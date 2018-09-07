@@ -1,0 +1,4 @@
+build/
+dist/
+examples/output
+*.egg-info
