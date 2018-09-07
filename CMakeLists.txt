@@ -5,5 +5,5 @@ project(kcap VERSION 0.0.1)
     add_subdirectory(HMx)
 
     add_custom_target(kcap ALL)
-    add_dependencies(kcap csl cosmosis_interface)
+    add_dependencies(kcap csl hmx_cosmosis_interface)
     
