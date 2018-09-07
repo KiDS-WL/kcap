@@ -1,0 +1,55 @@
+#This is a template for module description files
+name: ia_z_powerlap
+version: "2.0"
+purpose: ""
+url: ""
+interface: ia_z_powerlaw.py
+attribution: [CosmoSIS team, Niall Maccrann]
+rules: ""
+cite: []
+
+assumptions:
+    - "Modify the intrinsic alignment power spectra to have a power-law dependence in (1+z)"
+
+explanation: |
+    "
+    Basic models of intrinsic alignments assume a specific simple evolution with redshift.
+    This module takes an existing model of the IA power spectra and modifies them by giving
+    them additional evolution in z.
+
+    Specifically, it takes P_II and P_GI (e.g. as calculated by the la_model module)
+    and modifies them to:
+
+    P_II(k,z) -> (1+z)^alpha P_II(k,z)
+    P_GI(k,z) -> (1+z)^alpha P_GI(k,z)
+
+    "
+
+# List of parameters that can go in the params.ini file in the section for this module    
+params:
+    name: "String; a suffix to use for the input/output sections"
+
+
+#Inputs for a given choice of a parameter, from the values.ini or from other modules
+#If no such choices, just do one of these omitting mode=something part:
+inputs:
+    intrinsic_alignment_parameters:
+        alpha:  "Real; power law index to apply."
+    intrinsic_power:
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h"
+        z: "real vectorarray; redshift values of P(k,z) samples"
+        P_K: "real 2d array; spectrum of intrinsic-intrinsic power at samples in (Mpc/h)^{-3}"
+    matter_intrinsic_power:
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h"
+        z: "real vectorarray; redshift values of P(k,z) samples"
+        P_K: "real 2d array; spectrum of matter-intrinsic cross-power at samples in (Mpc/h)^{-3}"
+
+outputs:
+    intrinsic_power:
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h (unchanged from input)"
+        z: "real vectorarray; redshift values of P(k,z) samples (unchanged from input)"
+        P_K: "real 2d array; updated spectrum of intrinsic-intrinsic power at samples in (Mpc/h)^{-3}"
+    matter_intrinsic_power:
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h (unchanged from input)"
+        z: "real vectorarray; redshift values of P(k,z) samples (unchanged from input)"
+        P_K: "real 2d array; updated spectrum of matter-intrinsic cross-power at samples in (Mpc/h)^{-3}"
