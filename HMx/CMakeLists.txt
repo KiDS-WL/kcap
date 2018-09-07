@@ -21,7 +21,7 @@ project(HMx LANGUAGES Fortran VERSION 0.0.1)
         find_package(CosmoSIS)
     endif()
 
-    set(HMX_FFLAGS  "-Warray-bounds -fmax-errors=4 -ffpe-trap=invalid,zero,overflow -fimplicit-none -O3 -fdefault-real-8 -fdefault-double-8")
+    set(HMX_FFLAGS  "-fPIC -Warray-bounds -fmax-errors=4 -ffpe-trap=invalid,zero,overflow -fimplicit-none -O3 -fdefault-real-8 -fdefault-double-8")
     if(DEBUG)
         set(HMX_FFLAGS "${HMX_FFLAGS} -Wall -fcheck=all -fbounds-check -fbacktrace -Og")
     endif()
