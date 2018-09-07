@@ -1,0 +1,121 @@
+#This is a template for module description files
+name: wl_spectra
+version: "1.0"
+purpose: "Compute various weak lensing C_ell from P(k,z) with the Limber integral"
+url: ""
+interface: interface.so
+attribution: [CosmoSIS team, Matt Becker]
+rules: ""
+cite: []
+
+assumptions:
+    - "The Limber integral is valid on the scales in question"
+
+explanation: |
+    "
+    DEPRECATED: You should use the module cosmosis-standard-library/structure/projection/project_2d.py instead.
+
+    The Limber approximation integrates a 3D power spectrum over the radial
+    direction to get a 2D angular power spectrum.  It is an approximation
+    which is only valid on smaller scales.
+
+
+    C_\ell =  A \int_0^{\chi_1} W_1(\chi) W_2(\chi) P(k=l/\chi, z(\chi)) / chi^2 d\chi
+
+    The full integral must integrate over k(\ell) also.
+
+    For weak lensing, the power spectrum is the matter power spectrum and the two
+    kernel functions W depend on the redshift bins being used and the geometry.
+
+    Parts of this code and the underlying implementation of limber are based on cosmocalc:
+    https://bitbucket.org/beckermr/cosmocalc-public
+    "
+
+# List of parameters that can go in the params.ini file in the section for this module
+params:
+    n_ell: "Integer; number of log-spaced ell values to compute"
+    ell_min: "Real; minimum ell value to compute"
+    ell_max: "Real; maximum ell value to compute"
+    shear_shear: "Logical; compute shear auto-spectra? (Default: True)"
+    intrinsic_alignments: "Logical; compute intrinsic alignments spectra? (Default: False)"
+    matter_spectra: "Logical; compute matter power spectra? (Default: False)"
+    ggl_spectra: "Logical; compute galaxy-galaxy lensing spectra? (Default: False)"
+    gal_IA_cross_spectra: "Logical; compute cross-power between galaxy positions and alignments? (Default: False) - Not implemented"
+    mag_gal_cross_spectra: "Logical; compute lensing magnification cross-spectra? (Default: False)"
+    mag_mag: "Logical; compute lensing magnification auto-spectra? (Default: False)"
+
+#Inputs for a given choice of a parameter, from the values.ini or from other modules
+#If no such choices, just do one of these omitting mode=something part:
+inputs:
+    cosmological_parameters:
+        omega_m:  "Real; density fraction of all matter; used in the prefactor"
+        h0:  "Real; hubble factor H0 / 100 km/s/Mpc."
+    distances:
+        z: "real vector; redshift values of distance samples"
+        d_m: "real vector; comoving distnace to redshift values in units of Mpc (no factor h)"
+    matter_power_nl:
+        z: "real vector; redshift values of P(k,z) samples"
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h"
+        P_k: "real 2d array; non-linear matter power spectrum at samples in (Mpc/h)^{-3}"
+    wl_number_density:
+        nbin: "integer; number of redshift bins"
+        z: "real vector; redshift values of n(z) samples"
+        bin_: "real_vector; bin n(z) values.  Need not be normalized. bin_1, bin_2, bin_3, ...."
+    matter_power_gal:
+        z: "real vector; redshift values of P(k,z) samples"
+        k_h: "real vector; k values of P(k,z) samples in units of Mpc/h"
+        P_k: "real 2d array; non-linear galaxy power spectrum at samples in (Mpc/h)^{-3}"
+    matter_power_gal_mass:
+        z: "real vector; redshift values of P(k,z) samples"
+        k_h: "real vector; k values of P_{gm}(k,z) samples in units of Mpc/h"
+        P_k: "real 2d array; non-linear galaxy-mass cross-power spectrum at samples in (Mpc/h)^{-3}"
+
+outputs:
+    shear_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    shear_cl_ii:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    shear_cl_gi:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    matter_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    ggl_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    gal_IA_cross_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    magnification_galaxy_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
+    magnification_magnification_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+    magnification_intrinsic_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+    magnification_shear_cl:
+        ell: "Sample ell values for output C_ell"
+        nbin: "Number of redshift bins used"
+        bin_i_j: "C_ell (no l(l+1) factor) for (auto-correlation) bin i and j. Only stores j<=i."
+
