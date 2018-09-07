@@ -1,0 +1,60 @@
+# Fortran module binaries
+*.mod
+*.o
+
+# Build files
+build/
+debug_build/
+
+# Binaries
+bin/
+*.e
+
+# Library
+lib/
+
+# Plots
+*.eps
+plotting/*.p~
+
+# Emacs backups
+src/*.f90~
+
+# Backup directories
+src/BACKUP/
+BACKUP/
+
+# Mead directories
+CFHTLenS/
+Limber/
+OLD/
+RCSLenS/
+cosmo-OWLS/
+definitions/
+lensing/
+matter/
+pressure/
+profiling/
+projection/
+variations/
+winint/
+BAHAMAS/
+bias/
+Mead2017/
+fitting/
+
+# Note that /data, /hydro and /diagnostics are dealt with separately
+# Each directory contains a .gitignore
+
+# Benchmark directory
+benchmarks/HMx_*.txt
+benchmarks/Alonso_set1
+benchmarks/Alonso_set2
+benchmarks/OLD
+
+# Library update script
+src/update_library.sh*
+
+# Cosmic Emu files
+EMU0.txt
+xstar.dat
