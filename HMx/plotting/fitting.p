@@ -1,6 +1,8 @@
 unset multiplot
 reset
 
+set term aqua dashed
+
 # Initial white space
 print ''
 

@@ -199,6 +199,7 @@ function execute(block, config) result(status)
   status = datablock_get_double(block, halo_model_parameters_section, "rstar", HMx_config%hm%rstar)
   status = datablock_get_double(block, halo_model_parameters_section, "sstar", HMx_config%hm%sstar)
   status = datablock_get_double(block, halo_model_parameters_section, "mstar", HMx_config%hm%mstar)
+  status = datablock_get_double(block, halo_model_parameters_section, "Theat", HMx_config%hm%Theat)
 
   ! Exponentiate those parameters that will be explored in log space
   HMx_config%hm%eps = 10**log10_eps
