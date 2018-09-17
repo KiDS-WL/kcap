@@ -12,7 +12,7 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.8)
 
     find_package(CosmoSIS REQUIRED)
 
-    get_filename_component(COSMOSIS_SRC_DIR ${COSMOSIS_DIR} DIRECTORY)
+    set(COSMOSIS_SRC_DIR ${COSMOSIS_DIR})
 
     include(BuildGSL)
     include(BuildFFTW)
