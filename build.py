@@ -30,10 +30,6 @@ def check_cosmosis():
     return {"COSMOSIS_SRC_DIR" : cosmosis_src_dir}
 
 def install_cosmosis(env):
-    if "MPIFC" in env:
-        print("Compiling with MPI support.")
-    else:
-        print("Compiling without MPI support.")
     cosmosis_source = "git+https://bitbucket.org/tilmantroester/cosmosis.git@kcap#egg=cosmosis-standalone"
     subprocess.check_call([sys.executable, "-m", "pip", "install", cosmosis_source], env=env)
 
@@ -61,6 +57,9 @@ def check_compilers():
     if cxx_version < minimum_cxx_version:
         raise RuntimeError(f"G++ compiler version ({cxx_version}) does not meet requirements ({minimum_cxx_version}).")
     
+    if env["MPIFC"] == "":
+        print("Compiling CosmoSIS without MPI support. If MPI support is required, set MPIFC.")
+ 
     return env
 
 def build():
