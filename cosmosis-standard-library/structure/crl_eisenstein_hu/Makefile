@@ -10,4 +10,4 @@ clean:
 	rm -rf nowiggle_module.so.dSYM/
 
 nowiggle_module.so:   spline.f90 interface_tools.f90 eisensteinhu.f90 compute_pk_nowiggle.f90  nowiggle_module.f90
-	$(FC) $(FFLAGS) -shared -o $@ $+ $(LDFLAGS) -lcosmosis
+	$(FC) $(FFLAGS) -shared -o $@ $+ $(LDFLAGS) -lcosmosis_fortran

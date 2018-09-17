@@ -44,11 +44,8 @@ IFORTRUNTIME = -L$(IFORTLIBPATH) -lintlc -limf -lsvml -liomp5 -lifportmt -lifcor
 # gfortran
 # if you are using gfortran set here where the lib are installed
 # and check the runtime libs
-GFORTRANLIBPATH := $(GFORTRAN_LIBPATH)
-GFORTRANRUNTIME = -lgfortran
-ifneq ($(GFORTRANLIBPATH),)
-GFORTRANRUNTIME += -L$(GFORTRANLIBPATH)
-endif
+GFORTRANLIBPATH = $(GFORTRAN_LIBPATH)
+GFORTRANRUNTIME = -lgfortran 
 
 # if you are on linux and using mkl, you need to set this 
 MKLROOT = 
@@ -240,7 +237,7 @@ endif
 CFITSIO =  -L$(CFITSIO_LIBPATH) -lcfitsio
 
 #final LDFLAG
-LDFLAG = $(CM64) $(CFITSIO) $(LAPACK) $(FRUNTIME) -ldl -lm -lpthread
+LDFLAG = $(CM64) $(CFITSIO) $(LAPACK) -L$(FLIBPATH) $(FRUNTIME) -ldl -lm -lpthread
 
 # define some path to find the codes
 vpath %.c src src/minipmc src/cldf src/CAMspec src/component_plugin/basic src/lenslike/plenslike
