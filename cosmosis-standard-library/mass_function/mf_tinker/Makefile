@@ -1,4 +1,4 @@
-include ${COSMOSIS_SRC_DIR}/cosmosis/compilers.mk
+include ${COSMOSIS_SRC_DIR}/config/compilers.mk
 all: tinker_mf_module.so
 
 test:
