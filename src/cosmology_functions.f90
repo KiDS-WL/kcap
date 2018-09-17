@@ -8,9 +8,9 @@ MODULE cosmology_functions
 
   ! Contains cosmological parameters that only need to be calculated once
   TYPE cosmology     
-     REAL :: Om_m, Om_b, Om_v, Om_w, Om_nu, h, n, sig8, w, wa, inv_m_wdm, YH ! Primary parameters
+     REAL :: Om_m, Om_b, Om_v, Om_w, m_nu, h, n, sig8, w, wa, inv_m_wdm, YH ! Primary parameters
      REAL :: A, z_CMB, T_CMB, neff, Gamma ! Less primary parameters
-     REAL :: Om, k, Om_k, Om_c, Om_r, Om_v_mod, age, horizon ! Derived parameters
+     REAL :: Om, k, Om_k, Om_c, Om_r, Om_v_mod, Om_nu, age, horizon ! Derived parameters
      REAL :: mue, mup ! Derived thermal parameters
      REAL :: a1, a2, ns, ws, am, dm, wm ! DE parameters     
      REAL :: Om_ws, as, a1n, a2n ! Derived DE parameters
@@ -124,8 +124,9 @@ CONTAINS
     INTEGER :: i
 
     ! Names of pre-defined cosmologies    
-    INTEGER, PARAMETER :: ncosmo=26
+    INTEGER, PARAMETER :: ncosmo=237
     CHARACTER(len=256) :: names(0:ncosmo)
+    names=''
     names(0)='User defined'
     names(1)='Boring'
     names(2)='WMAP7 (cosmo-OWLS version; 1312.5462)'
@@ -151,8 +152,83 @@ CONTAINS
     names(22)='IDE3'
     names(23)='IDE10'
     names(24)='Random Mira Titan cosmology'
-    names(25)='Random FrankenEmu cosmology'
+    names(25)='Random Cosmic Emu cosmology'
     names(26)='Boring with CAMB linear spectrum'
+    names(100)='Mira Titan M000'
+    names(101)='Mira Titan M001'
+    names(102)='Mira Titan M002'
+    names(103)='Mira Titan M003'
+    names(104)='Mira Titan M004'
+    names(105)='Mira Titan M005'
+    names(106)='Mira Titan M006'
+    names(107)='Mira Titan M007'
+    names(108)='Mira Titan M008'
+    names(109)='Mira Titan M009'
+    names(110)='Mira Titan M010'
+    names(111)='Mira Titan M011'
+    names(112)='Mira Titan M012'
+    names(113)='Mira Titan M013'
+    names(114)='Mira Titan M014'
+    names(115)='Mira Titan M015'
+    names(116)='Mira Titan M016'
+    names(117)='Mira Titan M017'
+    names(118)='Mira Titan M018'
+    names(119)='Mira Titan M019'
+    names(120)='Mira Titan M020'
+    names(121)='Mira Titan M021'
+    names(122)='Mira Titan M022'
+    names(123)='Mira Titan M023'
+    names(124)='Mira Titan M024'
+    names(125)='Mira Titan M025'
+    names(126)='Mira Titan M026'
+    names(127)='Mira Titan M027'
+    names(128)='Mira Titan M028'
+    names(129)='Mira Titan M029'
+    names(130)='Mira Titan M030'
+    names(131)='Mira Titan M031'
+    names(132)='Mira Titan M032'
+    names(133)='Mira Titan M033'
+    names(134)='Mira Titan M034'
+    names(135)='Mira Titan M035'
+    names(136)='Mira Titan M036'
+    names(200)='Cosmic Emu M000'
+    names(201)='Cosmic Emu M001'
+    names(202)='Cosmic Emu M002'
+    names(203)='Cosmic Emu M003'
+    names(204)='Cosmic Emu M004'
+    names(205)='Cosmic Emu M005'
+    names(206)='Cosmic Emu M006'
+    names(207)='Cosmic Emu M007'
+    names(208)='Cosmic Emu M008'
+    names(209)='Cosmic Emu M009'
+    names(210)='Cosmic Emu M010'
+    names(211)='Cosmic Emu M011'
+    names(212)='Cosmic Emu M012'
+    names(213)='Cosmic Emu M013'
+    names(214)='Cosmic Emu M014'
+    names(215)='Cosmic Emu M015'
+    names(216)='Cosmic Emu M016'
+    names(217)='Cosmic Emu M017'
+    names(218)='Cosmic Emu M018'
+    names(219)='Cosmic Emu M019'
+    names(220)='Cosmic Emu M020'
+    names(221)='Cosmic Emu M021'
+    names(222)='Cosmic Emu M022'
+    names(223)='Cosmic Emu M023'
+    names(224)='Cosmic Emu M024'
+    names(225)='Cosmic Emu M025'
+    names(226)='Cosmic Emu M026'
+    names(227)='Cosmic Emu M027'
+    names(228)='Cosmic Emu M028'
+    names(229)='Cosmic Emu M029'
+    names(230)='Cosmic Emu M030'
+    names(231)='Cosmic Emu M031'
+    names(232)='Cosmic Emu M032'
+    names(233)='Cosmic Emu M033'
+    names(234)='Cosmic Emu M034'
+    names(235)='Cosmic Emu M035'
+    names(236)='Cosmic Emu M036'
+    names(237)='Cosmic Emu M037'
 
     IF(verbose) WRITE(*,*) 'ASSIGN_COSMOLOGY: Assigning cosmological model parameters'
 
@@ -160,8 +236,16 @@ CONTAINS
        WRITE(*,*) 'ASSIGN_COSMOLOGY: Choose cosmological model'
        WRITE(*,*) '==========================================='
        DO i=0,SIZE(names)-1
-          WRITE(*,*) i, '- ', TRIM(names(i))
+          IF(i>=100 .AND. i<=136) THEN
+             ! Do nothing
+          ELSE IF(i>=200 .AND. i<=237) THEN
+             ! Do nothing
+          ELSE IF(names(i) .NE. '') THEN
+             WRITE(*,*) i, '- ', TRIM(names(i))
+          END IF
        END DO
+       WRITE(*,*) ' 100 -> 136 - Mira Titan M000 -> M036'
+       WRITE(*,*) ' 200 -> 237 - Cosmic Emu M000 -> M037'
        READ(*,*) icosmo
        WRITE(*,*) '==========================================='
     END IF
@@ -184,7 +268,7 @@ CONTAINS
     cosm%Om_b=0.05
     cosm%Om_v=1.-cosm%Om_m
     cosm%Om_w=0.
-    cosm%Om_nu=0.
+    cosm%m_nu=0.
     cosm%h=0.7
     cosm%sig8=0.8
     cosm%n=0.96
@@ -217,7 +301,6 @@ CONTAINS
        cosm%Om_m=0.272
        cosm%Om_b=0.0455
        cosm%Om_v=1.-cosm%Om_m
-       cosm%Om_nu=0.
        cosm%h=0.704
        cosm%sig8=0.81
        cosm%n=0.967
@@ -235,7 +318,6 @@ CONTAINS
        cosm%Om_b=0.0463
        cosm%Om_m=0.2330+cosm%Om_b
        cosm%Om_v=1.-cosm%Om_m       
-       cosm%Om_nu=0.
        cosm%n=0.9720
        cosm%sig8=0.8211
     ELSE IF(icosmo==5) THEN
@@ -363,14 +445,29 @@ CONTAINS
        END IF
     ELSE IF(icosmo==24) THEN
        CALL random_Mira_Titan_cosmology(cosm)
+       cosm%itk=2 ! Set to CAMB linear power
+       cosm%iw=3 ! Set to w(a) dark energy
+       cosm%Om_v=0. ! Necessary for CAMB
     ELSE IF(icosmo==25) THEN
-       CALL random_FrankenEmu_cosmology(cosm)
+       CALL random_Cosmic_Emu_cosmology(cosm)   
+       cosm%itk=2 ! Set to CAMB linear power
+       cosm%iw=4 ! Set to constant w dark energy
+       cosm%Om_v=0. ! Necessary for CAMB
     ELSE IF(icosmo==26) THEN
-       cosm%itk=2
-       cosm%iw=1
-       cosm%w=-1.
+       ! Boring with CAMB linear spectrum
+       cosm%itk=2 ! Set to CAMB linear power
        cosm%Om_w=cosm%Om_v ! Necessary for CAMB
-       cosm%Om_v=0.
+       cosm%Om_v=0. ! Necessary for CAMB
+    ELSE IF(icosmo>=100 .AND. icosmo<=137) THEN
+       CALL Mira_Titan_node_cosmology(icosmo-100,cosm)
+       cosm%itk=2 ! Set to CAMB linear power
+       cosm%iw=3 ! Set to w(a) dark energy
+       cosm%Om_v=0. ! Necessary for CAMB
+    ELSE IF(icosmo>=200 .AND. icosmo<=237) THEN
+       CALL Cosmic_Emu_node_cosmology(icosmo-200,cosm)
+       cosm%itk=2 ! Set to CAMB linear power
+       cosm%iw=4 ! Set to constant w dark energy
+       cosm%Om_v=0. ! Necessary for CAMB
     ELSE
        STOP 'ASSIGN_COSMOLOGY: Error, icosmo not specified correctly'
     END IF
@@ -390,15 +487,18 @@ CONTAINS
     TYPE(cosmology), INTENT(INOUT) :: cosm
     REAL :: Xs, f1, f2
     REAL :: rho_g, Om_g_h2
-    REAL, PARAMETER :: small=1e-5
+    REAL, PARAMETER :: small=1e-5 ! Some small number for writing curvature things
+    REAL, PARAMETER :: neutrino_constant=94.1 ! Number that appears in neutrino formula [eV]
+    REAL, PARAMETER :: neff_contribution=0.227 ! Contribution to Omega_r per n_eff
 
     IF(cosm%verbose) WRITE(*,*) 'INIT_COSMOLOGY: Calcuating radiation density'
 
     ! Calculate radiation density
-    rho_g=(4.*SBconst*cosm%T_CMB**4/c_light**3)
-    Om_g_h2=rho_g*(8.*pi*bigG/3.)/H0**2
-    cosm%Om_r=Om_g_h2*(1.+0.227*cosm%neff)/cosm%h**2
+    rho_g=(4.*SBconst*cosm%T_CMB**4/c_light**3) ! Photon physcial density from CMB temperature
+    Om_g_h2=rho_g*(8.*pi*bigG/3.)/H0**2 ! Photon cosmological density
+    cosm%Om_r=Om_g_h2*(1.+neff_contribution*cosm%neff)/cosm%h**2 ! Radiation density by including neutrinos
 
+    ! Information about how radiation density is calculated
     IF(cosm%verbose) THEN
        WRITE(*,*) 'INIT_COSMOLOGY: Omega_r:', cosm%Om_r  
        WRITE(*,*) 'INIT_COSMOLOGY: Altering vacuum density to account for radiation'
@@ -408,10 +508,15 @@ CONTAINS
     ! Correction to vacuum density in order for radiation to maintain flatness
     cosm%Om_v_mod=cosm%Om_v-cosm%Om_r    
 
+    ! Information about how vacuum is changed to enforece flatness
     If(cosm%verbose) THEN
        WRITE(*,*) 'INIT_COSMOLOGY: Omega_v post change:', cosm%Om_v_mod
        WRITE(*,*) 'INIT_COSMOLOGY: Calculating derived parameters'
     END IF
+
+    ! Massive neutrinos
+    IF(cosm%m_nu .NE. 0.) STOP 'INIT_COSMOLOGY: Error, massive neutrinos not supported yet'
+    cosm%Om_nu=cosm%m_nu/(neutrino_constant*cosm%h**2)
 
     ! Derived cosmological parameters    
     cosm%Om_c=cosm%Om_m-cosm%Om_b-cosm%Om_nu
@@ -517,7 +622,8 @@ CONTAINS
     ! Get the required sigma_8 by re-normalising the power spectrum
     IMPLICIT NONE
     TYPE(cosmology), INTENT(INOUT) :: cosm
-    REAL :: sigi
+    REAL :: sigi, sigf
+    LOGICAL, PARAMETER :: run_twice=.FALSE.
 
     ! Change the flag *before* doing this calculation because it calls power
     cosm%is_normalised=.TRUE.
@@ -564,16 +670,24 @@ CONTAINS
           WRITE(*,*) 'NORMALISE_POWER: Initial sigma_8:', REAL(sigi)          
        END IF
 
-       ! Run again to normalise
-       cosm%A=cosm%A*(cosm%sig8/sigi)**2 
-       CALL get_CAMB_power(z=0.,non_linear=.FALSE.,halofit_version=5,cosm=cosm)
-       sigi=sqrt(sigma2_integral1(8.,1.,cosm,2.*acc_cosm))
+       ! Normalisation
+       IF(run_twice) THEN
+          ! Run again to normalise
+          cosm%A=cosm%A*(cosm%sig8/sigi)**2 
+          CALL get_CAMB_power(z=0.,non_linear=.FALSE.,halofit_version=5,cosm=cosm)          
+       ELSE
+          ! Normalise using sigma8 and rescaling linear power
+          cosm%log_plin=cosm%log_plin+2.*log(cosm%sig8/sigi)
+       END IF
+
+       ! Check that the normalisation has been done correctly
+       sigf=sqrt(sigma2_integral1(8.,1.,cosm,2.*acc_cosm))
 
        ! Write to screen
        IF(cosm%verbose) THEN
-          WRITE(*,*) 'NORMALISE_POWER: New As:', REAL(cosm%A)  
+          !WRITE(*,*) 'NORMALISE_POWER: New As:', REAL(cosm%A)  
           WRITE(*,*) 'NORMALISE_POWER: Target sigma_8:', REAL(cosm%sig8)
-          WRITE(*,*) 'NORMALISE_POWER: Final sigma_8 (calculated):', REAL(sigi)
+          WRITE(*,*) 'NORMALISE_POWER: Final sigma_8 (calculated):', REAL(sigf)
           WRITE(*,*) 'NORMALISE_POWER: Done'
           WRITE(*,*)
        END IF
@@ -817,7 +931,6 @@ CONTAINS
        w_de=cosm%w+(cosm%wm-cosm%w)*p1*p2/(p3*p4)
     ELSE IF(cosm%iw==3) THEN
        ! w(a)CDM
-       ! TODO: Check this
        w_de=cosm%w+(1.-a)*cosm%wa
     ELSE IF(cosm%iw==4) THEN
        ! wCDM
@@ -857,8 +970,6 @@ CONTAINS
     REAL, INTENT(IN) :: a
     TYPE(cosmology), INTENT(INOUT) :: cosm
 
-    IF(cosm%Om_nu .NE. 0.) STOP 'W_DE_TOTAL: Error, does not support massive neutrinos'
-
     IF(cosm%Om_v_mod==0. .AND. cosm%Om_w==0.) THEN
        w_de_total=-1.
     ELSE
@@ -875,8 +986,6 @@ CONTAINS
     REAL :: w_eff
     REAL, INTENT(IN) :: a
     TYPE(cosmology), INTENT(INOUT) :: cosm
-
-    IF(cosm%Om_nu .NE. 0.) STOP 'W_EFF: Error, does not support massive neutrinos'
 
     w_eff=w_de(a,cosm)*Omega_w(a,cosm)-Omega_v(a,cosm)+Omega_r(a,cosm)/3.
     w_eff=w_eff/Omega(a,cosm)
@@ -898,7 +1007,6 @@ CONTAINS
        X_de=1.
     ELSE IF(cosm%iw==3) THEN
        ! w(a)CDM
-       ! TODO: Check this
        X_de=(a**(-3.*(1.+cosm%w+cosm%wa)))*exp(-3.*cosm%wa*(1.-a))
     ELSE IF(cosm%iw==4) THEN
        ! wCDM
@@ -1218,7 +1326,7 @@ CONTAINS
     IF(cosm%itk==1) THEN
        Tk=Tk_eh(k,cosm)
     ELSE IF(cosm%itk==3) THEN
-       Tk=Tk_defw(k,cosm)
+       Tk=Tk_DEFW(k,cosm)
     ELSE
        STOP 'TK: Error, itk specified incorrectly'
     END IF
@@ -1987,7 +2095,7 @@ CONTAINS
 
     REAL, PARAMETER :: Rsplit=1e-2
 
-    ! TODO: Optimize Rsplit, alpha, beta
+    ! TODO: Optimize Rsplit, alpha, beta, not really a problem when only called for R = 0, 100 Mpc/h
 
     IF(t==0. .OR. t==1.) THEN
        ! t=0 corresponds to k=infintiy when W(kR)=0
@@ -3117,7 +3225,7 @@ CONTAINS
     WRITE(7,*) 'l_sample_boost = 1'
     CLOSE(7)
 
-    IF(cosm%verbose) WRITE(*,*) 'GET_CAMB_POWER: Running CAMB'
+    IF(cosm%verbose) WRITE(*,*) 'GET_CAMB_POWER: Running CAMB (note weird problems with this function in library)'
     CALL SYSTEM('rm /Users/Mead/Physics/CAMB_files/tmp/temp_transfer_out.dat')
     CALL SYSTEM('rm /Users/Mead/Physics/CAMB_files/tmp/temp_matterpower.dat')
     IF(cosm%verbose) THEN
@@ -3162,6 +3270,374 @@ CONTAINS
     
   END SUBROUTINE get_CAMB_power
 
+  SUBROUTINE random_Cosmic_Emu_cosmology(cosm)
+
+    !Generate some random cosmological parameter
+    USE random_numbers
+    IMPLICIT NONE
+    TYPE(cosmology), INTENT(INOUT) :: cosm
+
+    REAL, PARAMETER :: om_m_min=0.120
+    REAL, PARAMETER :: om_m_max=0.155
+
+    REAL, PARAMETER :: om_b_min=0.0215
+    REAL, PARAMETER :: om_b_max=0.0235
+
+    REAL, PARAMETER :: n_min=0.85
+    REAL, PARAMETER :: n_max=1.05
+
+    REAL, PARAMETER :: h_min=0.55
+    REAL, PARAMETER :: h_max=0.85
+
+    REAL, PARAMETER :: w_min=-1.3
+    REAL, PARAMETER :: w_max=-0.7
+
+    REAL, PARAMETER :: sig8_min=0.616
+    REAL, PARAMETER :: sig8_max=0.9
+
+    cosm%h=random_uniform(h_min,h_max)
+
+    cosm%Om_m=random_uniform(om_m_min,om_m_max)/cosm%h**2
+
+    cosm%Om_b=random_uniform(om_b_min,om_b_max)/cosm%h**2
+
+    !Enforce flatness
+    ! Note - need to have Om_w for dark enegry
+    cosm%Om_w=1.-cosm%Om_m
+
+    cosm%n=random_uniform(n_min,n_max)   
+
+    cosm%w=random_uniform(w_min,w_max)
+
+    cosm%sig8=random_uniform(sig8_min,sig8_max)
+
+
+  END SUBROUTINE random_Cosmic_Emu_cosmology
+
+  SUBROUTINE Cosmic_Emu_node_cosmology(node,cosm)
+    
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: node
+    TYPE(cosmology), INTENT(INOUT) :: cosm
+    REAL :: om_m, om_b
+
+    ! M000 -> M037 of Cosmic_Emu (Table 1 in 1304.7849)
+    IF(node==0) THEN
+       ! M000
+       om_m=0.1296
+       om_b=0.0224
+       cosm%n=0.9700
+       cosm%w=1.000
+       cosm%sig8=0.8000
+       cosm%h=0.7200
+    ELSE IF(node==1) THEN
+       ! M001
+       om_m=0.1539
+       om_b=0.0231
+       cosm%n=0.9468
+       cosm%w=0.816
+       cosm%sig8=0.8161
+       cosm%h=0.5977
+    ELSE IF(node==2) THEN
+       ! M002
+       om_m=0.1460
+       om_b=0.0227
+       cosm%n=0.8952
+       cosm%w=0.758
+       cosm%sig8=0.8548
+       cosm%h=0.5970
+    ELSE IF(node==3) THEN
+       ! M003
+       om_m=0.1324
+       om_b=0.0235
+       cosm%n=0.9984
+       cosm%w=0.874
+       cosm%sig8=0.8484
+       cosm%h=0.6763
+    ELSE IF(node==4) THEN
+       ! M004
+       om_m=0.1381
+       om_b=0.0227
+       cosm%n=0.9339
+       cosm%w=1.087
+       cosm%sig8=0.7000
+       cosm%h=0.7204
+    ELSE IF(node==5) THEN
+       ! M005
+       om_m=0.1358
+       om_b=0.0216
+       cosm%n=0.9726
+       cosm%w=1.242
+       cosm%sig8=0.8226
+       cosm%h=0.7669
+    ELSE IF(node==6) THEN
+       ! M006
+       om_m=0.1516
+       om_b=0.0229
+       cosm%n=0.9145
+       cosm%w=1.223
+       cosm%sig8=0.6705
+       cosm%h=0.7040
+    ELSE IF(node==7) THEN
+       ! M007
+       om_m=0.1268
+       om_b=0.0223
+       cosm%n=0.9210
+       cosm%w=0.70001 ! Changed to avoid problems
+       cosm%sig8=0.7474
+       cosm%h=0.6189
+    ELSE IF(node==8) THEN
+       ! M008
+       om_m=0.1448
+       om_b=0.0223
+       cosm%n=0.9855
+       cosm%w=1.203
+       cosm%sig8=0.8090
+       cosm%h=0.7218
+    ELSE IF(node==9) THEN
+       ! M009
+       om_m=0.1392
+       om_b=0.0234
+       cosm%n=0.9790
+       cosm%w=0.739
+       cosm%sig8=0.6692
+       cosm%h=0.6127
+    ELSE IF(node==10) THEN
+       ! M010
+       om_m=0.1403
+       om_b=0.0218
+       cosm%n=0.8565
+       cosm%w=0.990
+       cosm%sig8=0.7556
+       cosm%h=0.6695
+    ELSE IF(node==11) THEN
+       ! M011
+       om_m=0.1437
+       om_b=0.0234
+       cosm%n=0.8823
+       cosm%w=1.126
+       cosm%sig8=0.7276
+       cosm%h=0.7177
+    ELSE IF(node==12) THEN
+       ! M012
+       om_m=0.1223
+       om_b=0.0225
+       cosm%n=1.0048
+       cosm%w=0.971
+       cosm%sig8=0.6271
+       cosm%h=0.7396
+    ELSE IF(node==13) THEN
+       ! M013
+       om_m=0.1482
+       om_b=0.0221
+       cosm%n=0.9597
+       cosm%w=0.855
+       cosm%sig8=0.6508
+       cosm%h=0.6107
+    ELSE IF(node==14) THEN
+       ! M014
+       om_m=0.1471
+       om_b=0.0233
+       cosm%n=1.0306
+       cosm%w=1.010
+       cosm%sig8=0.7075
+       cosm%h=0.6688
+    ELSE IF(node==15) THEN
+       ! M015
+       om_m=0.1415
+       om_b=0.0230
+       cosm%n=1.0177
+       cosm%w=1.281
+       cosm%sig8=0.7692
+       cosm%h=0.7737
+    ELSE IF(node==16) THEN
+       ! M016
+       om_m=0.1245
+       om_b=0.0218
+       cosm%n=0.9403
+       cosm%w=1.145
+       cosm%sig8=0.7437
+       cosm%h=0.7929
+    ELSE IF(node==17) THEN
+       ! M017
+       om_m=0.1426
+       om_b=0.0215
+       cosm%n=0.9274
+       cosm%w=0.893
+       cosm%sig8=0.6865
+       cosm%h=0.6305
+    ELSE IF(node==18) THEN
+       ! M018
+       om_m=0.1313
+       om_b=0.0216
+       cosm%n=0.8887
+       cosm%w=1.029
+       cosm%sig8=0.6440
+       cosm%h=0.7136
+    ELSE IF(node==19) THEN
+       ! M019
+       om_m=0.1279
+       om_b=0.0232
+       cosm%n=0.8629
+       cosm%w=1.184
+       cosm%sig8=0.6159
+       cosm%h=0.8120
+    ELSE IF(node==20) THEN
+       ! M020
+       om_m=0.1290
+       om_b=0.0220
+       cosm%n=1.0242
+       cosm%w=0.797
+       cosm%sig8=0.7972
+       cosm%h=0.6442
+    ELSE IF(node==21) THEN
+       ! M021
+       om_m=0.1335
+       om_b=0.0221
+       cosm%n=1.0371
+       cosm%w=1.165
+       cosm%sig8=0.6563
+       cosm%h=0.7601
+    ELSE IF(node==22) THEN
+       ! M022
+       om_m=0.1505
+       om_b=0.0225
+       cosm%n=1.0500
+       cosm%w=1.107
+       cosm%sig8=0.7678
+       cosm%h=0.6736
+    ELSE IF(node==23) THEN
+       ! M023
+       om_m=0.1211
+       om_b=0.0220
+       cosm%n=0.9016
+       cosm%w=1.261
+       cosm%sig8=0.6664
+       !cosm%h=0.8694 ! This seems wrong (typo in FrankenEmu?, or something to do with adding h?)
+       cosm%h=0.8500
+    ELSE IF(node==24) THEN
+       ! M024
+       om_m=0.1302
+       om_b=0.0226
+       cosm%n=0.9532
+       cosm%w=1.300
+       cosm%sig8=0.6644
+       cosm%h=0.8380
+    ELSE IF(node==25) THEN
+       ! M025
+       om_m=0.1494
+       om_b=0.0217
+       cosm%n=1.0113
+       cosm%w=0.719
+       cosm%sig8=0.7398
+       cosm%h=0.5724
+    ELSE IF(node==26) THEN
+       ! M026
+       om_m=0.1347
+       om_b=0.0232
+       cosm%n=0.9081
+       cosm%w=0.952
+       cosm%sig8=0.7995
+       cosm%h=0.6931
+    ELSE IF(node==27) THEN
+       ! M027
+       om_m=0.1369
+       om_b=0.0224
+       cosm%n=0.8500
+       cosm%w=0.836
+       cosm%sig8=0.7111
+       cosm%h=0.6387
+    ELSE IF(node==28) THEN
+       ! M028
+       om_m=0.1527
+       om_b=0.0222
+       cosm%n=0.8694
+       cosm%w=0.932
+       cosm%sig8=0.8068
+       cosm%h=0.6189
+    ELSE IF(node==29) THEN
+       ! M029
+       om_m=0.1256
+       om_b=0.0228
+       cosm%n=1.0435
+       cosm%w=0.913
+       cosm%sig8=0.7087
+       cosm%h=0.7067
+    ELSE IF(node==30) THEN
+       ! M030
+       om_m=0.1234
+       om_b=0.0230
+       cosm%n=0.8758
+       cosm%w=0.777
+       cosm%sig8=0.6739
+       cosm%h=0.6626
+    ELSE IF(node==31) THEN
+       ! M031
+       om_m=0.1550
+       om_b=0.0219
+       cosm%n=0.9919
+       cosm%w=1.068
+       cosm%sig8=0.7041
+       cosm%h=0.6394
+    ELSE IF(node==32) THEN
+       ! M032
+       om_m=0.1200
+       om_b=0.0229
+       cosm%n=0.9661
+       cosm%w=1.048
+       cosm%sig8=0.7556
+       cosm%h=0.7901
+    ELSE IF(node==33) THEN
+       ! M033
+       om_m=0.1399
+       om_b=0.0225
+       cosm%n=1.0407
+       cosm%w=1.147
+       cosm%sig8=0.8645
+       cosm%h=0.7286
+    ELSE IF(node==34) THEN
+       ! M034
+       om_m=0.1497
+       om_b=0.0227
+       cosm%n=0.9239
+       cosm%w=1.000
+       cosm%sig8=0.8734
+       cosm%h=0.6510
+    ELSE IF(node==35) THEN
+       ! M035
+       om_m=0.1485
+       om_b=0.0221
+       cosm%n=0.9604
+       cosm%w=0.853
+       cosm%sig8=0.8822
+       cosm%h=0.6100
+    ELSE IF(node==36) THEN
+       ! M036
+       om_m=0.1216
+       om_b=0.0233
+       cosm%n=0.9387
+       cosm%w=0.706
+       cosm%sig8=0.8911
+       cosm%h=0.6421
+    ELSE IF(node==37) THEN
+       ! M037
+       om_m=0.1495
+       om_b=0.0228
+       cosm%n=1.0233
+       cosm%w=1.294
+       cosm%sig8=0.8999 ! Moved off boundary
+       cosm%h=0.7313
+    ELSE
+       STOP 'FRANKENEMU_NODE_COSMOLOGY: Error, node specified incorrectly'
+    END IF
+
+    cosm%w=-cosm%w
+    cosm%Om_m=om_m/cosm%h**2
+    cosm%Om_b=om_b/cosm%h**2
+    cosm%Om_w=1.-cosm%Om_m
+    
+  END SUBROUTINE Cosmic_Emu_node_cosmology
+
   SUBROUTINE random_Mira_Titan_cosmology(cosm)
 
     !Generate some random cosmological parameters for the Mira Titan hypercube
@@ -3204,90 +3680,414 @@ CONTAINS
     cosm%Om_b=om_b/cosm%h**2
 
     om_nu=random_uniform(om_nu_min,om_nu_max)
-    cosm%Om_nu=om_nu/cosm%h**2
-    cosm%Om_nu=0.
+    cosm%m_nu=94.1*om_nu
+    cosm%m_nu=0.
 
     ! Enforce flatness, ensure Omega_w is used for dark energy, Omega_v = 0
     cosm%Om_w=1.-cosm%Om_m
-    cosm%Om_v=0.
 
     cosm%n=random_uniform(n_min,n_max)
 
     cosm%w=random_uniform(w_min,w_max)
-    cosm%w=-1.
 
     ! Enforce 0.3 <= (-w0-wa)^(1/4)
     DO
        cosm%wa=random_uniform(wa_min,wa_max)
        !IF(0.3<=(-cosm%w-cosm%wa)**(1./4.)) EXIT
-       IF(0.0081<=-cosm%w-cosm%wa) EXIT
+       IF(0.0081<=-cosm%w-cosm%wa .AND. 2.769>=-cosm%w-cosm%wa) EXIT
     END DO
-    cosm%wa=0.
 
     cosm%sig8=random_uniform(sig8_min,sig8_max)
-
-    ! Set to w(a) dark energy
-    cosm%iw=4
-
-    ! Set to CAMB linear power
-    cosm%itk=2
 
   END SUBROUTINE random_Mira_Titan_cosmology
 
-  SUBROUTINE random_FrankenEmu_cosmology(cosm)
-
-    !Generate some random cosmological parameter
-    USE random_numbers
+  SUBROUTINE Mira_Titan_node_cosmology(node,cosm)
+    
     IMPLICIT NONE
+    INTEGER, INTENT(IN) :: node
     TYPE(cosmology), INTENT(INOUT) :: cosm
+    REAL :: om_m, om_b, om_nu
 
-    REAL, PARAMETER :: Om_m_min=0.1
-    REAL, PARAMETER :: Om_m_max=1.
+    ! M000 -> M010 of Mira Titan (m_nu = 0 eV; Table 3 in 1705.03388)
+    IF(node==0) THEN
+       ! M000
+       om_m=0.1335
+       om_b=0.02258
+       cosm%sig8=0.8
+       cosm%h=0.71
+       cosm%n=0.963
+       cosm%w=-1.0
+       cosm%wa=0.0
+       om_nu=0.
+    ELSE IF(node==1) THEN
+       ! M001
+       ! Something seems funnny with this cosmology
+       om_m=0.1472
+       om_b=0.02261
+       cosm%sig8=0.8778
+       cosm%h=0.6167
+       cosm%n=0.9611
+       cosm%w=-0.7000
+       cosm%wa=0.67220
+       om_nu=0.
+    ELSE IF(node==2) THEN
+       ! M002
+       om_m=0.1356
+       om_b=0.02328
+       cosm%sig8=0.8556
+       cosm%h=0.7500
+       cosm%n=1.0500
+       cosm%w=-1.0330
+       cosm%wa=0.91110
+       om_nu=0.
+    ELSE IF(node==3) THEN
+       ! M003
+       om_m=0.1550
+       om_b=0.02194
+       cosm%sig8=0.9000
+       cosm%h=0.7167
+       cosm%n=0.8944
+       cosm%w=-1.1000
+       cosm%wa=-0.28330
+       om_nu=0.
+    ELSE IF(node==4) THEN
+       ! M004
+       om_m=0.1239
+       om_b=0.02283
+       cosm%sig8=0.7889
+       cosm%h=0.5833
+       cosm%n=0.8722
+       cosm%w=-1.1670
+       cosm%wa=1.15000
+       om_nu=0.
+    ELSE IF(node==5) THEN
+       ! M005
+       om_m=0.1433
+       om_b=0.02350
+       cosm%sig8=0.7667
+       cosm%h=0.8500
+       cosm%n=0.9833
+       cosm%w=-1.2330
+       cosm%wa=-0.04445
+       om_nu=0.
+    ELSE IF(node==6) THEN
+       ! M006
+       om_m=0.1317
+       om_b=0.021501 ! Moved off boundary
+       cosm%sig8=0.8333
+       cosm%h=0.5500
+       cosm%n=0.9167
+       cosm%w=-0.7667
+       cosm%wa=0.19440
+       om_nu=0.
+    ELSE IF(node==7) THEN
+       ! M007
+       om_m=0.1511
+       om_b=0.02217
+       cosm%sig8=0.8111
+       cosm%h=0.8167
+       cosm%n=1.0280
+       cosm%w=-0.8333
+       cosm%wa=-1.0000
+       om_nu=0.
+    ELSE IF(node==8) THEN
+       ! M008
+       om_m=0.1200
+       om_b=0.02306
+       cosm%sig8=0.7000
+       cosm%h=0.6833
+       cosm%n=1.0060
+       cosm%w=-0.9000
+       cosm%wa=0.43330
+    ELSE IF(node==9) THEN
+       ! M009
+       om_m=0.1394
+       om_b=0.02172
+       cosm%sig8=0.7444
+       cosm%h=0.6500
+       cosm%n=0.8500
+       cosm%w=-0.9667
+       cosm%wa=-0.76110
+       om_nu=0.
+    ELSE IF(node==10) THEN
+       ! M010
+       om_m=0.1278
+       om_b=0.02239
+       cosm%sig8=0.7222
+       cosm%h=0.7833
+       cosm%n=0.9389
+       cosm%w=-1.3000
+       cosm%wa=-0.52220
+       om_nu=0.
+    ELSE IF(node==11) THEN
+       ! M011
+       om_m=0.1227
+       om_b=0.0220
+       cosm%sig8=0.7151
+       cosm%h=0.5827
+       cosm%n=0.9357
+       cosm%w=-1.0821
+       cosm%wa=1.0646
+       om_nu=0.000345
+    ELSE IF(node==12) THEN
+       ! M012
+       om_m=0.1241
+       om_b=0.0224
+       cosm%sig8=0.7472
+       cosm%h=0.8315
+       cosm%n=0.8865
+       cosm%w=-1.2325
+       cosm%wa=-0.7646
+       om_nu=0.001204
+    ELSE IF(node==13) THEN
+       ! M013
+       om_m=0.1534
+       om_b=0.0232
+       cosm%sig8=0.8098
+       cosm%h=0.7398
+       cosm%n=0.8706
+       cosm%w=-1.2993
+       cosm%wa=1.2236
+       om_nu=0.003770
+    ELSE IF(node==14) THEN
+       ! M014
+       om_m=0.1215
+       om_b=0.0215
+       cosm%sig8=0.8742
+       cosm%h=0.5894
+       cosm%n=1.0151
+       cosm%w=-0.7281
+       cosm%wa=-0.2088
+       om_nu=0.001752
+    ELSE IF(node==15) THEN
+       ! M015
+       om_m=0.1250
+       om_b=0.0224
+       cosm%sig8=0.8881
+       cosm%h=0.6840
+       cosm%n=0.8638
+       cosm%w=-1.0134
+       cosm%wa=0.0415
+       om_nu=0.002789
+    ELSE IF(node==16) THEN
+       ! M016
+       om_m=0.1499
+       om_b=0.0223
+       cosm%sig8=0.7959
+       cosm%h=0.6452
+       cosm%n=1.0219
+       cosm%w=-1.0139
+       cosm%wa=0.9434
+       om_nu=0.002734
+    ELSE IF(node==17) THEN
+       ! M017
+       om_m=0.1206
+       om_b=0.0215
+       cosm%sig8=0.7332
+       cosm%h=0.7370
+       cosm%n=1.0377
+       cosm%w=-0.9472
+       cosm%wa=-0.9897
+       om_nu=0.000168
+    ELSE IF(node==18) THEN
+       ! M018
+       om_m=0.1544
+       om_b=0.0217
+       cosm%sig8=0.7982
+       cosm%h=0.6489
+       cosm%n=0.9026
+       cosm%w=-0.7091
+       cosm%wa=0.6409
+       om_nu=0.006419
+    ELSE IF(node==19) THEN
+       ! M019
+       om_m=0.1256
+       om_b=0.0222
+       cosm%sig8=0.8547
+       cosm%h=0.8251
+       cosm%n=1.0265
+       cosm%w=-0.9813
+       cosm%wa=-0.3393
+       om_nu=0.004673
+    ELSE IF(node==20) THEN
+       ! M020
+       om_m=0.1514
+       om_b=0.0225
+       cosm%sig8=0.7561
+       cosm%h=0.6827
+       cosm%n=0.9913
+       cosm%w=-1.0101
+       cosm%wa=-0.7778
+       om_nu=0.009777
+    ELSE IF(node==21) THEN
+       ! M021
+       om_m=0.1472
+       om_b=0.0221
+       cosm%sig8=0.8475
+       cosm%h=0.6583
+       cosm%n=0.9613
+       cosm%w=-0.9111
+       cosm%wa=-1.5470
+       om_nu=0.000672
+    ELSE IF(node==22) THEN
+       ! M022
+       om_m=0.1384
+       om_b=0.0231
+       cosm%sig8=0.8328
+       cosm%h=0.8234
+       cosm%n=0.9739
+       cosm%w=-0.9312
+       cosm%wa=0.5939
+       om_nu=0.008239
+    ELSE IF(node==23) THEN
+       ! M023
+       om_m=0.1334
+       om_b=0.0225
+       cosm%sig8=0.7113
+       cosm%h=0.7352
+       cosm%n=0.9851
+       cosm%w=-0.8971
+       cosm%wa=0.3247
+       om_nu=0.003733
+    ELSE IF(node==24) THEN
+       ! M024
+       om_m=0.1508
+       om_b=0.0229
+       cosm%sig8=0.7002
+       cosm%h=0.7935
+       cosm%n=0.8685
+       cosm%w=-1.0322
+       cosm%wa=1.0220
+       om_nu=0.003063
+    ELSE IF(node==25) THEN
+       ! M025
+       om_m=0.1203
+       om_b=0.0230
+       cosm%sig8=0.8773
+       cosm%h=0.6240
+       cosm%n=0.9279
+       cosm%w=-0.8282
+       cosm%wa=-1.5005
+       om_nu=0.007024
+    ELSE IF(node==26) THEN
+       ! M026
+       om_m=0.1224
+       om_b=0.0222
+       cosm%sig8=0.7785
+       cosm%h=0.7377
+       cosm%n=0.8618
+       cosm%w=-0.7463
+       cosm%wa=0.3647
+       om_nu=0.002082
+    ELSE IF(node==27) THEN
+       ! M027
+       om_m=0.1229
+       om_b=0.0234
+       cosm%sig8=0.8976
+       cosm%h=0.8222
+       cosm%n=0.9698
+       cosm%w=-1.0853
+       cosm%wa=0.8683
+       om_nu=0.002902
+    ELSE IF(node==28) THEN
+       ! M028
+       om_m=0.1229
+       om_b=0.0231
+       cosm%sig8=0.8257
+       cosm%h=0.6109
+       cosm%n=0.9885
+       cosm%w=-0.9311
+       cosm%wa=0.8693
+       om_nu=0.009086
+    ELSE IF(node==29) THEN
+       ! M029
+       om_m=0.1274
+       om_b=0.0228
+       cosm%sig8=0.8999
+       cosm%h=0.8259
+       cosm%n=0.8505
+       cosm%w=-0.7805
+       cosm%wa=0.5688
+       om_nu=0.006588
+    ELSE IF(node==30) THEN
+       ! M030
+       om_m=0.1404
+       om_b=0.0222
+       cosm%sig8=0.8232
+       cosm%h=0.6852
+       cosm%n=0.8679
+       cosm%w=-0.8594
+       cosm%wa=-0.4637
+       om_nu=0.008126
+    ELSE IF(node==31) THEN
+       ! M031
+       om_m=0.1386
+       om_b=0.0229
+       cosm%sig8=0.7693
+       cosm%h=0.6684
+       cosm%n=1.0478
+       cosm%w=-1.2670
+       cosm%wa=1.2536
+       om_nu=0.006502
+    ELSE IF(node==32) THEN
+       ! M032
+       om_m=0.1369
+       om_b=0.0215
+       cosm%sig8=0.8812
+       cosm%h=0.8019
+       cosm%n=1.0005
+       cosm%w=-0.7282
+       cosm%wa=-1.6927
+       om_nu=0.000905
+    ELSE IF(node==33) THEN
+       ! M033
+       om_m=0.1286
+       om_b=0.0230
+       cosm%sig8=0.7005
+       cosm%h=0.6752
+       cosm%n=1.0492
+       cosm%w=-0.7119
+       cosm%wa=-0.8184
+       om_nu=0.007968
+    ELSE IF(node==34) THEN
+       ! M034
+       om_m=0.1354
+       om_b=0.0216
+       cosm%sig8=0.7018
+       cosm%h=0.5970
+       cosm%n=0.8791
+       cosm%w=-0.8252
+       cosm%wa=-1.1148
+       om_nu=0.003602
+    ELSE IF(node==35) THEN
+       ! M035
+       om_m=0.1359
+       om_b=0.0228
+       cosm%sig8=0.8210
+       cosm%h=0.6815
+       cosm%n=0.9872
+       cosm%w=-1.1642
+       cosm%wa=-0.1801
+       om_nu=0.004440
+    ELSE IF(node==36) THEN
+       ! M036
+       om_m=0.1390
+       om_b=0.0220
+       cosm%sig8=0.8631
+       cosm%h=0.6477
+       cosm%n=0.8985
+       cosm%w=-0.8632
+       cosm%wa=0.8285
+       om_nu=0.001082
+    ELSE
+       STOP 'MIRA_TITAN_NODE_COSMOLOGY: Error, i specified incorrectly'
+    END IF
 
-    REAL, PARAMETER :: Om_b_on_Om_m_min=0.05
-    REAL, PARAMETER :: Om_b_on_Om_m_max=0.5
-
-    REAL, PARAMETER :: n_min=0.5
-    REAL, PARAMETER :: n_max=1.5
-
-    REAL, PARAMETER :: h_min=0.4
-    REAL, PARAMETER :: h_max=1.2
-
-    REAL, PARAMETER :: w_min=-1.5
-    REAL, PARAMETER :: w_max=-0.5
-
-    REAL, PARAMETER :: wa_min=0.
-    REAL, PARAMETER :: wa_max=0.
-
-    REAL, PARAMETER :: sig8_min=0.2
-    REAL, PARAMETER :: sig8_max=1.5
-
-    STOP 'RANDOM_FRANKENEMU_COSMOLOGY: Not tested'
-
-    cosm%Om_m=random_uniform(Om_m_min,Om_m_max)
-
-    !Enforce flatness
-    ! Note - need to have Om_w for dark enegry
-    cosm%Om_v=1.-cosm%Om_m
-
-    cosm%Om_b=cosm%Om_m*random_uniform(Om_b_on_Om_m_min,Om_b_on_Om_m_max)
-
-    cosm%n=random_uniform(n_min,n_max)
-
-    cosm%h=random_uniform(h_min,h_max)
-
-    cosm%w=random_uniform(w_min,w_max)
-
-    cosm%wa=random_uniform(wa_min,wa_max)
-
-    cosm%sig8=random_uniform(sig8_min,sig8_max)
-
-    ! Set to constant w cosmology
-    cosm%iw=4
-
-    ! Set to CAMB linear power
-    cosm%itk=2
-
-  END SUBROUTINE random_FrankenEmu_cosmology
+    cosm%Om_m=om_m/cosm%h**2
+    cosm%Om_b=om_b/cosm%h**2
+    cosm%m_nu=94.1*om_nu
+    cosm%Om_w=1.-cosm%Om_m
+        
+  END SUBROUTINE Mira_Titan_node_cosmology
 
 END MODULE cosmology_functions

@@ -3,10 +3,14 @@ reset
 if(!exists("print")){print=0}
 if(print==0){set term aqua dashed font ',14'}
 if(print==1){set term post enh col sol; set output 'power.eps'}
+if(print==2){set term pdfcairo; set output 'power.pdf'}
 
 #This gnuplot script plots the output file 'power.dat' that is spat out of HMcode.
 #Simply load up gnuplot (type gnuplot in the terminal) and then type "gnuplot>load 'plot.p'"
 #The plot should then be the non-linear spectrum at 16 redshifts
+
+# Initial white space
+print ''
 
 fac=4.*pi/(2.*pi)**3
 
@@ -39,6 +43,17 @@ fvoid='data/power_1void.dat'
 #Key stuff
 if(delta==0) set key top right
 if(delta==1) set key top left
+
+# write
+print 'delta = 0: Plot P(k)'
+print 'delta = 1: Plot Delta^2(k)'
+print 'delta = ', delta
+print ''
+
+print 'void = 0: Not plotting voids'
+print 'void = 1: Plot voids'
+print 'void = ', void
+print ''
 
 #Now do the actual plotting
 if(delta==0){

@@ -13,17 +13,9 @@ FFLAGS = $(HMX_FFLAGS) -std=gnu -ffree-line-length-none
 all: bin lib
 else
 # With cosmosis
-ifeq ($(COSMOSIS_STANDALONE),)
-# Standard cosmosis
 include $(COSMOSIS_SRC_DIR)/config/compilers.mk
 COSMOSIS_FFLAGS := $(FFLAGS)
 USER_LDFLAGS = -lcosmosis_fortran
-else
-# Standalone cosmosis
-include $(COSMOSIS_SRC_DIR)/cosmosis/compilers.mk
-COSMOSIS_FFLAGS := $(FFLAGS)
-USER_LDFLAGS = -Wl,-rpath,$(COSMOSIS_SRC_DIR)/cosmosis/datablock
-endif
 FFLAGS = $(HMX_FFLAGS) $(COSMOSIS_FFLAGS)
 all: bin lib cosmosis
 endif
