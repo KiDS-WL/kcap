@@ -2,7 +2,7 @@ from __future__ import print_function
 from builtins import range
 import numpy as np
 from cosmosis.datablock import option_section, names as section_names
-
+from cosmosis.datablock.cosmosis_py.errors import BlockWrongValueType
 
 def setup(options):
     # only one parameter - filepath
@@ -15,6 +15,13 @@ def setup(options):
     single_bin = options.get_int(option_section, "single_bin", default=-666)
     upsampling = options.get_int(option_section, "upsampling", default=1)
 
+    try:
+        bins = options[option_section, "bins"]
+        if isinstance(bins, int):
+            single_bin = bins
+    except:
+        bins = None
+
     data_full = np.loadtxt(filename).T
 
     if des_fmt:
@@ -24,13 +31,17 @@ def setup(options):
         n_of_z = data_full[2:-1]
     else:
         nz = len(data_full[0])
-        nbin = len(data_full) - 1
         z = data_full[0]
         if single_bin != -666:
             n_of_z = data_full[single_bin]
             nbin = 1
         else:
-            n_of_z = data_full[1:]
+            if bins is None:
+                nbin = len(data_full) - 1
+                n_of_z = data_full[1:]
+            else:
+                nbin = len(bins)
+                n_of_z = data_full[bins]
 
     if histogram:
         # in this case the sample z values are lower edges of

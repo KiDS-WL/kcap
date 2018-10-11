@@ -27,6 +27,7 @@ params:
     nmin:  "integer, the number of points to add at low k (default 50)"
     nmax:  "integer, the number of points to add at high k (default 200)"
     npoint: "integer, the number of end k-samples to use to fit the line at the end (default 3)"
+    sections: "string, space-separated list of section names the extrapolation should be applied to. Optional"
 
 inputs:
     matter_power_lin:
