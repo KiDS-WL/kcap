@@ -17,7 +17,7 @@ explanation: |
 
 # List of parameters that can go in the params.ini file in the section for this module    
 params:
-    filepath: "String; absolute or relative path to an n(z) file"
+    filepath: "String; absolute or relative path to an n(z) file. If the string contains one or more spaces, it is interpreted as a list of file paths."
     des_fmt: "Bool, default=F; use the DES format n(z) with columns zmin, zmax, nz1, nz2..."
     histogram: "Bool, default=F; Assume that the given z values are lower edges of histogram bins, not sample points."
     output_section: "String, default ''wl_number_density''. The section to which to save the output."
