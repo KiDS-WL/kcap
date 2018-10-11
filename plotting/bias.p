@@ -21,7 +21,10 @@ set format y '10^{%T}'
 #File to compare against
 if(!exists('com')){com='power_HMcode_standard.txt'}
 
-power(a,b,type)=sprintf('bias/power_%s%s_%s.dat',a,b,type)
+# Number of redshifts
+nz=16
+
+power(a,b,type)=sprintf('data/power_%s%s_%s.dat',a,b,type)
 
 print ''
 print 'Comparing power_full.dat to: ', com
@@ -41,11 +44,9 @@ set multiplot layout 2,1
 set xlabel ''
 set format x ''
 
-nz=1
-
-plot for[i=1:nz]  power('m','m','full') u 1:(column(i+1)) w l lw 2 dt 1 lc -1 ti 'Matter-Matter',\
-     for[i=1:nz]  power('m','f','full') u 1:(column(i+1)) w l lw 2 dt 1 lc 1  ti 'Field-Matter',\
-     for[i=1:nz]  power('f','f','full') u 1:(column(i+1)) w l lw 2 dt 1 lc 2  ti 'Field-Field'
+plot for[i=1:1]  power('m','m','full') u 1:(column(i+1)) w l lw 2 dt 1 lc -1 ti 'Matter-Matter',\
+     for[i=1:1]  power('m','f','full') u 1:(column(i+1)) w l lw 2 dt 1 lc 1  ti 'Field-Matter',\
+     for[i=1:1]  power('f','f','full') u 1:(column(i+1)) w l lw 2 dt 1 lc 2  ti 'Field-Field'
 
 set xlabel 'k / (h Mpc^{-1})'
 set format x
@@ -56,8 +57,8 @@ set format y
 set ylabel 'b_f(k)'
 
 plot 1 w l ls -1 noti,\
-     for[i=1:nz] '<paste '.power('m','f','full').' '.power('m','m','full').'' u 1:(column(i+1)/column(i+1+17))       w l lw 2 dt 1 lc 1 noti,\
-     for[i=1:nz] '<paste '.power('f','f','full').' '.power('m','m','full').'' u 1:(sqrt(column(i+1)/column(i+1+17))) w l lw 2 dt 1 lc 2 noti
+     for[i=1:1] '<paste '.power('m','f','full').' '.power('m','m','full').'' u 1:(column(i+1)/column(i+2+nz))       w l lw 2 dt 1 lc 1 noti,\
+     for[i=1:1] '<paste '.power('f','f','full').' '.power('m','m','full').'' u 1:(sqrt(column(i+1)/column(i+2+nz))) w l lw 2 dt 1 lc 2 noti
 
 unset multiplot
 

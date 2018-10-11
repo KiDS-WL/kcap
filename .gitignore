@@ -44,6 +44,7 @@ bias/
 Mead2017/
 fitting/
 emulator/
+CCL/
 
 # Note that /data, /hydro and /diagnostics are dealt with separately
 # Each directory contains a .gitignore

@@ -13,7 +13,7 @@ module HMx_setup
      character(len=256) :: p_lin_source, hm_mode
 
      integer :: ihm, iw, icosmo
-     logical :: response
+     logical :: response, dimensionless_power_spectrum
 
      integer, dimension(2) :: fields
 
@@ -39,7 +39,7 @@ function setup(options) result(result)
   ! Variables
   integer(cosmosis_status) :: status
   type(HMx_setup_config), pointer :: HMx_config
-  integer :: verbose, response, icosmo
+  integer :: verbose, response, icosmo, dimensionless_power_spectrum
 
   allocate(HMx_config)
 
@@ -115,6 +115,10 @@ function setup(options) result(result)
   status = datablock_get_int_default(options, option_section, "response", 0, response)
   HMx_config%response = response == 1
 
+  !Set power spectrum units
+  status = datablock_get_int_default(options, option_section, "dimensionless_power_spectrum", 1, dimensionless_power_spectrum)
+  HMx_config%dimensionless_power_spectrum = dimensionless_power_spectrum == 1
+
   ! Create k array (log spacing)
   call fill_array(log(HMx_config%kmin), log(HMx_config%kmax), HMx_config%k, HMx_config%nk)
   HMx_config%k = exp(HMx_config%k)
@@ -143,12 +147,23 @@ function execute(block, config) result(status)
   type(HMx_setup_config), pointer :: HMx_config
   integer :: i
   integer, dimension(:) :: fields(2)
-  real(8) :: log10_eps, log10_M0, log10_whim
+  real(8) :: log10_eps, log10_M0, log10_whim, log10_Theat
   real(8), dimension(:), allocatable :: k_plin, z_plin
   real(8), dimension(:,:), allocatable :: pk_lin, pk_1h, pk_2h, pk_full
   character(len=256) :: pk_section
 
   call c_f_pointer(config, HMx_config)
+
+  if(allocated(k_plin)) deallocate(k_plin)
+  if(allocated(z_plin)) deallocate(z_plin)
+  if(allocated(pk_lin)) deallocate(pk_lin)
+  if(allocated(pk_1h)) deallocate(pk_1h)
+  if(allocated(pk_2h)) deallocate(pk_2h)
+  if(allocated(pk_full)) deallocate(pk_full)
+
+  if(allocated(HMx_config%cosm%log_k_plin)) deallocate(HMx_config%cosm%log_k_plin)
+  if(allocated(HMx_config%cosm%log_plin)) deallocate(HMx_config%cosm%log_plin)
+
 ! Assign default values.
   call assign_cosmology(HMx_config%icosmo, HMx_config%cosm, HMx_config%verbose)
   call assign_halomod(HMx_config%ihm, HMx_config%hm, HMx_config%verbose)
@@ -196,15 +211,17 @@ function execute(block, config) result(status)
   status = datablock_get_double_default(block, halo_model_parameters_section, "log10_M0", log10(HMx_config%hm%M0), log10_M0)
   status = datablock_get_double(block, halo_model_parameters_section, "Astar", HMx_config%hm%Astar)
   status = datablock_get_double_default(block, halo_model_parameters_section, "log10_whim", log10(HMx_config%hm%Twhim), log10_whim)
-  status = datablock_get_double(block, halo_model_parameters_section, "rstar", HMx_config%hm%rstar)
+  status = datablock_get_double(block, halo_model_parameters_section, "cstar", HMx_config%hm%cstar)
   status = datablock_get_double(block, halo_model_parameters_section, "sstar", HMx_config%hm%sstar)
   status = datablock_get_double(block, halo_model_parameters_section, "mstar", HMx_config%hm%mstar)
-  status = datablock_get_double(block, halo_model_parameters_section, "Theat", HMx_config%hm%Theat)
+  status = datablock_get_double_default(block, halo_model_parameters_section, "log10_Theat", log10(HMx_config%hm%Theat), log10_Theat)
+  status = datablock_get_double(block, halo_model_parameters_section, "fcold", HMx_config%hm%fcold)
 
   ! Exponentiate those parameters that will be explored in log space
   HMx_config%hm%eps = 10**log10_eps
   HMx_config%hm%M0 = 10**log10_M0
   HMx_config%hm%Twhim = 10**log10_whim
+  HMx_config%hm%Theat = 10**log10_Theat
 
   if(trim(HMx_config%p_lin_source) == "external") then
      status = datablock_get_double_grid(block, matter_power_lin_section, &
@@ -226,16 +243,18 @@ function execute(block, config) result(status)
   call init_cosmology(HMx_config%cosm)
   if(HMx_config%verbose) then
      call print_cosmology(HMx_config%cosm)
-    !  WRITE(*,*) "HALOMOD parameters:"
-    !  WRITE(*,*) "alpha    :", HMx_config%hm%alpha
-    !  WRITE(*,*) "eps      :", HMx_config%hm%eps
-    !  WRITE(*,*) "Gamma    :", HMx_config%hm%Gamma
-    !  WRITE(*,*) "M0       :", HMx_config%hm%M0
-    !  WRITE(*,*) "Astar    :", HMx_config%hm%Astar
-    !  WRITE(*,*) "Twhim    :", HMx_config%hm%Twhim
-    !  WRITE(*,*) "rstar    :", HMx_config%hm%rstar
-    !  WRITE(*,*) "sstar    :", HMx_config%hm%sstar
-    !  WRITE(*,*) "mstar    :", HMx_config%hm%mstar
+     WRITE(*,*) "HALOMOD parameters:"
+     WRITE(*,*) "alpha    :", HMx_config%hm%alpha
+     WRITE(*,*) "eps      :", HMx_config%hm%eps
+     WRITE(*,*) "Gamma    :", HMx_config%hm%Gamma
+     WRITE(*,*) "M0       :", HMx_config%hm%M0
+     WRITE(*,*) "Astar    :", HMx_config%hm%Astar
+     WRITE(*,*) "Twhim    :", HMx_config%hm%Twhim
+     WRITE(*,*) "cstar    :", HMx_config%hm%cstar
+     WRITE(*,*) "sstar    :", HMx_config%hm%sstar
+     WRITE(*,*) "mstar    :", HMx_config%hm%mstar
+     WRITE(*,*) "Theat    :", HMx_config%hm%Theat
+     WRITE(*,*) "fcold    :", HMx_config%hm%fcold
   end if
 
   call calculate_HMx(HMx_config%fields, &
@@ -272,11 +291,18 @@ function execute(block, config) result(status)
      stop
   end if
 
+  if(.not. HMx_config%dimensionless_power_spectrum) then
+    ! Remove the k^3/2pi^2 factor
+    forall (i=1:HMx_config%nk) pk_full(i,:) = pk_full(i,:)*2*pi**2/HMx_config%k(i)**3
+  endif
+
   status = datablock_put_double_grid(block, pk_section, &
        "k_h", HMx_config%k, &
        "z", 1.0/HMx_config%a-1.0, &
        "p_k", pk_full)
 
+  !write(*,*) pk_section
+  !write(*,*) pk_full(:,1)
   if(status /= 0) then
      write(*,*) "Failed to write NL power spectrum to datablock."
   end if

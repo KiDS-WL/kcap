@@ -30,90 +30,11 @@ MODULE cosmology_functions
   END TYPE cosmology
 
   ! Global parameters
-  REAL, PARAMETER :: acc_cosm=1e-4 !Accuacy for the integrations
+  REAL, PARAMETER :: acc_cosm=1e-4 !Accuacy for the cosmological integrations
 
 CONTAINS
 
-   SUBROUTINE print_cosmology(cosm)
-
-    ! Prints the cosmological parameters to the screen
-    IMPLICIT NONE
-    TYPE(cosmology), INTENT(INOUT) :: cosm
-    REAL, PARAMETER :: small=1e-5
-
-    IF(cosm%verbose) THEN
-       WRITE(*,*) 'COSMOLOGY: ', TRIM(cosm%name)
-       WRITE(*,*) '===================================='
-       WRITE(*,*) 'COSMOLOGY: Standard parameters'
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_m:', cosm%Om_m
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_b:', cosm%Om_b  
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_v:', cosm%Om_v
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_w:', cosm%Om_w
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'h:', cosm%h
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'sigma_8:', cosm%sig8
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n_s:', cosm%n
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'T_CMB [K]:', cosm%T_CMB
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'z_CMB:', cosm%z_CMB
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n_eff:', cosm%neff
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Y_H:', cosm%YH
-       IF(cosm%inv_m_wdm .NE. 0.) THEN
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'm_wdm [keV]:', 1./cosm%inv_m_wdm
-       END IF
-       WRITE(*,*) '===================================='
-       WRITE(*,*) 'COSMOLOGY: Derived parameters'
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_r:', cosm%Om_r
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega:', cosm%Om
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_c:', cosm%Om_c
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_k:', cosm%Om_k
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_v'':', cosm%Om_v_mod
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'k [Mpc/h]^-2:', cosm%k
-       IF(ABS(cosm%k)>small) THEN
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'k_rad [Mpc/h]:', 1./sqrt(ABS(cosm%k))
-       END IF
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'mu_p:', cosm%mup
-       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'mu_e:', cosm%mue
-       WRITE(*,*) '===================================='
-       IF(cosm%iw==1) THEN
-          WRITE(*,*) 'COSMOLOGY: Vacuum energy'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w:', -1.
-       ELSE IF(cosm%iw==2) THEN
-          WRITE(*,*) 'COSMOLOGY: QUICC dark energy prescription'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w0:', cosm%w
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'wm:', cosm%wm
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'am:', cosm%am
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'dm:', cosm%dm
-       ELSE IF(cosm%iw==3) THEN
-          WRITE(*,*) 'COSMOLOGY: w(a) = w0+wa(1.-a)'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w0:', cosm%w
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'wa:', cosm%wa
-       ELSE IF(cosm%iw==4) THEN
-          WRITE(*,*) 'COSMOLOGY: Constant w'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w:', cosm%w
-       ELSE IF(cosm%iw==5) THEN
-          WRITE(*,*) 'COSMOLOGY: IDE I'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%as
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n*:', cosm%ns
-       ELSE IF(cosm%iw==6) THEN
-          WRITE(*,*) 'COSMOLOGY: IDE II'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%as
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n*:', cosm%ns
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a1^n (derived):', cosm%a1n
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a2^n (derived):', cosm%a2n
-       ELSE IF(cosm%iw==7) THEN
-          WRITE(*,*) 'COSMOLOGY: IDE III'
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%a1
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
-          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w*:', cosm%ws
-       END IF
-       WRITE(*,*) '===================================='
-       WRITE(*,*)
-    END IF
-
-  END SUBROUTINE print_cosmology
-
-  SUBROUTINE assign_cosmology(icosmo,cosm,verbose)
+   SUBROUTINE assign_cosmology(icosmo,cosm,verbose)
 
     ! Assigns the 'primary' cosmological parameters (primary according to my definition)
     ! This routine *only* assigns parameters, it does and should not do *any* calculations
@@ -536,7 +457,7 @@ CONTAINS
 
     ! Gas parameters
     cosm%mup=4./(5.*cosm%YH+3.) ! Nuclear mass per particle (~0.588 if fH=0.76)
-    cosm%mue=2./(1.+cosm%YH) ! Nuclear mass per electron (~1.136 if fH=0.76)
+    cosm%mue=2./(1.+cosm%YH)    ! Nuclear mass per electron (~1.136 if fH=0.76)
 
     IF(cosm%verbose) THEN
        WRITE(*,*) 'INIT_COSMOLOGY: mu_p:', cosm%mup
@@ -616,6 +537,86 @@ CONTAINS
     END IF
     
   END SUBROUTINE init_cosmology
+
+  SUBROUTINE print_cosmology(cosm)
+
+    ! Prints the cosmological parameters to the screen
+    IMPLICIT NONE
+    TYPE(cosmology), INTENT(INOUT) :: cosm
+    REAL, PARAMETER :: small=1e-5
+
+    IF(cosm%verbose) THEN
+       WRITE(*,*) '===================================='
+       WRITE(*,*) 'COSMOLOGY: ', TRIM(cosm%name)
+       WRITE(*,*) '===================================='
+       WRITE(*,*) 'COSMOLOGY: Standard parameters'
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_m:', cosm%Om_m
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_b:', cosm%Om_b  
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_v:', cosm%Om_v
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_w:', cosm%Om_w
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'h:', cosm%h
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'sigma_8:', cosm%sig8
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n_s:', cosm%n
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'T_CMB [K]:', cosm%T_CMB
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'z_CMB:', cosm%z_CMB
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n_eff:', cosm%neff
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Y_H:', cosm%YH
+       IF(cosm%inv_m_wdm .NE. 0.) THEN
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'm_wdm [keV]:', 1./cosm%inv_m_wdm
+       END IF
+       WRITE(*,*) '===================================='
+       WRITE(*,*) 'COSMOLOGY: Derived parameters'
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_r:', cosm%Om_r
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega:', cosm%Om
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_c:', cosm%Om_c
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_k:', cosm%Om_k
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Omega_v'':', cosm%Om_v_mod
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'k [Mpc/h]^-2:', cosm%k
+       IF(ABS(cosm%k)>small) THEN
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'k_rad [Mpc/h]:', 1./sqrt(ABS(cosm%k))
+       END IF
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'mu_p:', cosm%mup
+       WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'mu_e:', cosm%mue
+       WRITE(*,*) '===================================='
+       IF(cosm%iw==1) THEN
+          WRITE(*,*) 'COSMOLOGY: Vacuum energy'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w:', -1.
+       ELSE IF(cosm%iw==2) THEN
+          WRITE(*,*) 'COSMOLOGY: QUICC dark energy prescription'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w0:', cosm%w
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'wm:', cosm%wm
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'am:', cosm%am
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'dm:', cosm%dm
+       ELSE IF(cosm%iw==3) THEN
+          WRITE(*,*) 'COSMOLOGY: w(a) = w0+wa(1.-a)'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w0:', cosm%w
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'wa:', cosm%wa
+       ELSE IF(cosm%iw==4) THEN
+          WRITE(*,*) 'COSMOLOGY: Constant w'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w:', cosm%w
+       ELSE IF(cosm%iw==5) THEN
+          WRITE(*,*) 'COSMOLOGY: IDE I'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%as
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n*:', cosm%ns
+       ELSE IF(cosm%iw==6) THEN
+          WRITE(*,*) 'COSMOLOGY: IDE II'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%as
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'n*:', cosm%ns
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a1^n (derived):', cosm%a1n
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a2^n (derived):', cosm%a2n
+       ELSE IF(cosm%iw==7) THEN
+          WRITE(*,*) 'COSMOLOGY: IDE III'
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'a*:', cosm%a1
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'Om_w(a*):', cosm%Om_ws
+          WRITE(*,fmt='(A11,A15,F11.5)') 'COSMOLOGY:', 'w*:', cosm%ws
+       END IF
+       WRITE(*,*) '===================================='
+       WRITE(*,*)
+    END IF
+
+  END SUBROUTINE print_cosmology
 
   SUBROUTINE normalise_power(cosm)
 
@@ -1188,25 +1189,27 @@ CONTAINS
     REAL, INTENT(IN) :: a
     TYPE(cosmology), INTENT(INOUT) :: cosm
 
-    physical_angular_distance=f_k(physical_distance(a,cosm),cosm)
+    !physical_angular_distance=f_k(physical_distance(a,cosm),cosm)
+    physical_angular_distance=a*comoving_angular_distance(a,cosm)
 
   END FUNCTION physical_angular_distance
 
   FUNCTION comoving_angular_distance(a,cosm)
 
-    ! The physical angular-diameter distance to a galaxy at scale-factor a
+    ! The comoving angular-diameter distance to a galaxy at scale-factor a
     IMPLICIT NONE
     REAL :: comoving_angular_distance
     REAL, INTENT(IN) :: a
     TYPE(cosmology), INTENT(INOUT) :: cosm
 
-    comoving_angular_distance=a*physical_angular_distance(a,cosm)
+    !comoving_angular_distance=physical_angular_distance(a,cosm)/a
+    comoving_angular_distance=f_k(comoving_distance(a,cosm),cosm)
 
   END FUNCTION comoving_angular_distance
 
   FUNCTION luminosity_distance(a,cosm)
 
-    ! The luminosity distance to a galaxy at scale-factor a
+    ! The (physical) luminosity distance to a galaxy at scale-factor a
     IMPLICIT NONE
     REAL :: luminosity_distance
     REAL, INTENT(IN) :: a
@@ -1221,22 +1224,22 @@ CONTAINS
     ! Fill up tables of a vs. r(a) (comoving distance)
     IMPLICIT NONE
     TYPE(cosmology), INTENT(INOUT) :: cosm
-    REAL :: zmin, zmax, amin, amax
+    REAL :: zmax, amin, amax
     INTEGER :: i
 
     INTEGER, PARAMETER :: nr=128
+    REAL, PARAMETER :: zmin=0.
 
-    zmin=0.
     zmax=cosm%z_CMB
     amin=scale_factor_z(zmax)
     amax=scale_factor_z(zmin)
-    IF(cosm%verbose) THEN
+    !IF(cosm%verbose) THEN
        WRITE(*,*) 'INIT_DISTANCE: Redshift range for r(z) tables'
        WRITE(*,*) 'INIT_DISTANCE: minimum z:', REAL(zmin)
        WRITE(*,*) 'INIT_DISTANCE: maximum z:', REAL(zmax)
        WRITE(*,*) 'INIT_DISTANCE: minimum a:', REAL(amin)
        WRITE(*,*) 'INIT_DISTANCE: maximum a:', REAL(amax)
-    END IF
+    !END IF
     cosm%n_r=nr
     CALL fill_array(amin,amax,cosm%a_r,cosm%n_r)
     IF(ALLOCATED(cosm%r)) DEALLOCATE(cosm%r)
@@ -1246,18 +1249,18 @@ CONTAINS
     DO i=1,cosm%n_r
        cosm%r(i)=integrate_cosm(cosm%a_r(i),1.,distance_integrand,cosm,acc_cosm,3)
     END DO
-    IF(cosm%verbose) THEN
+    !IF(cosm%verbose) THEN
        WRITE(*,*) 'INIT_DISTANCE: minimum r [Mpc/h]:', REAL(cosm%r(cosm%n_r))
        WRITE(*,*) 'INIT_DISTANCE: maximum r [Mpc/h]:', REAL(cosm%r(1))
-    END IF
+    !END IF
 
     ! Find the horizon distance in your cosmology
     cosm%horizon=integrate_cosm(0.,1.,distance_integrand,cosm,acc_cosm,3)
-    IF(cosm%verbose) THEN
+    !IF(cosm%verbose) THEN
        WRITE(*,*) 'INIT_DISTANCE: Horizon distance [Mpc/h]:', REAL(cosm%horizon)
        WRITE(*,*) 'INIT_DISTANCE: Done'
        WRITE(*,*)
-    END IF
+    !END IF
 
     cosm%has_distance=.TRUE.
 
@@ -1328,6 +1331,7 @@ CONTAINS
     ELSE IF(cosm%itk==3) THEN
        Tk=Tk_DEFW(k,cosm)
     ELSE
+       WRITE(*,*) 'TK: itk:', cosm%itk
        STOP 'TK: Error, itk specified incorrectly'
     END IF
 
@@ -3252,7 +3256,7 @@ CONTAINS
     IF(cosm%verbose) WRITE(*,*) 'GET_CAMB_POWER: Data done'    
 
     ! Convert from P(k) -> Delta^2(k)
-    Pk=Pk*(k**3)*4.*pi/(2.*pi)**3
+    Pk=Pk*(k**3)*4.*pi/twopi**3
 
     ! Add to cosm arrays and convert to log
     IF(ALLOCATED(cosm%log_k_plin)) DEALLOCATE(cosm%log_k_plin)

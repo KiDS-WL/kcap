@@ -3,7 +3,7 @@ reset
 if(print==0) set term aqua dashed
 if(print==1) set term post enh col; set output 'nz.eps'
 
-nz='lensing/nz.dat'
+nz='data/nz.dat'
 
 set xlabel 'z'
 set xrange [0:*]

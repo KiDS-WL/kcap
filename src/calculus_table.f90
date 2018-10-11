@@ -8,7 +8,7 @@ CONTAINS
     USE fix_polynomial
     USE array_operations
 
-    !Given two arrays x and y such that y=y(x) this uses interpolation to calculate the derivative y'(x_i) at position x_i
+    ! Given two arrays x and y such that y=y(x) this uses interpolation to calculate the derivative y'(x_i) at position x_i
     IMPLICIT NONE
     REAL :: derivative_table
     INTEGER, INTENT(IN) :: n
@@ -20,23 +20,23 @@ CONTAINS
     INTEGER :: i
     INTEGER, INTENT(IN) :: imeth, iorder
 
-    !This version interpolates if the value is off either end of the array!
-    !Care should be chosen to insert x, xtab, ytab as log if this might give better!
-    !Results from the interpolation!
+    ! This version interpolates if the value is off either end of the array!
+    ! Care should be chosen to insert x, xtab, ytab as log if this might give better!
+    ! Results from the interpolation!
 
-    !imeth = 1 => find x in xtab by crudely searching
-    !imeth = 2 => find x in xtab quickly assuming the table is linearly spaced
-    !imeth = 3 => find x in xtab using midpoint splitting (iterations=CEILING(log2(n)))
+    ! imeth = 1 => find x in xtab by crudely searching
+    ! imeth = 2 => find x in xtab quickly assuming the table is linearly spaced
+    ! imeth = 3 => find x in xtab using midpoint splitting (iterations=CEILING(log2(n)))
 
-    !iorder = 1 => linear interpolation
-    !iorder = 2 => quadratic interpolation
-    !iorder = 3 => cubic interpolation
+    ! iorder = 1 => linear interpolation
+    ! iorder = 2 => quadratic interpolation
+    ! iorder = 3 => cubic interpolation
 
     xtab=xin
     ytab=yin
 
     IF(xtab(1)>xtab(n)) THEN
-       !Reverse the arrays in this case
+       ! Reverse the arrays in this case
        CALL reverse(xtab,n)
        CALL reverse(ytab,n)
     END IF
@@ -122,7 +122,7 @@ CONTAINS
           y3=ytab(i+1)
           y4=ytab(i+2)
 
-          !In this case take the average of two separate quadratic spline values
+          ! In this case take the average of two separate quadratic spline values
 
           derivative_table=0.
 
@@ -193,7 +193,7 @@ CONTAINS
 
     USE fix_polynomial
 
-    !Integrates tables y(x)dx
+    ! Integrates tables y(x)dx
     IMPLICIT NONE
     REAL :: integrate_table
     INTEGER, INTENT(IN) :: n, n1, n2
@@ -207,12 +207,12 @@ CONTAINS
 
     sum=0.d0
 
-    !I think if n1=n2 then the result will just be zero anyway
-    !IF(n2<=n1) STOP 'INTEGRATE_TABLE: Error n2 must be greater than n1'
+    ! I think if n1=n2 then the result will just be zero anyway
+    ! IF(n2<=n1) STOP 'INTEGRATE_TABLE: Error n2 must be greater than n1'
 
     IF(iorder==1) THEN
 
-       !Sums over all Trapezia (a+b)*h/2
+       ! Sums over all Trapezia (a+b)*h/2
        DO i=n1,n2-1
           a=y(i+1)
           b=y(i)
@@ -238,8 +238,8 @@ CONTAINS
           q2=a*(x2**3.)/3.+b*(x2**2.)/2.+c*x2
           q3=a*(x3**3.)/3.+b*(x3**2.)/2.+c*x3
 
-          !Takes value for first and last sections but averages over sections where you
-          !have two independent estimates of the area
+          ! Takes value for first and last sections but averages over sections where you
+          ! have two independent estimates of the area
           IF(n==3) THEN
              sum=sum+q3-q1
           ELSE IF(i==1) THEN
@@ -256,8 +256,8 @@ CONTAINS
 
        DO i=n1,n2-1
 
-          !First choose the integers used for defining cubics for each section
-          !First and last are different because the section does not lie in the *middle* of a cubic
+          ! First choose the integers used for defining cubics for each section
+          ! First and last are different because the section does not lie in the *middle* of a cubic
 
           IF(i==1) THEN
 
@@ -294,7 +294,7 @@ CONTAINS
 
           CALL fix_cubic(a,b,c,d,x1,y1,x2,y2,x3,y3,x4,y4)
 
-          !These are the limits of the particular section of integral
+          ! These are the limits of the particular section of integral
           xi=x(i)
           xf=x(i+1)
 
