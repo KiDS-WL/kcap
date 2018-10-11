@@ -45,17 +45,15 @@ CONTAINS
 
   END FUNCTION odd
 
-  LOGICAL FUNCTION requal(x,y)
+  LOGICAL FUNCTION requal(x,y,eps)
 
     ! Tests if two REAL numbers are within some tolerance of each other
     ! If they are, then they should be considered equal
     ! Adapted from https://stackoverflow.com/questions/4915462/how-should-i-do-floating-point-comparison/4915891#4915891
     IMPLICIT NONE
-    REAL, INTENT(IN) :: x, y    
+    REAL, INTENT(IN) :: x, y
+    REAL, INTENT(IN) :: eps
     REAL :: absx, absy, diff
-    REAL, PARAMETER :: eps=1e-4
-
-    STOP 'REQUAL: Test this'
 
     absx=ABS(x)
     absy=ABS(y)

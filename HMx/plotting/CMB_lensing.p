@@ -9,8 +9,8 @@ if(print==0){set term aqua; ell='l'}
 if(print==1){set term post enh col fontfile cmmi; set output 'CMB_lensing.eps'; ell='{/cmmi10 \140}'}
 
 #File paths
-CAMB='/Users/Mead/Physics/CAMB/boring/boring_scalCls.dat'
-HMx='/Users/Mead/Physics/HMx/data/cl_linear.dat'
+CAMB='/Users/Mead/Physics/CAMB_files/boring/boring_scalCls.dat'
+HMx='/Users/Mead/Physics/HMx/data/CMBlensing_cl_linear.dat'
 
 #CMB temperature in K
 T0=2.725
