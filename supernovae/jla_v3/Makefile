@@ -11,7 +11,7 @@ libjla.a: src/jla.o
 	$(AR) $(ARFLAGS) $@ $^
 
 jla.so: interface.cc
-	$(CXX) $(CXXFLAGS) -shared -o $@ $^ -L. -ljla $(LDFLAGS) -lc++
+	$(CXX) $(CXXFLAGS) -shared -o $@ $^ -L. -ljla $(LDFLAGS) -lstdc++
 #test_jla: src/test.o libjla.a
 #	$(CXX) -o $@ $^ $(CXXFLAGS) $(LFLAGS) $(CLASS_LFLAGS)
 

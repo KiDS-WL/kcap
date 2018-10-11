@@ -113,8 +113,11 @@ class Spectrum(object):
         For example ShearShear becomes shear-shear
         """
         name = cls.__name__
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
+        if len(name) == 2:
+            return (name[0] + "-" + name[1]).lower()
+        else:
+            s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
+            return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
 
     def prefactor(self, block, bin1, bin2):
         if self.prefactor_power == 0:

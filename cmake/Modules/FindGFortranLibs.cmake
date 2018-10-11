@@ -41,6 +41,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   # Detect gfortran version
   string(REGEX MATCH "gcc version [^\t\n ]+" GFORTRAN_VER_STR "${GFORTRAN_VERBOSE_STR}")
   string(REGEX REPLACE "gcc version ([^\t\n ]+)" "\\1" GFORTRAN_VERSION_STRING "${GFORTRAN_VER_STR}")
+  string(STRIP ${GFORTRAN_VERSION_STRING} GFORTRAN_VERSION_STRING)
   message(STATUS "Detected gfortran version ${GFORTRAN_VERSION_STRING}")
   unset(GFORTRAN_VER_STR)
 
@@ -53,6 +54,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   message(STATUS "Architecture string: ${GFORTRAN_ARCH_STR}")
   string(REGEX REPLACE "Target: ([^\t\n ]+)" "\\1"
     GFORTRAN_ARCH "${GFORTRAN_ARCH_STR}")
+  string(STRIP ${GFORTRAN_ARCH} GFORTRAN_ARCH)
   message(STATUS "Detected gfortran architecture: ${GFORTRAN_ARCH}")
   unset(GFORTRAN_ARCH_STR)
 
@@ -66,6 +68,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     string(REGEX REPLACE "--prefix=([^\t\n ]+)" "\\1"
       GFORTRAN_PREFIX_DIR "${GFORTRAN_PREFIX_STR}")
   endif()
+  string(STRIP ${GFORTRAN_PREFIX_DIR} GFORTRAN_PREFIX_DIR)
   message(STATUS "Detected gfortran prefix: ${GFORTRAN_PREFIX_DIR}")
   unset(GFORTRAN_PREFIX_STR)
 
@@ -79,6 +82,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     string(REGEX REPLACE "--exec-prefix=([^\t\n ]+)" "\\1"
       GFORTRAN_EXEC_PREFIX_DIR "${GFORTRAN_EXEC_PREFIX_STR}")
   endif()
+  string(STRIP ${GFORTRAN_EXEC_PREFIX_DIR} GFORTRAN_EXEC_PREFIX_DIR)
   message(STATUS "Detected gfortran exec-prefix: ${GFORTRAN_EXEC_PREFIX_DIR}")
   UNSET(GFORTRAN_EXEC_PREFIX_STR)
 

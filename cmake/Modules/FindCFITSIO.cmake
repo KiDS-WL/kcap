@@ -44,6 +44,8 @@ else()
              )
 endif(CFITSIO_ROOT_DIR)
 
+get_filename_component(CFITSIO_LIBRARY_DIR ${CFITSIO_LIB} DIRECTORY)
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(CFITSIO DEFAULT_MSG
                                   CFITSIO_INCLUDE_DIR CFITSIO_LIB)
