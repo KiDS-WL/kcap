@@ -22,7 +22,19 @@ def setup(options):
     except:
         bins = None
 
-    data_full = np.loadtxt(filename).T
+    if " " in filename:
+        # Multiple files.
+        filenames = [f.strip() for f in filename.split(" ")]
+        data = []
+        for f in filenames:
+            data.append(np.loadtxt(f).T)
+        # Check that z values are consistent
+        z = data[0][0]
+        if not all([np.allclose(z, d[0]) for d in data]):
+            raise ValueError("Mismatch of z column in n(z) files.")
+        data_full = np.concatenate([z[None,:]]+[d[1:] for d in data], axis=0)
+    else:
+        data_full = np.loadtxt(filename).T
 
     if des_fmt:
         z = 0.5 * (data_full[0] + data_full[1])
