@@ -5,7 +5,7 @@ project(HMx LANGUAGES Fortran VERSION 0.0.1)
     
     option(BUILD_INTERFACE "Build the CosmoSIS interface" OFF)
     option(BUILD_HMX_EXECUTABLE "Build HMx executable" ON)
-    option(BUILD_TESTS "Build tests." ON)
+    option(BUILD_TESTS "Build tests." OFF)
 
     option(DEBUG "Build with debugging settings" OFF)
 
