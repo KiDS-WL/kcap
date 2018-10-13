@@ -4,8 +4,7 @@ import scipy.interpolate
 import numpy as np
 pi = np.pi
 
-from cosmosis.datablock import option_section
-from cosmosis import names
+from cosmosis.datablock import option_section, names
 
 from cosmosis.datablock.cosmosis_py import errors
 
