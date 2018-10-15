@@ -43,3 +43,17 @@ $(MYLIB):
 	$(MAKE) -C $(MODULE) all
 #src/libclusters.a:
 #	$(MAKE) -C src
+
+# Clean up
+.PHONY: clean
+clean:
+	rm -f libcosebis_cl.so
+	rm -f libcosebis_2pcfs.so
+	rm -f libcosebis_likelihood.so
+	rm -f lib2pcfs_likelihood.so
+	rm -f $(MODULE)/*.o
+	rm -f $(MODULE)/libpslib.a
+	test -n "./" && rm -rf ./libcosebis_cl.so.dSYM/
+	test -n "./" && rm -rf ./libcosebis_2pcfs.so.dSYM/
+	test -n "./" && rm -rf ./libcosebis_likelihood.so.dSYM/
+	test -n "./" && rm -rf ./lib2pcfs_likelihood.so.dSYM/
