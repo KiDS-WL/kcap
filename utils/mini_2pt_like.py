@@ -29,20 +29,26 @@ def setup(options):
     except errors.BlockNameNotFound:
         cut_xi_minus_idx = []
 
+    order_data = options.get_string(option_section, "order_data", "xi_pm-bin-theta").lower()
+    order_cov = options.get_string(option_section, "order_cov", "xi_pm-bin-theta").lower()
+
     cov_filename = options.get_string(option_section, "cov")
     cov = np.loadtxt(cov_filename)
-    if cut_xi_minus_idx != []:
-        idx_xi_minus = (n_bin*(n_bin+1))//2*n_theta + np.arange((n_bin*(n_bin+1))//2, dtype=int)*n_theta + cut_xi_minus_idx[:,None]
+    if order_cov == "xi_pm-bin-theta":
+        if cut_xi_minus_idx != []:
+            idx_xi_minus = (n_bin*(n_bin+1))//2*n_theta + np.arange((n_bin*(n_bin+1))//2, dtype=int)*n_theta + cut_xi_minus_idx[:,None]
+        else:
+            idx_xi_minus = np.array([], ndmin=1)
+        if cut_xi_plus_idx != []:
+            idx_xi_plus = np.arange((n_bin*(n_bin+1))//2, dtype=int)*n_theta + cut_xi_plus_idx[:,None]
+        else:
+            idx_xi_plus = np.array([], ndmin=1)
+        idx = np.concatenate([idx_xi_plus.flatten(), idx_xi_minus.flatten()])
+        cov = np.delete(cov, idx, axis=0)
+        cov = np.delete(cov, idx, axis=1)
     else:
-        idx_xi_minus = np.array([], ndmin=1)
-    if cut_xi_plus_idx != []:
-        idx_xi_plus = np.arange((n_bin*(n_bin+1))//2, dtype=int)*n_theta + cut_xi_plus_idx[:,None]
-    else:
-        idx_xi_plus = np.array([], ndmin=1)
-    idx = np.concatenate([idx_xi_plus.flatten(), idx_xi_minus.flatten()])
-    cov = np.delete(cov, idx, axis=0)
-    cov = np.delete(cov, idx, axis=1)
-
+        raise ValueError(f"Unsupported covariance order {order_cov}.")
+    
     inv_cov = np.linalg.inv(cov)
 
     data_vectors = {}
@@ -50,7 +56,12 @@ def setup(options):
         data_vectors[i] = {}
         for j in range(i+1):
             if single_filename is not None:
-                bin_idx =  (i*(i+1))//2+j
+                if order_data == "xi_pm-bin-theta":
+                    bin_idx =  (i*(i+1))//2+j
+                elif order_data == "montepython":
+                    bin_idx = (j*(2*n_bin - j + 1)//2) + i-j
+                else:
+                    raise ValueError(f"Unsupported data order {order_data}.")
                 xi_plus = data[1+bin_idx,:n_theta]
                 xi_minus = data[1+bin_idx,n_theta:]
                 data_vectors[i][j] = [xi_plus, xi_minus]
