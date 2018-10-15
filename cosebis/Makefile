@@ -2,11 +2,11 @@
 # replace all of this, but you need to keep this line
 # at the top:
 include ${COSMOSIS_SRC_DIR}/config/compilers.mk
-export MODULE   = ./modules
-export 
+
+MODULE = ./modules
 
 USER_CXXFLAGS += -I${GSL_INC}
-USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L $(MODULE) -lpslib -lstdc++ -lz -Wno-deprecated -I $(MODULE)
+USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L$(MODULE) -lpslib -lstdc++ -lz -Wno-deprecated -I$(MODULE)
 #fgas
 #USER_CXXFLAGS += -I${GSL_INC}
 #USER_LDFLAGS += -lcosmosis -L${GSL_LIB}  -lgsl -lgslcblas
