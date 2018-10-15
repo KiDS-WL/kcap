@@ -77,6 +77,8 @@ def build():
 def clean():
     print("Running make csl-clean")
     subprocess.check_call(["make", "csl-clean"], cwd="build")
+    print("Running make cosebis-clean")
+    subprocess.check_call(["make", "cosebis-clean"], cwd="build")
     print("Running make clean")
     subprocess.check_call(["make", "clean"], cwd="build")
     print("Removing CMakeCache.txt")
