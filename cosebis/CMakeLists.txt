@@ -22,7 +22,7 @@ project(COSEBIS LANGUAGES C CXX VERSION 0.1)
 	message(STATUS "LAPACK_LINK: ${LAPACK_LIB} ${LAPACK_LIB_DIR}")
     endif()
 
-    add_custom_target(cosebis ALL
+    add_custom_target(cosebis
                       COMMENT "Running make for cosebis"
                       COMMAND ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} GSL_INC=${GSL_INCLUDE_DIRS} GSL_LIB=${GSL_LIBRARY_DIRS} COSMOSIS_SRC_DIR=${COSMOSIS_SRC_DIR} make ${QUIET_MAKE}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
