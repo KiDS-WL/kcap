@@ -16,43 +16,42 @@ USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L$(MODULE) -lpslib
 #--- linker
 #-----------------------------------
 
-MYLIB     = libpslib.a
+PSLIB     = libpslib.a
 
 #-----------------------------------
 #--- rules
 #-----------------------------------
-all: libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so lib2pcfs_likelihood.so
+all: $(MODULE)/$(PSLIB) libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so lib2pcfs_likelihood.so
 
-libcosebis_cl.so: COSEBIs_Cl_cosmosis_interface.cc $(MYLIB)
+$(MODULE)/$(PSLIB)::
+	cd $(MODULE) && $(MAKE)
+
+libcosebis_cl.so: COSEBIs_Cl_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_Cl_cosmosis_interface.cc -shared -o libcosebis_cl.so $(LDFLAGS) $(USER_LDFLAGS)
 
-libcosebis_2pcfs.so: COSEBIs_2PCFs_cosmosis_interface.cc $(MYLIB)
+libcosebis_2pcfs.so: COSEBIs_2PCFs_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_2PCFs_cosmosis_interface.cc -shared -o libcosebis_2pcfs.so $(LDFLAGS) $(USER_LDFLAGS)
 
-libcosebis_likelihood.so: COSEBIs_likelihood_cosmosis_interface.cc $(MYLIB)
+libcosebis_likelihood.so: COSEBIs_likelihood_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_likelihood_cosmosis_interface.cc -shared -o libcosebis_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
 
-lib2pcfs_likelihood.so: 2pcfs_likelihood_cosmosis_interface.cc $(MYLIB)
+lib2pcfs_likelihood.so: 2pcfs_likelihood_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) 2pcfs_likelihood_cosmosis_interface.cc -shared -o lib2pcfs_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
 
 #fgas.so: fgas_cosmosis.cpp src/libclusters.a
 #	$(CXX) $(CXXFLAGS) fgas_cosmosis.cpp -shared -o fgas.so $(LDFLAGS) src/libclusters.a
 
-
-$(MYLIB):
-	$(MAKE) -C $(MODULE) all
 #src/libclusters.a:
 #	$(MAKE) -C src
 
 # Clean up
 .PHONY: clean
 clean:
+	cd $(MODULE) && $(MAKE) clean
 	rm -f libcosebis_cl.so
 	rm -f libcosebis_2pcfs.so
 	rm -f libcosebis_likelihood.so
 	rm -f lib2pcfs_likelihood.so
-	rm -f $(MODULE)/*.o
-	rm -f $(MODULE)/libpslib.a
 	test -n "./" && rm -rf ./libcosebis_cl.so.dSYM/
 	test -n "./" && rm -rf ./libcosebis_2pcfs.so.dSYM/
 	test -n "./" && rm -rf ./libcosebis_likelihood.so.dSYM/
