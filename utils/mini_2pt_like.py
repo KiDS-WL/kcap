@@ -46,6 +46,18 @@ def setup(options):
         idx = np.concatenate([idx_xi_plus.flatten(), idx_xi_minus.flatten()])
         cov = np.delete(cov, idx, axis=0)
         cov = np.delete(cov, idx, axis=1)
+    elif order_cov == "montepython":
+        if cut_xi_minus_idx != []:
+            idx_xi_minus = np.arange((n_bin*(n_bin+1))//2, dtype=int)*2*n_theta + n_theta + cut_xi_minus_idx[:,None]
+        else:
+            idx_xi_minus = np.array([], ndmin=1)
+        if cut_xi_plus_idx != []:
+            idx_xi_plus = np.arange((n_bin*(n_bin+1))//2, dtype=int)*2*n_theta + cut_xi_plus_idx[:,None]
+        else:
+            idx_xi_plus = np.array([], ndmin=1)
+        idx = np.concatenate([idx_xi_plus.flatten(), idx_xi_minus.flatten()])
+        cov = np.delete(cov, idx, axis=0)
+        cov = np.delete(cov, idx, axis=1)
     else:
         raise ValueError(f"Unsupported covariance order {order_cov}.")
     
@@ -59,7 +71,7 @@ def setup(options):
                 if order_data == "xi_pm-bin-theta":
                     bin_idx =  (i*(i+1))//2+j
                 elif order_data == "montepython":
-                    bin_idx = (j*(2*n_bin - j + 1)//2) + i-j
+                    bin_idx = (j*(2*n_bin - j + 1))//2 + i-j
                 else:
                     raise ValueError(f"Unsupported data order {order_data}.")
                 xi_plus = data[1+bin_idx,:n_theta]
@@ -81,36 +93,61 @@ def setup(options):
 
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
-    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, like_name, keep_theory_vector
+    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, like_name, keep_theory_vector
 
 def execute(block, config):
-    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, like_name, keep_theory_vector = config
+    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, like_name, keep_theory_vector = config
     
     n_bin = block["shear_xi", "nbin_a"]
 
-    theory_xi_plus_vector = []
-    theory_xi_minus_vector = []
-    data_xi_plus_vector = []
-    data_xi_minus_vector = []
-    for i in range(n_bin):
-        for j in range(i+1):
-            data_xi_plus, data_xi_minus = data_vectors[i][j]
+    if order_cov == "xi_pm-bin-theta":
+        theory_xi_plus_vector = []
+        theory_xi_minus_vector = []
+        data_xi_plus_vector = []
+        data_xi_minus_vector = []
+        
+        for i in range(n_bin):
+            for j in range(i+1):
+                data_xi_plus, data_xi_minus = data_vectors[i][j]
 
-            data_xi_plus_vector.append(data_xi_plus)
-            data_xi_minus_vector.append(data_xi_minus)
+                theory_theta = block["shear_xi", "theta"]
+                theory_xi_plus = block["shear_xi", f"xiplus_{i+1}_{j+1}"]
+                theory_xi_minus = block["shear_xi", f"ximinus_{i+1}_{j+1}"]
 
-            theory_theta = block["shear_xi", "theta"]
-            theory_xi_plus = block["shear_xi", f"xiplus_{i+1}_{j+1}"]
-            theory_xi_minus = block["shear_xi", f"ximinus_{i+1}_{j+1}"]
+                intp_xi_plus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_plus)
+                theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
+                intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
+                theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
 
-            intp_xi_plus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_plus)
-            theory_xi_plus_vector.append(intp_xi_plus(np.log(theta_xi_plus)))
+                data_xi_plus_vector.append(data_xi_plus)
+                data_xi_minus_vector.append(data_xi_minus)
+                theory_xi_plus_vector.append(theory_xi_plus)
+                theory_xi_minus_vector.append(theory_xi_minus)
+                    
+        x = np.concatenate(data_xi_plus_vector + data_xi_minus_vector)
+        mu = np.concatenate(theory_xi_plus_vector + theory_xi_minus_vector)
+    elif order_cov == "montepython":
+        data_xi_vector = []
+        theory_xi_vector = []
+        for i in range(n_bin):
+            for j in range(i,n_bin):
+                data_xi_plus, data_xi_minus = data_vectors[j][i]
 
-            intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
-            theory_xi_minus_vector.append(intp_xi_minus(np.log(theta_xi_minus)))
+                theory_theta = block["shear_xi", "theta"]
+                theory_xi_plus = block["shear_xi", f"xiplus_{j+1}_{i+1}"]
+                theory_xi_minus = block["shear_xi", f"ximinus_{j+1}_{i+1}"]
 
-    x = np.concatenate(data_xi_plus_vector + data_xi_minus_vector)
-    mu = np.concatenate(theory_xi_plus_vector + theory_xi_minus_vector)
+                intp_xi_plus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_plus)
+                theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
+                intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
+                theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
+
+                data_xi_vector.append(np.concatenate([data_xi_plus, data_xi_minus]))
+                theory_xi_vector.append(np.concatenate([theory_xi_plus, theory_xi_minus]))
+        
+        x = np.concatenate(data_xi_vector)
+        mu = np.concatenate(theory_xi_vector)
+
     d = x - mu
 
     chi2 = np.einsum('i,ij,j', d, inv_cov, d)
@@ -123,6 +160,8 @@ def execute(block, config):
     if keep_theory_vector:
         block[names.data_vector, like_name + "_theory"] = mu
         block[names.data_vector, like_name + "_data"] = x
+        block[names.data_vector, like_name + "_theta_xi_plus"] = theta_xi_plus
+        block[names.data_vector, like_name + "_theta_xi_minus"] = theta_xi_minus
 
     return 0
 
