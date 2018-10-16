@@ -32,9 +32,9 @@ void WnLog::setTheta(number thetamin1,number thetamax1,int nMax)
 	root.clear();
 	norm.clear();
 	rootTheta.clear();
-	ifstream fRoot((string("cosmosis-standard-library/cosebis/TLogsRootsAndNorms/Root_")+toString(thetamin/arcmin,2)+string("-")
+	ifstream fRoot((string("cosebis/TLogsRootsAndNorms/Root_")+toString(thetamin/arcmin,2)+string("-")
 	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
-	ifstream fNorm((string("cosmosis-standard-library/cosebis/TLogsRootsAndNorms/Normalization_")+toString(thetamin/arcmin,2)+string("-")
+	ifstream fNorm((string("cosebis/TLogsRootsAndNorms/Normalization_")+toString(thetamin/arcmin,2)+string("-")
 	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
 	if(fRoot.fail())
 	{
@@ -84,7 +84,7 @@ void WnLog::set(int order)
 	clog<<"set order of WnLog"<<endl;
 	n= order;
 	// is there a table on disk?
-	string myname =string("cosmosis-standard-library/cosebis/")+
+	string myname =string("cosebis/")+
 		 string(WnFileName)+toString(n)+string("-")
 		 +toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	setName(myname.c_str(),function_cosebis::NONAMECOUNTER);

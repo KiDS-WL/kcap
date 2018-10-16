@@ -1,6 +1,7 @@
-**/
+
 !modules/
 !TLogsRootsAndNorms/
 !iniFiles/
 *.so
 *.so.dSYM
+*.a
