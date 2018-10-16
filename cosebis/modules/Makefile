@@ -1,3 +1,4 @@
+include ${COSMOSIS_SRC_DIR}/config/compilers.mk
 #-----------------------------------
 #--- objects to build
 #-----------------------------------
@@ -13,6 +14,7 @@ LIBNAME  = libpslib.a
 
 # make objects (components) of library
 %.o : %.cc 
+	@ech
 	$(CXX) $(CXXFLAGS) -c $<
 #%.o: %.cc
 #	$(CXX) -o $@ -c $(CXXFLAGS) $*.cc
