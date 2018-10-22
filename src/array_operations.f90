@@ -46,6 +46,7 @@ CONTAINS
   SUBROUTINE amputate(arr,n_old,n_new)
 
     ! Chop an array down to a smaller size
+    ! TODO: Retire
     IMPLICIT NONE
     REAL, ALLOCATABLE, INTENT(INOUT) :: arr(:)
     REAL, ALLOCATABLE :: hold(:)
@@ -67,6 +68,45 @@ CONTAINS
     DEALLOCATE(hold)
 
   END SUBROUTINE amputate
+
+  SUBROUTINE amputate_general(a,n,m,i1,i2)
+
+    ! Chop an array of size a(n) down to a smaller size demarked by indices i1, i2
+    ! If i1=1 and i2=n then this does nothing
+    IMPLICIT NONE
+    REAL, ALLOCATABLE, INTENT(INOUT) :: a(:)
+    INTEGER, INTENT(IN) :: n
+    INTEGER, INTENT(OUT) :: m
+    INTEGER, INTENT(IN) :: i1, i2
+    REAL, ALLOCATABLE :: b(:)
+    INTEGER :: i
+
+    IF(i2<i1) THEN
+       STOP 'AMPUTATE: Error, i2 should be greater than i1'
+    END IF
+
+    m=i2-i1+1
+    IF(n<m) THEN
+       STOP 'AMPUTATE: Error, new array should be smaller than the old one'
+    END IF
+
+    ! Store input array and then deallocate
+    ALLOCATE(b(n))
+    b=a
+    DEALLOCATE(a)
+
+    ! Allocate new output array
+    ALLOCATE(a(m))
+
+    ! Fill new output array
+    DO i=1,m
+       a(i)=b(i+i1-1)
+    END DO
+
+    ! Deallocate holding array
+    DEALLOCATE(b)
+
+  END SUBROUTINE amputate_general
 
   SUBROUTINE reduce(arr1,n1,arr2,n2)
 

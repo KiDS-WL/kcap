@@ -73,6 +73,13 @@ test: $(TEST_DIR)/test_gas_gas
 debug: FFLAGS += $(DEBUG_FLAGS)
 debug: $(BIN_DIR)/HMx_debug
 
+# Fitting
+fitting: $(BIN_DIR)/HMx_fitting
+
+# Fitting debugging
+debug: FFLAGS += $(DEBUG_FLAGS)
+fitting_debug: $(BIN_DIR)/HMx_fitting_debug
+
 # Rule to make object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.f90
 	$(make_dirs)
@@ -99,6 +106,17 @@ $(TEST_DIR)/test_gas_gas: $(OBJ) $(TEST_DIR)/test_gas_gas.f90
 	@echo "\nBuilding tests.\n"
 	$(FC) -o $@ $^ -J$(BUILD_DIR) $(LDFLAGS) $(FFLAGS)
 
+# Rules to make fitting executables
+$(BIN_DIR)/HMx_fitting: $(OBJ) $(SRC_DIR)/HMx_fitting.f90
+	@echo "\nBuilding fitting.\n"
+	$(make_dirs)
+	$(FC) -o $@ $^ -J$(BUILD_DIR) $(LDFLAGS) $(FFLAGS)
+
+# Rule to make debugging executable
+$(BIN_DIR)/HMx_fitting_debug: $(DEBUG_OBJ) $(SRC_DIR)/HMx_fitting.f90
+	@echo "\nBuilding fitting debugging executable.\n"
+	$(FC) -o $@ $^ -J$(DEBUG_BUILD_DIR) $(LDFLAGS) $(FFLAGS)
+
 # Rule to make HMx static library
 $(LIB_DIR)/libhmx.a: $(OBJ)
 	@echo "\nBuilding static library.\n"
@@ -115,6 +133,8 @@ $(LIB_DIR)/HMx_cosmosis_interface.so: $(SRC_DIR)/cosmosis_interface.f90
 clean:
 	rm -f $(BIN_DIR)/HMx
 	rm -f $(BIN_DIR)/HMx_debug
+	rm -f $(BIN_DIR)/HMx_fitting
+	rm -f $(BIN_DIR)/HMx_fitting_debug
 	rm -f $(LIB_DIR)/libhmx.a
 	rm -f $(LIB_DIR)/HMx_cosmosis_interface.so
 	rm -f $(BUILD_DIR)/*.o

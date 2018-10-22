@@ -4,7 +4,7 @@ MODULE cosmic_emu_stuff
 
 CONTAINS
 
-  SUBROUTINE get_FrankenEmu_power(k,P,n,z,cosm,rebin)
+  SUBROUTINE read_FrankenEmu_power(k,P,n,z,cosm,rebin)
 
     IMPLICIT NONE
     REAL, ALLOCATABLE, INTENT(OUT) :: k(:), P(:)
@@ -34,9 +34,9 @@ CONTAINS
     IF(ALLOCATED(P)) DEALLOCATE(P)
     ALLOCATE(k(n),P(n))
 
-    WRITE(*,*) 'GET_FRANKENEMU_POWER: z:', z
-    WRITE(*,*) 'GET_FRANKENEMU_POWER: P(k) file length:', n
-    WRITE(*,*) 'GET_FRANKENEMU_POWER: Reading in P(k)'
+    WRITE(*,*) 'READ_FRANKENEMU_POWER: z:', z
+    WRITE(*,*) 'READ_FRANKENEMU_POWER: P(k) file length:', n
+    WRITE(*,*) 'READ_FRANKENEMU_POWER: Reading in P(k)'
 
     OPEN(7,file=output)
     READ(7,*)
@@ -73,12 +73,12 @@ CONTAINS
        DEALLOCATE(k2,P2)
     END IF
 
-    WRITE(*,*) 'GET_FRANKENEMU_POWER: Done'
+    WRITE(*,*) 'READ_FRANKENEMU_POWER: Done'
     WRITE(*,*)
 
-  END SUBROUTINE get_FrankenEmu_power
+  END SUBROUTINE read_FrankenEmu_power
 
-  SUBROUTINE get_Mira_Titan_power(k,P,n,z,cosm,rebin)
+  SUBROUTINE read_Mira_Titan_power(k,P,n,z,cosm,rebin)
 
     IMPLICIT NONE
     REAL, ALLOCATABLE, INTENT(OUT) :: k(:), P(:)
@@ -106,9 +106,9 @@ CONTAINS
     IF(ALLOCATED(P)) DEALLOCATE(P)
     ALLOCATE(k(n),P(n))
 
-    WRITE(*,*) 'GET_MIRA_TITAN_POWER: z:', z
-    WRITE(*,*) 'GET_MIRA_TITAN_POWER: P(k) file length:', n
-    WRITE(*,*) 'GET_MIRA_TITAN_POWER: Reading in P(k)'
+    WRITE(*,*) 'READ_MIRA_TITAN_POWER: z:', z
+    WRITE(*,*) 'READ_MIRA_TITAN_POWER: P(k) file length:', n
+    WRITE(*,*) 'READ_MIRA_TITAN_POWER: Reading in P(k)'
 
     OPEN(7,file=output)
     DO i=1,n
@@ -140,9 +140,9 @@ CONTAINS
        DEALLOCATE(k2,P2)
     END IF
 
-    WRITE(*,*) 'GET_MIRA_TITAN_POWER: Done'
+    WRITE(*,*) 'READ_MIRA_TITAN_POWER: Done'
     WRITE(*,*)
 
-  END SUBROUTINE get_Mira_Titan_power
+  END SUBROUTINE read_Mira_Titan_power
   
 END MODULE cosmic_emu_stuff

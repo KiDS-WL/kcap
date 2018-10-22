@@ -12,7 +12,7 @@ rmax=1.16
 set yrange[rmin:rmax]
 set ylabel 'P(k) / P_{{/Symbol L}CDM}(k)'
 
-power(name)=sprintf('Mead2017/power_%s.dat',name)
+power(name)=sprintf('data/power_%s.dat',name)
 ratio(name)=sprintf('/Users/Mead/Physics/fixed_sigma/power/L200/z0/%s_ratio.dat',name)
 
 names="'LCDM' 'OCDM' 'w-0.7' 'w-1.3' 'wa0.5' 'wa-0.5' 'w0-0.7wa-1.5' 'w0-1.3wa0.5'"
