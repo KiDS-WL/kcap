@@ -8,7 +8,7 @@ if(print==1) {set term post enh col font ',12'; set output 'emulator.eps'}
 # Initial white space
 print ''
 
-file(n,z)=sprintf('emulator/cosmo%d_z%d.dat',n,z)
+file(n,z)=sprintf('data/cosmo%d_z%d.dat',n,z)
 
 # Number of redshifts
 nz=4

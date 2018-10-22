@@ -18,7 +18,7 @@ module HMx_setup
     character(len=256) :: p_lin_source, hm_mode, matter_matter_section_name
 
     integer :: ihm, iw, icosmo
-    logical :: response, dimensionless_power_spectrum
+    logical :: response, dimensionless_power_spectrum, one_parameter_hmcode
     
     type(field), dimension(:), allocatable :: fields
     integer, dimension(:), allocatable :: itype
@@ -151,6 +151,9 @@ function setup(options) result(result)
     HMx_config%ihm = 6
   else if(trim(HMx_config%hm_mode) == "hmcode") then
     HMx_config%ihm = 1
+  else if(trim(HMx_config%hm_mode) == "hmcode_one_baryon_parameter") then
+    HMx_config%ihm = 1
+    HMx_config%one_parameter_hmcode = .true.
   else if(trim(HMx_config%hm_mode) == "vanilla_halo_model") then
     HMx_config%ihm = 3
   else
@@ -288,6 +291,10 @@ function execute(block, config) result(status)
   HMx_config%hm%M0 = 10**log10_M0
   HMx_config%hm%Twhim = 10**log10_whim
   HMx_config%hm%Theat = 10**log10_Theat
+
+  if(HMx_config%one_parameter_hmcode) then
+    HMx_config%hm%one_parameter_baryons = .true.
+  end if
 
   if(trim(HMx_config%p_lin_source) == "external") then
      status = datablock_get_double_grid(block, matter_power_lin_section, &

@@ -27,10 +27,10 @@ if(print==0) set ylabel 'l(l+1)C_{y{/Symbol k}}(l) / 2{/Symbol p}'
 if(print==1) set ylabel ''.ell.'('.ell.'+1)C_{y{/Symbol k}}('.ell.') / 2{/Symbol p}'
 set yrange [0:2e-9]
 
-RCSLenS='RCSLenS/Cell_y-kappa_RCS-2.txt'
-sims='RCSLenS/Cell_y-kappa_sims.txt'
-HM_Planck='RCSLenS/Cell_ky_planck_RCS.dat'
-HM_WMAP='RCSLenS/Cell_ky_wmap_RCS.dat'
+RCSLenS='/Users/Mead/Physics/RCSLenS/Cell_y-kappa_RCS-2.txt'
+sims='/Users/Mead/Physics/RCSLenS/Cell_y-kappa_sims.txt'
+HM_Planck='/Users/Mead/Physics/RCSLenS/Cell_ky_planck_RCS.dat'
+HM_WMAP='/Users/Mead/Physics/RCSLenS/Cell_ky_wmap_RCS.dat'
 HM_Mead='data/cl_hm.dat'
 
 set key top right

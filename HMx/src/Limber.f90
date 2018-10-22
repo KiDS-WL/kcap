@@ -19,9 +19,11 @@ MODULE Limber
   PUBLIC :: xcorr_type
   PUBLIC :: Cl_contribution_ell
   PUBLIC :: fill_projection_kernels
-  PUBLIC :: get_nz
-  PUBLIC :: write_projection_kernels
+  PUBLIC :: read_nz
+  PUBLIC :: write_projection_kernel
   PUBLIC :: write_xi
+  PUBLIC :: write_nz
+  PUBLIC :: write_lensing_efficiency
   PUBLIC :: calculate_xi
   PUBLIC :: write_Cl
   PUBLIC :: k_ell
@@ -411,20 +413,20 @@ CONTAINS
     
   END FUNCTION maxdist
 
-  SUBROUTINE write_projection_kernels(proj,cosm)
-
-    IMPLICIT NONE
-    TYPE(projection), INTENT(IN) :: proj(2)
-    TYPE(cosmology), INTENT(INOUT) :: cosm
-    CHARACTER(len=256) :: output
-
-    output=TRIM('projection/kernel1.dat')
-    CALL write_projection_kernel(proj(1),cosm,output)
-
-    output=TRIM('projection/kernel2.dat')
-    CALL write_projection_kernel(proj(2),cosm,output)
-
-  END SUBROUTINE write_projection_kernels
+!!$  SUBROUTINE write_projection_kernels(proj,cosm)
+!!$
+!!$    IMPLICIT NONE
+!!$    TYPE(projection), INTENT(IN) :: proj(2)
+!!$    TYPE(cosmology), INTENT(INOUT) :: cosm
+!!$    CHARACTER(len=256) :: output
+!!$
+!!$    output=TRIM('data/kernel1.dat')
+!!$    CALL write_projection_kernel(proj(1),cosm,output)
+!!$
+!!$    output=TRIM('data/kernel2.dat')
+!!$    CALL write_projection_kernel(proj(2),cosm,output)
+!!$
+!!$  END SUBROUTINE write_projection_kernels
 
   SUBROUTINE write_projection_kernel(proj,cosm,output)
 
@@ -473,11 +475,11 @@ CONTAINS
        zmax=cosm%z_cmb
        IF(verbose_Limber) WRITE(*,*) 'FILL_LENSING_KERNEL: Source plane redshift:', REAL(zmax)
     ELSE
-       CALL get_nz(ix,lens)
+       CALL read_nz(ix,lens)
        zmin=lens%z_nz(1)
        zmax=lens%z_nz(lens%nnz)
-       output='data/nz.dat'
-       CALL write_nz(lens,output)
+!!$       output='data/nz.dat'
+!!$       CALL write_nz(lens,output)
     END IF
 
     ! Get the distance range for the lensing kernel
@@ -494,9 +496,9 @@ CONTAINS
     ! Fill the q(r) table
     CALL fill_lensing_efficiency(ix,rmin_lensing,rmax,zmax,lens,cosm)
 
-    ! Write the q(r) table to file
-    output='data/lensing_efficiency.dat'
-    CALL write_lensing_efficiency(lens,cosm,output)
+!!$    ! Write the q(r) table to file
+!!$    output='data/lensing_efficiency.dat'
+!!$    CALL write_lensing_efficiency(lens,cosm,output)
 
     ! Assign arrays for the projection function
     nX=nX_lensing
@@ -701,7 +703,7 @@ CONTAINS
 
   END FUNCTION gwave_kernel
 
-  SUBROUTINE get_nz(ix,lens)
+  SUBROUTINE read_nz(ix,lens)
 
     ! The the n(z) function for lensing
     IMPLICIT NONE
@@ -715,13 +717,13 @@ CONTAINS
     END IF
 
     IF(verbose_Limber) THEN
-       WRITE(*,*) 'GET_NZ: zmin:', lens%z_nz(1)
-       WRITE(*,*) 'GET_NZ: zmax:', lens%z_nz(lens%nnz)
-       WRITE(*,*) 'GET_NZ: nz:', lens%nnz
+       WRITE(*,*) 'READ_NZ: zmin:', lens%z_nz(1)
+       WRITE(*,*) 'READ_NZ: zmax:', lens%z_nz(lens%nnz)
+       WRITE(*,*) 'READ_NZ: nz:', lens%nnz
        WRITE(*,*)
     END IF
 
-  END SUBROUTINE get_nz
+  END SUBROUTINE read_nz
 
   SUBROUTINE fill_analytic_nz_table(ix,lens)
 
@@ -768,9 +770,9 @@ CONTAINS
     ELSE IF(ix==tracer_KiDS_450 .OR. ix==tracer_KiDS_450_bin1 .OR. ix==tracer_KiDS_450_bin2 .OR. ix==tracer_KiDS_450_highz) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS-450_fat_bin_nofz.txt'
     ELSE
-       STOP 'GET_NZ: ix not specified correctly'
+       STOP 'FILL_NZ_TABLE: ix not specified correctly'
     END IF
-    WRITE(*,*) 'GET_NZ: Input file:', TRIM(input)
+    WRITE(*,*) 'FILL_NZ_TABLE: Input file:', TRIM(input)
 
     ! Allocate arrays
     lens%nnz=count_number_of_lines(input)
@@ -792,7 +794,7 @@ CONTAINS
        ELSE IF(ix==tracer_KiDS_450_highz) THEN
           READ(7,*) lens%z_nz(i), spam, spam, spam, lens%nz(i) ! Fifth column (z = 0.9 -> 3.5)
        ELSE
-          STOP 'GET_NZ: ix not specified correctly'
+          STOP 'FILL_NZ_TABLE: ix not specified correctly'
        END IF
     END DO
     CLOSE(7)
