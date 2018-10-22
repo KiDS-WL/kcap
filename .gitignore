@@ -2,3 +2,13 @@ build/
 dist/
 examples/output
 *.egg-info
+
+*.o
+*.so
+*.so.dSYM
+*.a
+.vscode
+.DS_Store
+cosebis/WnLog
+
+examples/output*
