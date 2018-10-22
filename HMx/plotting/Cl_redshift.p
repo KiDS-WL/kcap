@@ -5,7 +5,7 @@ cmmi='/Users/Mead/Fonts/cmmi10.pfb'
 if(print==0){set term aqua}
 if(print==1){set term post enh col sol fontfile cmmi; set output 'Cl_redshift.eps'}
 
-cl(z1,z2)=sprintf('data/redshift_%i_%i_cl_full.dat',z1,z2)
+cl(z1,z2)=sprintf('data/redshift_%i_%i_cl_hm.dat',z1,z2)
 
 ell='{/cmmi10 \140}'
 
@@ -39,9 +39,9 @@ set key top left
 
 if(icumulative==0){
 plot for [i=1:nz] cl(i,i+1) u 1:3:(real(i-1)/real(nz-1)) w l lw 3 lc palette noti,\
-     'data/cl_full.dat' u 1:3 w l lw 3 lc -1 ti 'Total'
+     'data/cl_hm.dat' u 1:3 w l lw 3 lc -1 ti 'Total'
 }
 if(icumulative==1){
 plot for [i=1:nz] cl(0,i) u 1:3:(real(i)/real(nz)) w l lw 3 lc palette noti,\
-     'data/cl_full.dat' u 1:3 w l lw 3 lc -1 ti 'Total'
+     'data/cl_hm.dat' u 1:3 w l lw 3 lc -1 ti 'Total'
 }

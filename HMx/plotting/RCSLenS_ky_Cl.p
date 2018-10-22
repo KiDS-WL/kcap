@@ -31,7 +31,7 @@ RCSLenS='RCSLenS/Cell_y-kappa_RCS-2.txt'
 sims='RCSLenS/Cell_y-kappa_sims.txt'
 HM_Planck='RCSLenS/Cell_ky_planck_RCS.dat'
 HM_WMAP='RCSLenS/Cell_ky_wmap_RCS.dat'
-HM_Mead='data/cl_full.dat'
+HM_Mead='data/cl_hm.dat'
 
 set key top right
 
@@ -48,7 +48,7 @@ plot 0 w l lt -1 noti,\
      HM_WMAP   u 1:($2*kernel($1)) w l dt 1 lc 2 lw 3 ti 'Halo model - Ma (2015) - WMAP',\
      HM_WMAP   u 1:($3*kernel($1)) w l dt 3 lc 2 lw 3 noti,\
      HM_WMAP   u 1:($4*kernel($1)) w l dt 4 lc 2 lw 3 noti,\
-     'data/cl_full.dat'  u 1:($3*kernel($1)) w l lw 3 dt 1 lc 3 ti 'Halo model - Mead',\
-     'data/cl_1halo.dat' u 1:($3*kernel($1)) w l lw 3 dt 3 lc 3 noti,\
-     'data/cl_2halo.dat' u 1:($3*kernel($1)) w l lw 3 dt 4 lc 3 noti,\
+     'data/cl_hm.dat' u 1:($3*kernel($1)) w l lw 3 dt 1 lc 3 ti 'Halo model - Mead',\
+     'data/cl_1h.dat' u 1:($3*kernel($1)) w l lw 3 dt 3 lc 3 noti,\
+     'data/cl_2h.dat' u 1:($3*kernel($1)) w l lw 3 dt 4 lc 3 noti,\
      RCSLenS u 1:($1*($1+1)*$2/(2.*pi)):($1*($1+1)*$3/(2.*pi)) w errorbars ps 1 pt 7 lc rgb 'black' ti 'RCSLenS data'

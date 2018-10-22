@@ -8,7 +8,7 @@ if(print==0){set term aqua dashed; sun='sun'}
 if(print==1){set term post enh col fontfile cmsy; set output 'halo_windows.eps', sun='{/cmsy10 \014}'}
 
 #file location
-file(m,z)=sprintf('diagnostics/halo_window_m%i_z%1.1f.dat',m,z)
+file(m,z)=sprintf('data/halo_window_m%i_z%1.1f.dat',m,z)
 
 #x axis
 kmin=1e-1
@@ -44,9 +44,10 @@ do for [m=m1:m2] {
 set title tits(m)
 
 #Make the individual plot
-plot file(m,z) u 1:2 w l dt 1 lw 3 lc rgb 'black' ti 'CDM',\
-     file(m,z) u 1:3 w l dt 1 lw 3 lc rgb 'red' ti 'Gas',\
-     file(m,z) u 1:4 w l dt 1 lw 3 lc rgb 'blue' ti 'Stars',\
+plot file(m,z) u 1:2 w l dt 1 lw 3 lc 1 ti 'Matter',\
+     file(m,z) u 1:3 w l dt 1 lw 3 lc 2 ti 'CDM',\
+     file(m,z) u 1:4 w l dt 1 lw 3 lc 3 ti 'Gas',\
+     file(m,z) u 1:5 w l dt 1 lw 3 lc 4 ti 'Stars'#,\
      file(m,z) u 1:5 w l dt 2 lw 3 lc rgb 'red' ti 'Bound gas',\
      file(m,z) u 1:6 w l dt 3 lw 3 lc rgb 'red' ti 'Free gas'
 

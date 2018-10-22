@@ -13,7 +13,7 @@ if(print==1){set term post enh col fontfile cmsy; set output 'halo_properties.ep
 print ''
 
 #File to plot
-file(z)=sprintf('diagnostics/properies_z%1.1f.dat',z)
+file(z)=sprintf('data/properies_z%1.1f.dat',z)
 
 #Mass axis
 set log x

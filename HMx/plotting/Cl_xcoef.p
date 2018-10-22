@@ -8,7 +8,7 @@ if(print==1){set term post enh col fontfile cmmi; ell='{/cmmi10 \140}'; set outp
 
 Cl_11='data/cl_first.dat'
 Cl_22='data/cl_second.dat'
-Cl_12='data/cl_full.dat'
+Cl_12='data/cl_hm.dat'
 
 ellmin=1e1
 ellmax=1e4

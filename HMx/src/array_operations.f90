@@ -2,6 +2,27 @@ MODULE array_operations
 
 CONTAINS
 
+  INTEGER FUNCTION array_position(x,a,n)
+
+    ! Returns the location in the array of value x
+    ! If x is not in array then returns zero
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: x    ! Value to check if it is in array
+    INTEGER, INTENT(IN) :: a(n) ! Array to check 
+    INTEGER, INTENT(IN) :: n    ! Size of array
+    INTEGER :: i
+
+    array_position=0
+    
+    DO i=1,n
+       IF(a(i)==x) THEN
+          array_position=i
+          EXIT
+       END IF
+    END DO
+    
+  END FUNCTION array_position
+
   FUNCTION sum_double(a,n)
 
     ! Sum using double precision, which is necessary for many array elements
@@ -151,13 +172,10 @@ CONTAINS
        max=log10(max)
     END IF
 
-    !This sets the limits for the bins!
-    !DO i=1,n+1
-    !   binlim(i)=min+(max-min)*REAL(i-1)/REAL(n)
-    !END DO
+    ! This sets the limits for the bins!
     CALL fill_array(min,max,binlim,n+1)
 
-    !This sets the centre value for each bin!
+    ! This sets the centre value for each bin!
     DO i=1,n
        b(i)=(binlim(i)+binlim(i+1))/2.
     END DO

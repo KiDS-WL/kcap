@@ -4,7 +4,7 @@ reset
 set term aqua dashed size 1000,800 font ',16'
 
 bench(name)=sprintf('benchmarks/power_HMcode_%s.txt',name)
-power(name)=sprintf('data/power_HMx_%s_full.dat',name)
+power(name)=sprintf('data/power_HMx_%s_hm.dat',name)
 
 print ''
 print 'itest = 1: Test against HMcode'

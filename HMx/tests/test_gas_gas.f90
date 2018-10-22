@@ -7,10 +7,11 @@ PROGRAM test_gas_gas
 
     ! Parameter definitions
     REAL, ALLOCATABLE :: k(:)
-    REAL, ALLOCATABLE :: pow_lin(:), pow_2h(:), pow_1h(:), pow_full(:)
+    REAL, ALLOCATABLE :: pow_lin(:), pow_2h(:,:,:), pow_1h(:,:,:), pow_full(:,:,:)
     REAL :: kmin, kmax
-    REAL :: z
-    INTEGER :: ihm, icosmo, nk
+    REAL :: a
+    INTEGER :: ihm, icosmo, nk, nt
+    INTEGER, DIMENSION(1) :: itype
     TYPE(cosmology) :: cosm
     TYPE(halomod) :: hmod
     CHARACTER(len=256) :: outfile
@@ -22,13 +23,16 @@ PROGRAM test_gas_gas
     REAL, PARAMETER :: mmax=1e17 ! Maximum halo mass for the calculation
 
   
+    itype = [2]
+    nt = size(itype)
+
     !Set number of k points and k range (log spaced)
     nk=128
     kmin=1e-3
     kmax=1e2
     CALL fill_array(log(kmin),log(kmax),k,nk)
     k=exp(k)
-    ALLOCATE(pow_lin(nk),pow_2h(nk),pow_1h(nk),pow_full(nk))
+    ALLOCATE(pow_lin(nk),pow_2h(nt,nt,nk),pow_1h(nt,nt,nk),pow_full(nt,nt,nk))
 
     !Assigns the cosmological model
     icosmo = 1
@@ -37,19 +41,17 @@ PROGRAM test_gas_gas
     CALL print_cosmology(cosm)
 
     !Sets the redshift
-    z=0.
+    a = 1.0
 
     !Initiliasation for the halomodel calcualtion
     ihm = 6
     CALL assign_halomod(ihm,hmod,verbose)
-    CALL init_halomod(mmin,mmax,z,hmod,cosm,verbose)
+    CALL init_halomod(mmin,mmax,a,hmod,cosm,verbose)
 
-    !Do the halo-model calculation
-    CALL calculate_halomod(2,2,k,nk,z,pow_lin,pow_2h,pow_1h,pow_full,hmod,cosm,verbose,.false.)
-
+    CALL calculate_HMx_a(itype,nt,k,nk,pow_lin,pow_2h,pow_1h,pow_full,hmod,cosm,verbose,.false.)
     !Write out the results
     outfile='tests/output/power_gas_gas.dat'
-    CALL write_power(k,pow_lin,pow_2h,pow_1h,pow_full,nk,outfile,verbose)
+    CALL write_power(k,pow_lin,pow_2h(1,1,:),pow_1h(1,1,:),pow_full(1,1,:),nk,outfile,verbose)
 
     CONTAINS
         SUBROUTINE write_power(k,pow_lin,pow_2h,pow_1h,pow,nk,output,verbose)

@@ -1,3 +1,4 @@
+unset multiplot
 reset
 
 if(print==0){set term aqua dashed}

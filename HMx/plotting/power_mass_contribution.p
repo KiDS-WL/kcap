@@ -1,3 +1,4 @@
+unset multiplot
 reset
 
 cmsy='/Users/Mead/Fonts/cmsy10.pfb'

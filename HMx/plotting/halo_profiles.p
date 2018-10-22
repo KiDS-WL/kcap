@@ -8,8 +8,8 @@ if(print==0){set term aqua dashed; msun='sun'}
 if(print==1){set term post enh col font ',10' fontfile cmsy; msun='{/cmsy10 \014}'}
 
 #File locations
-file(m,z)=sprintf('diagnostics/halo_profile_m%i_z%1.1f.dat',m,z)
-UPP(m,z)=sprintf('diagnostics/UPP/halo_profile_m%i_z%1.1f.dat',m,z)
+file(m,z)=sprintf('data/halo_profile_m%i_z%1.1f.dat',m,z)
+UPP(m,z)=sprintf('data/UPP/halo_profile_m%i_z%1.1f.dat',m,z)
 
 #Initial white space
 print ''
@@ -72,20 +72,23 @@ do for [m=m1:m2] {
 
 set title tits(m,z)
 
+ti_all=''
 ti_CDM=''
 ti_gas=''
 ti_stars=''
 ti_bound=''
 ti_free=''
+if(m==mtit) {ti_all='matter'}
 if(m==mtit) {ti_CDM='CDM'}
-if(m==mtit) {ti_gas='Gas'}
+if(m==mtit) {ti_gas='Bound gas'}
 if(m==mtit) {ti_stars='Stars'}
 if(m==mtit) {ti_bound='Bound gas'}
 if(m==mtit) {ti_free='Free gas'}
 
-plot file(m,z) u 1:(4.*pi*($1**pow)*$2) w l lw 3 dt 1 lc rgb 'black' ti ti_CDM,\
-     file(m,z) u 1:(4.*pi*($1**pow)*$3) w l lw 3 dt 1 lc rgb 'red'   ti ti_gas,\
-     file(m,z) u 1:(4.*pi*($1**pow)*$4) w l lw 3 dt 1 lc rgb 'blue'  ti ti_stars,\
+plot file(m,z) u 1:(4.*pi*($1**pow)*$2) w l lw 3 dt 1 lc 1 ti ti_all,\
+     file(m,z) u 1:(4.*pi*($1**pow)*$3) w l lw 3 dt 1 lc 2 ti ti_CDM,\
+     file(m,z) u 1:(4.*pi*($1**pow)*$4) w l lw 3 dt 1 lc 3 ti ti_gas,\
+     file(m,z) u 1:(4.*pi*($1**pow)*$5) w l lw 3 dt 1 lc 4 ti ti_stars#,\
      file(m,z) u 1:(4.*pi*($1**pow)*$5) w l lw 3 dt 2 lc rgb 'red'   ti ti_bound,\
      file(m,z) u 1:(4.*pi*($1**pow)*$6) w l lw 3 dt 3 lc rgb 'red'   ti ti_free
 
@@ -117,7 +120,7 @@ do for [m=m1:m2] {
 
 set title tits(m,z)
 
-plot file(m,z) u 1:(4.*pi*$1*$1*$7) w l lw 3 dt 1 lc rgb 'red' ti 'Halo model',\
+plot file(m,z) u 1:(4.*pi*$1*$1*$6) w l lw 3 dt 1 lc rgb 'red' ti 'Halo model',\
      UPP(m,z)  u 1:(4.*pi*$1*$1*$7) w l lw 3 dt 2 lc rgb 'black' ti 'UPP'
 
 
