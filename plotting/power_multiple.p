@@ -18,10 +18,10 @@ print('Set power type using *itype*')
 print('itype = '.itype.'')
 
 #File types
-file_linear='data/power_linear.dat'
-file_full='data/power_full.dat'
-file_1halo='data/power_1halo.dat'
-file_2halo='data/power_2halo.dat'
+file_li='data/power_linear.dat'
+file_hm='data/power_hm.dat'
+file_1h='data/power_1h.dat'
+file_2h='data/power_2h.dat'
 
 #Set k-range
 kmin=1e-3
@@ -65,10 +65,10 @@ set palette defined (1 'dark-red', 2 'gold')
 #plot for[i=1:16] file u 1:(column(i+1)) w l lw 2 lc rgb col(i) noti
 
 #Set the file type to plot
-if(itype==1){file=file_linear; tits='Linear power'}
-if(itype==2){file=file_2halo;  tits='Two-halo power'}
-if(itype==3){file=file_1halo;  tits='One-halo power'}
-if(itype==4){file=file_full;   tits='Full halo-model power'}
+if(itype==1){file=file_li; tits='Linear power'}
+if(itype==2){file=file_2h; tits='Two-halo power'}
+if(itype==3){file=file_1h; tits='One-halo power'}
+if(itype==4){file=file_hm; tits='Halo-model power'}
 print('File: '.file.'')
 print('Title: '.tits.'')
 print('')
@@ -76,14 +76,14 @@ print('')
 #Actual plot
 set title tits
 plot for[i=1:n] file u 1:(column(i+1)):(real(i-1)/real(n)) w l lw 2 dt 1 lc palette noti#,\
-     file_2halo u 1:(column(n+1)):(real(n-1)/real(n)) w l lw 2 dt 1 lc palette noti,\
-     file_1halo u 1:(column(n+1)):(real(n-1)/real(n)) w l lw 2 dt 1 lc palette noti
+     file_2h u 1:(column(n+1)):(real(n-1)/real(n)) w l lw 2 dt 1 lc palette noti,\
+     file_1h u 1:(column(n+1)):(real(n-1)/real(n)) w l lw 2 dt 1 lc palette noti
 #,\
      f(x) w l lw 3 dt 2 lc -1 noti
 
 #plot file_2halo  u 1:(column(nh+1)):(real(nh-1)/real(nh)) w l lw 2 dt 2 lc palette,\
 #     file_1halo  u 1:(column(nh+1)):(real(nh-1)/real(nh)) w l lw 2 dt 2 lc palette,\
-#     for[i=1:n] file_full u 1:(column(i+1)):(real(i-1)/real(n)) w l lw 2 dt 1 lc palette noti#,\
+#     for[i=1:n] file_hm u 1:(column(i+1)):(real(i-1)/real(n)) w l lw 2 dt 1 lc palette noti#,\
 #     f(x) w l lw 3 dt 2 lc -1 noti
 
 

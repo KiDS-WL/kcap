@@ -9,21 +9,39 @@ MODULE Limber
 
   PRIVATE
 
+  ! Types
   PUBLIC :: projection
   PUBLIC :: lensing
+
+  ! Functions
   PUBLIC :: maxdist
-  PUBLIC :: calculate_Cell
+  PUBLIC :: calculate_Cl
   PUBLIC :: xcorr_type
-  PUBLIC :: cell_contribution
+  PUBLIC :: Cl_contribution_ell
   PUBLIC :: fill_projection_kernels
   PUBLIC :: get_nz
-  PUBLIC :: set_xcorr_type
   PUBLIC :: write_projection_kernels
   PUBLIC :: write_xi
-  PUBLIC :: xcorr
   PUBLIC :: calculate_xi
-  PUBLIC :: write_cell
+  PUBLIC :: write_Cl
   PUBLIC :: k_ell
+
+  ! Tracers
+  PUBLIC :: n_tracers
+  PUBLIC :: tracer_RCSLenS
+  PUBLIC :: tracer_Compton_y
+  PUBLIC :: tracer_CMB_lensing
+  PUBLIC :: tracer_CFHTLenS
+  PUBLIC :: tracer_KiDS
+  PUBLIC :: tracer_KiDS_bin1
+  PUBLIC :: tracer_KiDS_bin2
+  PUBLIC :: tracer_KiDS_bin3
+  PUBLIC :: tracer_KiDS_bin4
+  PUBLIC :: tracer_gravity_wave
+  PUBLIC :: tracer_KiDS_450
+  PUBLIC :: tracer_KiDS_450_bin1
+  PUBLIC :: tracer_KiDS_450_bin2
+  PUBLIC :: tracer_KiDS_450_highz
  
   ! Projection quantities that need to be calculated only once; these relate to the Limber integrals
   TYPE projection    
@@ -42,25 +60,20 @@ MODULE Limber
   ! P(k,a) look-up table parameters
   REAL, PARAMETER :: kmin_pka=1e-4   ! k' value for P(k,a) table; P(k<k',a)=0
   REAL, PARAMETER :: kmax_pka=1e2    ! k' value for P(k,a) table; P(k>k',a)=0
+  REAL, PARAMETER :: amin_pka=1e-3   ! a' value for P(k,a) table; P(k,a<a')=0
+  REAL, PARAMETER :: amax_pka=1.     ! a' value for P(k,a) table; P(k,a>a')=0
 
   ! xcorr - C(l) calculation
-  REAL, PARAMETER :: kmin_xcorr=1e-3 ! Minimum k
-  REAL, PARAMETER :: kmax_xcorr=1e1  ! Maximum k (some halo-model things go hectic for k>10)
-  INTEGER, PARAMETER :: nk_xcorr=64  ! Number of k values (used to be 32)
-  REAL, PARAMETER :: amin_xcorr=0.1 ! Minimum scale factor (problems with one-halo term if amin is less than 0.1 (CMB lensing?))
-  REAL, PARAMETER :: amax_xcorr=1.0 ! Maximum scale factor
-  INTEGER, PARAMETER :: na_xcorr=16 ! Number of scale factores
   LOGICAL, PARAMETER :: verbose_Limber=.FALSE. ! Verbosity
-  !LOGICAL, PARAMETER :: verbose_cell=.FALSE. ! Verbosity
   LOGICAL, PARAMETER :: verbose_xi=.FALSE. ! Verbosity
 
   ! Maxdist
   REAL, PARAMETER :: dr_max=0.01 ! Small subtraction from maxdist to prevent numerical issues
 
   ! Limber integration parameters
-  INTEGER, PARAMETER  :: n_Limber=1024 ! Number of samples to take in r for Limber integration  
-  REAL, PARAMETER :: lcorr=0.5         ! 1/2 in LoVerde (2008) Limber correction k(r)=(l+1/2)/f_k(r)
-  REAL, PARAMETER :: acc_Limber=1e-4   ! Accuracy parameter for Limber integration
+  INTEGER, PARAMETER  :: n_cont=1024 ! Number of samples to take in r for Cl ell contribution calculation
+  REAL, PARAMETER :: lcorr=0.5       ! 1/2 in LoVerde (2008) Limber correction k(r)=(l+1/2)/f_k(r)
+  REAL, PARAMETER :: acc_Limber=1e-4 ! Accuracy parameter for Limber integration
 
   ! n(z)
   REAL, PARAMETER :: zmin_nz=0.  ! Minimum redshift for the analytic n(z) tables
@@ -79,153 +92,51 @@ MODULE Limber
   ! Gravitational waves
   REAL, PARAMETER :: A_gwave=1.
   REAL, PARAMETER :: rmin_gwave=10.
+
+  ! Tracer types
+  INTEGER, PARAMETER :: n_tracers=14
+  INTEGER, PARAMETER :: tracer_RCSLenS=1
+  INTEGER, PARAMETER :: tracer_Compton_y=2
+  INTEGER, PARAMETER :: tracer_CMB_lensing=3
+  INTEGER, PARAMETER :: tracer_CFHTLenS=4
+  INTEGER, PARAMETER :: tracer_KiDS=5
+  INTEGER, PARAMETER :: tracer_KiDS_bin1=6
+  INTEGER, PARAMETER :: tracer_KiDS_bin2=7
+  INTEGER, PARAMETER :: tracer_KiDS_bin3=8
+  INTEGER, PARAMETER :: tracer_KiDS_bin4=9
+  INTEGER, PARAMETER :: tracer_gravity_wave=10
+  INTEGER, PARAMETER :: tracer_KiDS_450=11
+  INTEGER, PARAMETER :: tracer_KiDS_450_bin1=12
+  INTEGER, PARAMETER :: tracer_KiDS_450_bin2=13
+  INTEGER, PARAMETER :: tracer_KiDS_450_highz=14
   
 CONTAINS
 
   FUNCTION xcorr_type(ix)
 
     ! Names for cross-correlation field types
-    ! TODO: This is super ugly. Surely it should be combined with set_xcorr_type somehow?
     IMPLICIT NONE
     CHARACTER(len=256) :: xcorr_type
     INTEGER, INTENT(IN) :: ix
 
     xcorr_type=''
-    IF(ix==1)  xcorr_type='RCSLenS lensing'
-    IF(ix==2)  xcorr_type='Compton y'
-    IF(ix==3)  xcorr_type='CMB lensing'
-    IF(ix==4)  xcorr_type='CFHTLenS lensing'
-    IF(ix==5)  xcorr_type='KiDS lensing (z = 0.1 -> 0.9)'
-    IF(ix==6)  xcorr_type='KiDS lensing (z = 0.1 -> 0.3)'
-    IF(ix==7)  xcorr_type='KiDS lensing (z = 0.3 -> 0.5)'
-    IF(ix==8)  xcorr_type='KiDS lensing (z = 0.5 -> 0.7)'
-    IF(ix==9)  xcorr_type='KiDS lensing (z = 0.7 -> 0.9)'
-    IF(ix==10) xcorr_type='Gravitational waves'
-    IF(ix==11) xcorr_type='KiDS 450 (z = 0.1 -> 0.9)'
-    IF(ix==12) xcorr_type='KiDS 450 (z = 0.1 -> 0.5)'
-    IF(ix==13) xcorr_type='KiDS 450 (z = 0.5 -> 0.9)'
-    IF(ix==14) xcorr_type='KiDS 450 (z = 0.9 -> 3.5)'
+    IF(ix==tracer_RCSLenS)        xcorr_type='RCSLenS lensing'
+    IF(ix==tracer_Compton_y)      xcorr_type='Compton y'
+    IF(ix==tracer_CMB_lensing)    xcorr_type='CMB lensing'
+    IF(ix==tracer_CFHTLenS)       xcorr_type='CFHTLenS lensing'
+    IF(ix==tracer_KiDS)           xcorr_type='KiDS lensing (z = 0.1 -> 0.9)'
+    IF(ix==tracer_KiDS_bin1)      xcorr_type='KiDS lensing (z = 0.1 -> 0.3)'
+    IF(ix==tracer_KiDS_bin2)      xcorr_type='KiDS lensing (z = 0.3 -> 0.5)'
+    IF(ix==tracer_KiDS_bin3)      xcorr_type='KiDS lensing (z = 0.5 -> 0.7)'
+    IF(ix==tracer_KiDS_bin4)      xcorr_type='KiDS lensing (z = 0.7 -> 0.9)'
+    IF(ix==tracer_gravity_wave)   xcorr_type='Gravitational waves'
+    IF(ix==tracer_KiDS_450)       xcorr_type='KiDS 450 (z = 0.1 -> 0.9)'
+    IF(ix==tracer_KiDS_450_bin1)  xcorr_type='KiDS 450 (z = 0.1 -> 0.5)'
+    IF(ix==tracer_KiDS_450_bin2)  xcorr_type='KiDS 450 (z = 0.5 -> 0.9)'
+    IF(ix==tracer_KiDS_450_highz) xcorr_type='KiDS 450 (z = 0.9 -> 3.5)'
     IF(xcorr_type=='') STOP 'XCORR_TYPE: Error, ix not specified correctly'
     
   END FUNCTION xcorr_type
-
-  SUBROUTINE set_xcorr_type(ix,ip)
-
-    ! Set the cross-correlation type
-    ! TODO: This is super ugly. Surely it should be combined with xcorr_type somehow?
-    IMPLICIT NONE
-    INTEGER, INTENT(INOUT) :: ix(2)
-    INTEGER, INTENT(OUT) :: ip(2)
-    INTEGER :: i, j
-    
-    INTEGER, PARAMETER :: nx=14 ! Total number of cross-correlation fields
-
-    ! Loop over two-components of xcorr
-    DO i=1,2
-
-       IF(ix(i)==-1) THEN
-          WRITE(*,fmt='(A30,I3)') 'SET_XCORR_TYPE: Choose field: ', i
-          WRITE(*,*) '========================='
-          DO j=1,nx
-             WRITE(*,fmt='(I3,A3,A30)') j, '- ', TRIM(xcorr_type(j))
-          END DO
-          READ(*,*) ix(i)
-          WRITE(*,*) '========================='
-          WRITE(*,*)
-       END IF
-
-       IF(ix(i)==2) THEN
-          ! Compton y
-          ip(i)=6 ! Profile type: 6: Pressure
-       ELSE IF(ix(i)==10) THEN
-          ! Gravitational waves
-          ip(i)=-1 ! Profile type: -1: DMONLY
-       ELSE
-          ! Gravitational lensing
-          ip(i)=0 ! Profile type: 0: Matter
-       END IF
-       
-    END DO
-
-  END SUBROUTINE set_xcorr_type
-
-  SUBROUTINE xcorr(ix,mmin,mmax,ell,Cell,nl,hmod,cosm,verbose)
-
-    ! Calculates the C(l) for the cross correlation of fields ix(1) and ix(2)
-    ! Public-facing function
-    ! TODO: Remove this explicit HMx dependence, it cannot be necessary, it is the only place it appears
-    ! TODO: Maybe this needs to be moved anyway
-    USE HMx 
-    IMPLICIT NONE
-    INTEGER, INTENT(INOUT) :: ix(2)
-    REAL, INTENT(IN) :: mmin, mmax
-    REAL, INTENT(IN) :: ell(nl)
-    REAL, INTENT(OUT) :: Cell(nl)
-    INTEGER, INTENT(IN) :: nl
-    TYPE(halomod), INTENT(INOUT) :: hmod
-    TYPE(cosmology), INTENT(INOUT) :: cosm
-    LOGICAL, INTENT(IN) :: verbose
-    REAL, ALLOCATABLE :: a(:), k(:), powa_lin(:,:), powa_2h(:,:), powa_1h(:,:), powa(:,:)
-    TYPE(projection) :: proj(2)    
-    REAL :: lmin, lmax
-    INTEGER :: ip(2), nk, na
-    REAL :: r1, r2
-
-    ! Set the k range
-    nk=nk_xcorr
-    CALL fill_array(log(kmin_xcorr),log(kmax_xcorr),k,nk)
-    k=exp(k)   
-
-    ! Set the a range
-    na=na_xcorr
-    CALL fill_array(amin_xcorr,amax_xcorr,a,na)
-
-    ! Set the ell range
-    lmin=ell(1)
-    lmax=ell(nl)
-
-    ! Allocate power arrays
-    ALLOCATE(powa(nk,na),powa_lin(nk,na),powa_2h(nk,na),powa_1h(nk,na))
-
-    ! Write to screen
-    IF(verbose) THEN
-       WRITE(*,*) 'XCORR: Cross-correlation information'
-       WRITE(*,*) 'XCORR: P(k) minimum k [h/Mpc]:', REAL(kmin_xcorr)
-       WRITE(*,*) 'XCORR: P(k) maximum k [h/Mpc]:', REAL(kmax_xcorr)
-       WRITE(*,*) 'XCORR: Number of k:', nk
-       WRITE(*,*) 'XCORR: minimum a:', REAL(amin_xcorr)
-       WRITE(*,*) 'XCORR: maximum a:', REAL(amax_xcorr)
-       WRITE(*,*) 'XCORR: number of a:', na
-       WRITE(*,*) 'XCORR: minimum ell:', REAL(lmin)
-       WRITE(*,*) 'XCORR: maximum ell:', REAL(lmax)
-       WRITE(*,*) 'XCORR: number of ell:', nl
-       WRITE(*,*)
-    END IF
-
-    ! Use the xcorrelation type to set the necessary halo profiles
-    CALL set_xcorr_type(ix,ip)
-
-    ! Do the halo model power spectrum calculation
-    CALL calculate_HMx(ip,mmin,mmax,k,nk,a,na,powa_lin,powa_2h,powa_1h,powa,hmod,cosm,verbose,response=.FALSE.)
-
-    ! Fill out the projection kernels
-    CALL fill_projection_kernels(ix,proj,cosm)
-    IF(verbose) CALL write_projection_kernels(proj,cosm)
-
-    ! Set the range in comoving distance for the Limber integral
-    r1=0.
-    r2=maxdist(proj)
-
-    ! Actually calculate the C(ell), but only for the full halo model part
-    CALL calculate_Cell(r1,r2,ell,Cell,nl,k,a,powa,nk,na,proj,cosm)
-
-    ! Write to screen
-    IF(verbose) THEN
-       WRITE(*,*) 'XCORR: Done'
-       WRITE(*,*)
-    END IF
-
-  END SUBROUTINE xcorr
 
   REAL FUNCTION k_ell(ell,a,cosm)
 
@@ -299,7 +210,7 @@ CONTAINS
     TYPE(cosmology), INTENT(INOUT) :: cosm
     TYPE(lensing) :: lens
 
-    IF(ix==2 .OR. ix==10) THEN
+    IF(ix==tracer_Compton_y .OR. ix==tracer_gravity_wave) THEN
        CALL fill_kernel(ix,proj,cosm)
     ELSE
        CALL fill_lensing_kernel(ix,proj,lens,cosm)
@@ -307,7 +218,7 @@ CONTAINS
 
   END SUBROUTINE fill_projection_kernel
 
-  SUBROUTINE calculate_Cell(r1,r2,ell,Cell,nl,k,a,pow,nk,na,proj,cosm)
+  SUBROUTINE calculate_Cl(r1,r2,ell,Cell,nl,k,a,pow,nk,na,proj,cosm)
 
     ! Calculates C(l) using the Limber approximation
     ! Note that using Limber and flat-sky for sensible results limits lmin to ell~10
@@ -332,28 +243,28 @@ CONTAINS
 
     ! Write some useful things to the screen
     IF(verbose_Limber) THEN
-       WRITE(*,*) 'CALCULATE_CELL: ell min:', REAL(ell(1))
-       WRITE(*,*) 'CALCULATE_CELL: ell max:', REAL(ell(nl))
-       WRITE(*,*) 'CALCULATE_CELL: number of ell:', nl
-       WRITE(*,*) 'CALCULATE_CELL: number of k:', nk
-       WRITE(*,*) 'CALCULATE_CELL: number of a:', na
-       WRITE(*,*) 'CALCULATE_CELL: Minimum distance [Mpc/h]:', REAL(r1)
-       WRITE(*,*) 'CALCULATE_CELL: Maximum distance [Mpc/h]:', REAL(r2)
+       WRITE(*,*) 'CALCULATE_CL: ell min:', REAL(ell(1))
+       WRITE(*,*) 'CALCULATE_CL: ell max:', REAL(ell(nl))
+       WRITE(*,*) 'CALCULATE_CL: number of ell:', nl
+       WRITE(*,*) 'CALCULATE_CL: number of k:', nk
+       WRITE(*,*) 'CALCULATE_CL: number of a:', na
+       WRITE(*,*) 'CALCULATE_CL: Minimum distance [Mpc/h]:', REAL(r1)
+       WRITE(*,*) 'CALCULATE_CL: Maximum distance [Mpc/h]:', REAL(r2)
     END IF
 
     ! Finally do the integration
-    IF(verbose_Limber) WRITE(*,*) 'CALCULATE CELL: Doing calculation'
+    IF(verbose_Limber) WRITE(*,*) 'CALCULATE_CL: Doing calculation'
     DO i=1,nl
        Cell(i)=integrate_Limber(ell(i),r1,r2,logk,loga,logpow,nk,na,acc_Limber,3,proj,cosm)
     END DO
     IF(verbose_Limber) THEN
-       WRITE(*,*) 'CALCULATE_CELL: Done'
+       WRITE(*,*) 'CALCULATE_CL: Done'
        WRITE(*,*)
     END IF
 
-  END SUBROUTINE calculate_Cell
+  END SUBROUTINE calculate_Cl
 
-  SUBROUTINE Cell_contribution(r1,r2,k,a,pow,nk,na,proj,cosm)
+  SUBROUTINE Cl_contribution_ell(r1,r2,k,a,pow,nk,na,proj,cosm)
 
     ! Calculates the contribution to each ell of C(l) as a function of z, k, r
     ! Note that using Limber and flat-sky for sensible results limits lmin to ~10
@@ -378,7 +289,7 @@ CONTAINS
     END DO
 
     ! Now call the contribution subroutine
-    fbase='data/Cell_contrib_ell_'
+    fbase='data/Cl_contribution_ell_'
     fext='.dat'
     DO i=1,n
        l=2**(i-1) ! Set the l
@@ -386,24 +297,24 @@ CONTAINS
        CALL Limber_contribution(REAL(l),r1,r2,logk,loga,logpow,nk,na,proj,cosm,outfile)
     END DO
 
-  END SUBROUTINE Cell_contribution
+  END SUBROUTINE Cl_contribution_ell
 
-  SUBROUTINE write_Cell(ell,Cell,nl,output)
+  SUBROUTINE write_Cl(l,Cl,nl,output)
 
     ! Write C(l) to a file; writes l, C(l), l(l+1)C(l)/2pi
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: nl
-    REAL, INTENT(IN) :: ell(nl), Cell(nl)
+    REAL, INTENT(IN) :: l(nl), Cl(nl)
     CHARACTER(len=256) :: output
     INTEGER :: i
 
     OPEN(7,file=output)
     DO i=1,nl
-       WRITE(7,*) ell(i), Cell(i), ell(i)*(1.+ell(i))*Cell(i)/twopi
+       WRITE(7,*) l(i), Cl(i), l(i)*(l(i)+1.)*Cl(i)/twopi
     END DO
     CLOSE(7)
 
-  END SUBROUTINE write_Cell
+  END SUBROUTINE write_Cl
 
   SUBROUTINE calculate_xi(th_tab,xi_tab,nth,l_tab,cl_tab,nl,lmax)
 
@@ -468,6 +379,7 @@ CONTAINS
 
   SUBROUTINE write_xi(th_tab,xi_tab,nth,output)
 
+    ! Write correlation functions to disk
     IMPLICIT NONE
     REAL, INTENT(IN) :: th_tab(nth), xi_tab(3,nth)
     INTEGER, INTENT(IN) :: nth
@@ -482,13 +394,12 @@ CONTAINS
 
   END SUBROUTINE write_xi
 
-  FUNCTION maxdist(proj)!,cosm)
+  FUNCTION maxdist(proj)
 
     !Calculates the maximum distance necessary for the lensing integration
     IMPLICIT NONE
     REAL :: maxdist
     TYPE(projection), INTENT(IN) :: proj(2)
-    !TYPE(cosmology), INTENT(INOUT) :: cosm
     REAL :: rmax1, rmax2
 
     !Fix the maximum redshift and distance (which may fixed at source plane)
@@ -523,10 +434,8 @@ CONTAINS
     CHARACTER(len=256), INTENT(IN) :: output
     INTEGER :: i
     REAL :: r, z
-    
-    !LOGICAL, PARAMETER :: verbose=.FALSE. ! Verbosity
 
-    !Kernel 1
+    ! Kernel
     IF(verbose_Limber) WRITE(*,*) 'WRITE_PROJECTION_KERNEL: Writing out kernel: ', TRIM(output)
     OPEN(7,file=output)
     DO i=1,proj%nX    
@@ -544,7 +453,7 @@ CONTAINS
 
   SUBROUTINE fill_lensing_kernel(ix,proj,lens,cosm)
 
-    !Fill the lensing projection kernel
+    ! Fill the lensing projection kernel
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: ix
     TYPE(lensing) :: lens
@@ -554,10 +463,12 @@ CONTAINS
     CHARACTER(len=256) :: output
     INTEGER :: i, nX
 
-    IF(ix==2 .OR. ix==10) STOP 'FILL_LENSING_KERNEL: Error, trying to do this for a non-lensing ix'
+    IF(ix==tracer_Compton_y .OR. ix==tracer_gravity_wave) THEN
+       STOP 'FILL_LENSING_KERNEL: Error, trying to do this for a non-lensing ix'
+    END IF
 
-    !Choose either n(z) or fixed z_s
-    IF(ix==3) THEN      
+    ! Choose either n(z) or fixed z_s
+    IF(ix==tracer_CMB_lensing) THEN      
        zmin=0.
        zmax=cosm%z_cmb
        IF(verbose_Limber) WRITE(*,*) 'FILL_LENSING_KERNEL: Source plane redshift:', REAL(zmax)
@@ -569,7 +480,7 @@ CONTAINS
        CALL write_nz(lens,output)
     END IF
 
-    !Get the distance range for the lensing kernel
+    ! Get the distance range for the lensing kernel
     amax=scale_factor_z(zmax)
     rmax=comoving_distance(amax,cosm)
     IF(verbose_Limber) THEN
@@ -580,14 +491,14 @@ CONTAINS
        WRITE(*,*)
     END IF
 
-    !Fill the q(r) table
+    ! Fill the q(r) table
     CALL fill_lensing_efficiency(ix,rmin_lensing,rmax,zmax,lens,cosm)
 
-    !Write the q(r) table to file
+    ! Write the q(r) table to file
     output='data/lensing_efficiency.dat'
     CALL write_lensing_efficiency(lens,cosm,output)
 
-    !Assign arrays for the projection function
+    ! Assign arrays for the projection function
     nX=nX_lensing
     proj%nx=nx
     CALL fill_array(rmin_lensing,rmax,proj%r_x,nx)
@@ -596,10 +507,10 @@ CONTAINS
     ALLOCATE(proj%x(proj%nx))
 
     DO i=1,nx
-       !Get r and fill X(r)
+       ! Get r and fill X(r)
        r=proj%r_x(i)
        proj%x(i)=lensing_kernel(r,lens,cosm)  
-       !Enforce that the kernel must not be negative (is this necessary?)
+       ! Enforce that the kernel must not be negative (is this necessary?)
        IF(proj%x(i)<0.) proj%x(i)=0.
     END DO
     IF(verbose_Limber) THEN
@@ -611,7 +522,7 @@ CONTAINS
 
   SUBROUTINE fill_lensing_efficiency(ix,rmin,rmax,zmax,lens,cosm)
 
-    !Fill the table for lensing efficiency
+    ! Fill the table for lensing efficiency
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: ix
     REAL, INTENT(IN) :: rmin, rmax, zmax
@@ -620,7 +531,7 @@ CONTAINS
     REAL :: r, z
     INTEGER :: i
 
-    !Fill the r vs. q(r) tables
+    ! Fill the r vs. q(r) tables
     lens%nq=nq_efficiency
     IF(verbose_Limber) WRITE(*,*) 'FILL_EFFICIENCY: number of points:', lens%nq
     CALL fill_array(rmin,rmax,lens%r_q,lens%nq)
@@ -631,14 +542,14 @@ CONTAINS
        r=lens%r_q(i)
        z=redshift_r(r,cosm)
        IF(r==0.) THEN
-          !To avoid division by zero
+          ! To avoid division by zero
           lens%q(i)=1.
        ELSE
-          IF(ix==3) THEN
-             !q(r) for a fixed source plane
+          IF(ix==tracer_CMB_lensing) THEN
+             ! q(r) for a fixed source plane
              lens%q(i)=f_k(rmax-r,cosm)/f_k(rmax,cosm)
           ELSE
-             !q(r) for a n(z) distribution 
+             ! q(r) for a n(z) distribution 
              lens%q(i)=integrate_q(r,z,zmax,acc_Limber,3,lens,cosm)
           END IF
        END IF
@@ -652,7 +563,7 @@ CONTAINS
 
   FUNCTION q_r(r,lens)
 
-    !Interpolation function for q(r)
+    ! Interpolation function for q(r)
     IMPLICIT NONE
     REAL :: q_r
     REAL, INTENT(IN) :: r
@@ -664,7 +575,7 @@ CONTAINS
 
   SUBROUTINE write_lensing_efficiency(lens,cosm,output)
 
-    !Write lensing efficiency q(r) function to a file
+    ! Write lensing efficiency q(r) function to a file
     IMPLICIT NONE
     TYPE(lensing), INTENT(INOUT) :: lens
     TYPE(cosmology), INTENT(INOUT) :: cosm
@@ -688,7 +599,7 @@ CONTAINS
 
   FUNCTION lensing_kernel(r,lens,cosm)
 
-    !The lensing projection kernel
+    ! The lensing projection kernel
     IMPLICIT NONE
     REAL :: lensing_kernel
     REAL, INTENT(IN) :: r
@@ -696,13 +607,13 @@ CONTAINS
     TYPE(cosmology), INTENT(INOUT) :: cosm
     REAL :: z, q
 
-    !Get z(r)
+    ! Get z(r)
     z=redshift_r(r,cosm)
 
-    !Get the lensing efficiency
+    ! Get the lensing efficiency
     q=q_r(r,lens)
 
-    !This is then the projection kernel (X_kappa)
+    ! This is then the projection kernel (X_kappa)
     lensing_kernel=(1.+z)*f_k(r,cosm)*q
     lensing_kernel=lensing_kernel*1.5*cosm%om_m/(Hdist**2)
 
@@ -736,9 +647,9 @@ CONTAINS
     ! Now fill the kernels
     DO i=1,nX
        r=proj%r_x(i)
-       IF(ix==2) THEN
+       IF(ix==tracer_Compton_y) THEN
           proj%x(i)=y_kernel(r,cosm)
-       ELSE IF(ix==10) THEN
+       ELSE IF(ix==tracer_gravity_wave) THEN
           proj%x(i)=gwave_kernel(r,cosm)
        ELSE
           STOP 'FILL_KERNEL: Error, ix not specified correctly'
@@ -765,8 +676,8 @@ CONTAINS
 
     ! Make the kernel and do some unit conversions
     y_kernel=yfac                     ! yfac = sigma_T / m_e c^2 [kg^-1 s^2]
-    y_kernel=y_kernel*Mpc/cosm%h      ! NEW: Add Mpc/h units from the dr in the integral (h is new)
-    y_kernel=y_kernel/a**2            ! NEW: These come from 'a^-3' for pressure multiplied by 'a' for comoving distance
+    y_kernel=y_kernel*Mpc/cosm%h      ! Add Mpc/h units from the dr in the integral (h is new)
+    y_kernel=y_kernel/a**2            ! These come from 'a^-3' for pressure multiplied by 'a' for comoving distance
     y_kernel=y_kernel*eV*(0.01)**(-3) ! Convert units of pressure spectrum from [eV/cm^3] to [J/m^3]
 
   END FUNCTION y_kernel
@@ -797,7 +708,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: ix
     TYPE(lensing), INTENT(INOUT) :: lens
 
-    IF(ix==1 .OR. ix==4) THEN
+    IF(ix==tracer_RCSLenS .OR. ix==tracer_CFHTLenS) THEN
        CALL fill_analytic_nz_table(ix,lens)
     ELSE
        CALL fill_nz_table(ix,lens)
@@ -844,17 +755,17 @@ CONTAINS
     CHARACTER(len=256) :: input
 
     ! Get file name
-    IF(ix==5) THEN
+    IF(ix==tracer_KiDS) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS_z0.1-0.9_MEAD.txt'
-    ELSE IF(ix==6) THEN
+    ELSE IF(ix==tracer_KiDS_bin1) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS_z0.1-0.3.txt'
-    ELSE IF(ix==7) THEN
+    ELSE IF(ix==tracer_KiDS_bin2) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS_z0.3-0.5.txt'
-    ELSE IF(ix==8) THEN
+    ELSE IF(ix==tracer_KiDS_bin3) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS_z0.5-0.7.txt'
-    ELSE IF(ix==9) THEN
+    ELSE IF(ix==tracer_KiDS_bin4) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS_z0.7-0.9.txt'
-    ELSE IF(ix==11 .OR. ix==12 .OR. ix==13 .OR. ix==14) THEN
+    ELSE IF(ix==tracer_KiDS_450 .OR. ix==tracer_KiDS_450_bin1 .OR. ix==tracer_KiDS_450_bin2 .OR. ix==tracer_KiDS_450_highz) THEN
        input='/Users/Mead/Physics/KiDS/nz/KiDS-450_fat_bin_nofz.txt'
     ELSE
        STOP 'GET_NZ: ix not specified correctly'
@@ -870,15 +781,15 @@ CONTAINS
     ! Read in n(z) table
     OPEN(7,file=input)
     DO i=1,lens%nnz
-       IF(ix==5 .OR. ix==6 .OR. ix==7 .OR. ix==8 .OR. ix==9) THEN
+       IF(ix==tracer_KiDS .OR. ix==tracer_KiDS_bin1 .OR. ix==tracer_KiDS_bin2 .OR. ix==tracer_KiDS_bin3 .OR. ix==tracer_KiDS_bin4) THEN
           READ(7,*) lens%z_nz(i), lens%nz(i) ! Second column
-       ELSE IF(ix==11) THEN
+       ELSE IF(ix==tracer_KiDS_450) THEN
           READ(7,*) lens%z_nz(i), lens%nz(i) ! Second column (z = 0.1 -> 0.9)
-       ELSE IF(ix==12) THEN
+       ELSE IF(ix==tracer_KiDS_450_bin1) THEN
           READ(7,*) lens%z_nz(i), spam, lens%nz(i) ! Third column (z = 0.1 -> 0.5)
-       ELSE IF(ix==13) THEN
+       ELSE IF(ix==tracer_KiDS_450_bin2) THEN
           READ(7,*) lens%z_nz(i), spam, spam, lens%nz(i) ! Fourth column (z = 0.5 -> 0.9)
-       ELSE IF(ix==14) THEN
+       ELSE IF(ix==tracer_KiDS_450_highz) THEN
           READ(7,*) lens%z_nz(i), spam, spam, spam, lens%nz(i) ! Fifth column (z = 0.9 -> 3.5)
        ELSE
           STOP 'GET_NZ: ix not specified correctly'
@@ -888,7 +799,7 @@ CONTAINS
 
     ! Do this because the KiDS-450 files contain the lower left edge of histograms
     ! The bin sizes are 0.05 in z, so need to add 0.05/2 = 0.025
-    IF(ix==11 .OR. ix==12 .OR. ix==13 .OR. ix==14) THEN       
+    IF(ix==tracer_KiDS_450 .OR. ix==tracer_KiDS_450_bin1 .OR. ix==tracer_KiDS_450_bin2 .OR. ix==tracer_KiDS_450_highz) THEN       
        lens%z_nz=lens%z_nz+0.025
     END IF
 
@@ -905,7 +816,7 @@ CONTAINS
     REAL :: n1, n2, n3
     REAL :: z1, z2
 
-    IF(ix==1) THEN
+    IF(ix==tracer_RCSLenS) THEN
        ! RCSLenS
        a=2.94
        b=-0.44
@@ -920,7 +831,7 @@ CONTAINS
        n2=d*z*exp(-(z-e)**2/f**2)
        n3=g*z*exp(-(z-h)**2/i**2)
        nz_lensing=n1+n2+n3
-    ELSE IF(ix==4) THEN
+    ELSE IF(ix==tracer_CFHTLenS) THEN
        ! CFHTLenS
        z1=0.7 ! Not a free parameter in Van Waerbeke et al. (2013)
        z2=1.2 ! Not a free parameter in Van Waerbeke et al. (2013)
@@ -1211,8 +1122,8 @@ CONTAINS
     ! z - z/H(z)
     ! r - r
     OPEN(7,file=TRIM(outfile))
-    DO i=1,n_Limber
-       r=progression(r1,r2,i,n_Limber)
+    DO i=1,n_cont
+       r=progression(r1,r2,i,n_cont)
        IF(r==0.) THEN
           ! Avoid trouble for r = 0 exactly
           ! Maybe should do some sort of awful Taylor expansion here
@@ -1239,12 +1150,20 @@ CONTAINS
     REAL, INTENT(IN) :: k, a ! Input desired values of k and a
     INTEGER, INTENT(IN) :: nk, na ! Number of entried of k and a in arrays
     REAL, INTENT(IN) :: logktab(nk), logatab(na), logptab(nk,na) ! Arrays of log(k), log(a) and log(P(k,a))
+    REAL :: logk, loga
+
+    logk=log(k)
+    loga=log(a)
 
     ! Get the power
-    IF(k<kmin_pka .OR. k>kmax_pka) THEN
+    IF((logk<logktab(1) .OR. logk>logktab(nk)) .AND. (loga<logatab(1) .OR. loga>logatab(na))) THEN
+       find_pka=0.
+    ELSE IF(k<kmin_pka .OR. k>kmax_pka) THEN
+       find_pka=0.
+    ELSE IF(a<amin_pka .OR. a>amax_pka) THEN
        find_pka=0.
     ELSE
-       find_pka=exp(find2d(log(k),logktab,log(a),logatab,logptab,nk,na,3,3,1))
+       find_pka=exp(find2d(logk,logktab,loga,logatab,logptab,nk,na,3,3,1))
     END IF
 
   END FUNCTION find_pka

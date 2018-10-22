@@ -25,12 +25,12 @@ set format y '10^{%T}'
 #File to compare against
 if(!exists('com')){com='benchmarks/power_HMcode_Mead.txt'}
 
-new='data/power_full.dat'
-p1h='data/power_1halo.dat'
-p2h='data/power_2halo.dat'
+new='data/power_hm.dat'
+p1h='data/power_1h.dat'
+p2h='data/power_2h.dat'
 
 print ''
-print 'Comparing power_full.dat to: ', com
+print 'Comparing power_hm.dat to: ', com
 print 'Set variable *com* as comparison file'
 print ''
 

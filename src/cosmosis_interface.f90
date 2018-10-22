@@ -3,26 +3,82 @@ module HMx_setup
   use HMx, only: halomod
   implicit none
 
-  type HMx_setup_config
-     real(8) :: kmin, kmax
-     integer :: nk
+  type :: field
+    character(len=256) :: name
+    integer :: id
+  end type field
 
-     real(8) :: zmin, zmax, amin, amax, mmin, mmax
-     integer :: nz
+  type :: HMx_setup_config    
+    real(8) :: kmin, kmax
+    integer :: nk
 
-     character(len=256) :: p_lin_source, hm_mode
+    real(8) :: zmin, zmax, amin, amax, mmin, mmax
+    integer :: nz
 
-     integer :: ihm, iw, icosmo
-     logical :: response, dimensionless_power_spectrum
+    character(len=256) :: p_lin_source, hm_mode, matter_matter_section_name
 
-     integer, dimension(2) :: fields
+    integer :: ihm, iw, icosmo
+    logical :: response, dimensionless_power_spectrum
+    
+    type(field), dimension(:), allocatable :: fields
+    integer, dimension(:), allocatable :: itype
+    integer :: nt
 
-     type(cosmology) :: cosm
-     type(halomod) :: hm
+    type(cosmology) :: cosm
+    type(halomod) :: hm
 
-     real(8), dimension(:), allocatable :: k, a
-     logical :: verbose
+    real(8), dimension(:), allocatable :: k, a
+    logical :: verbose
   end type HMx_setup_config
+
+  contains
+    function read_fields(string) result(fields)
+      character(len=512), intent(in) :: string
+      type(field), dimension(:), allocatable:: fields
+
+      integer, parameter :: n_field_max = 10
+      type(field), dimension(n_field_max) :: fields_tmp
+      character(len=512) :: rest, field_str
+      integer :: i, id, idx
+
+      rest = trim(string)
+      i = 1
+      do while (trim(rest) /= "" .and. i < n_field_max)
+        idx = scan(trim(rest), " ", back=.true.)
+        if(idx <= 1) then
+          field_str = rest
+          rest = ""
+        else
+          field_str = rest(idx+1:)
+          rest = rest(:idx)
+        end if
+
+        if(trim(field_str) == "matter") then
+          fields_tmp(i)%name = "matter"
+          fields_tmp(i)%id = 0
+        else if(trim(field_str) == "dm") then
+          fields_tmp(i)%name = "dm"
+          fields_tmp(i)%id = 1
+        else if(trim(field_str) == "gas") then
+          fields_tmp(i)%name = "gas"
+          fields_tmp(i)%id = 2
+        else if(trim(field_str) == "stars") then
+          fields_tmp(i)%name = "stars"
+          fields_tmp(i)%id = 3
+        else if(trim(field_str) == "pressure") then
+          fields_tmp(i)%name = "pressure"
+          fields_tmp(i)%id = 6
+        else
+          write(*,*) "Field ", trim(field_str), " is not supported."
+        end if
+
+        i = i + 1
+      end do
+
+      allocate(fields, source=fields_tmp(:i-1))
+      fields = [(fields(i), i=size(fields),1,-1)]
+    end function read_fields
+
 end module HMx_setup
 
 function setup(options) result(result)
@@ -39,7 +95,8 @@ function setup(options) result(result)
   ! Variables
   integer(cosmosis_status) :: status
   type(HMx_setup_config), pointer :: HMx_config
-  integer :: verbose, response, icosmo, dimensionless_power_spectrum
+  integer :: i, verbose, response, icosmo, dimensionless_power_spectrum
+  character(len=512) :: field_list_string
 
   allocate(HMx_config)
 
@@ -71,14 +128,17 @@ function setup(options) result(result)
      stop
   end if
 
-  if(datablock_get(options, option_section, "field1", HMx_config%fields(1)) /= 0) then
-     write(*,*) "Could not load field1:", status
-     stop
-  end if
-  if(datablock_get(options, option_section, "field2", HMx_config%fields(2)) /= 0) then
-     write(*,*) "Could not load field2."
-     stop
-  end if
+  status = datablock_get_string(options, option_section, "fields", field_list_string)
+  HMx_config%fields = read_fields(field_list_string)
+  HMx_config%nt = size(HMx_config%fields)
+  allocate(HMx_config%itype(HMx_config%nt))
+  HMx_config%itype = [(HMx_config%fields(i)%id, i=1,HMx_config%nt)]
+
+  write(*,*) "Read ", HMx_config%nt, " fields."
+  do i=1,HMx_config%nt
+    write(*,*) HMx_config%fields(i)%name
+  end do
+  status = datablock_get_string_default(options, option_section, "matter_matter_section_name", "", HMx_config%matter_matter_section_name)
 
   status = datablock_get_double_default(options, option_section, "mmin", 1e7, HMx_config%mmin)
   status = datablock_get_double_default(options, option_section, "mmax", 1e17, HMx_config%mmax)
@@ -93,6 +153,9 @@ function setup(options) result(result)
     HMx_config%ihm = 1
   else if(trim(HMx_config%hm_mode) == "vanilla_halo_model") then
     HMx_config%ihm = 3
+  else
+    write(*,*) "hm_mode = ", trim(HMx_config%hm_mode), " not supported."
+    stop
   end if
   ! Get ihm value directly if supplied
   status = datablock_get_int_default(options, option_section, "ihm", HMx_config%ihm, HMx_config%ihm)
@@ -108,6 +171,9 @@ function setup(options) result(result)
   else if(trim(HMx_config%p_lin_source) == "eh") then
     ! Use Eisenstein & Hu transfer function
     HMx_config%cosm%itk = 1
+  else
+    write(*,*) "p_lin_source = ", trim(HMx_config%p_lin_source), " not supported."
+    stop
   end if
 
   status = datablock_get_int_default(options, option_section, "de_model", 1, HMx_config%cosm%iw)
@@ -145,11 +211,11 @@ function execute(block, config) result(status)
   integer(cosmosis_status) :: status
   !Variables
   type(HMx_setup_config), pointer :: HMx_config
-  integer :: i
-  integer, dimension(:) :: fields(2)
+  integer :: i, j
   real(8) :: log10_eps, log10_M0, log10_whim, log10_Theat
   real(8), dimension(:), allocatable :: k_plin, z_plin
-  real(8), dimension(:,:), allocatable :: pk_lin, pk_1h, pk_2h, pk_full
+  real(8), dimension(:,:), allocatable :: pk_lin
+  real(8), dimension(:,:,:,:), allocatable :: pk_1h, pk_2h, pk_full
   character(len=256) :: pk_section
 
   call c_f_pointer(config, HMx_config)
@@ -186,23 +252,23 @@ function execute(block, config) result(status)
   status = datablock_get_double(block, cosmological_parameters_section, "inv_m_wdm", HMx_config%cosm%inv_m_wdm)
 
   ! HMCode parameters
-  status = datablock_get_double(block, cosmological_parameters_section, "Dv0", HMx_config%hm%Dv0)
-  status = datablock_get_double(block, cosmological_parameters_section, "Dv1", HMx_config%hm%Dv1)
-  status = datablock_get_double(block, cosmological_parameters_section, "dc0", HMx_config%hm%dc0)
-  status = datablock_get_double(block, cosmological_parameters_section, "dc1", HMx_config%hm%dc1)
-  status = datablock_get_double(block, cosmological_parameters_section, "eta0", HMx_config%hm%eta0)
-  status = datablock_get_double(block, cosmological_parameters_section, "eta1", HMx_config%hm%eta1)
-  status = datablock_get_double(block, cosmological_parameters_section, "f0", HMx_config%hm%f0)
-  status = datablock_get_double(block, cosmological_parameters_section, "f1", HMx_config%hm%f1)
-  status = datablock_get_double(block, cosmological_parameters_section, "ks", HMx_config%hm%ks)
-  status = datablock_get_double(block, cosmological_parameters_section, "A", HMx_config%hm%A)
-  status = datablock_get_double(block, cosmological_parameters_section, "alp0", HMx_config%hm%alp0)
-  status = datablock_get_double(block, cosmological_parameters_section, "alp1", HMx_config%hm%alp1)
+  status = datablock_get_double(block, halo_model_parameters_section, "Dv0", HMx_config%hm%Dv0)
+  status = datablock_get_double(block, halo_model_parameters_section, "Dv1", HMx_config%hm%Dv1)
+  status = datablock_get_double(block, halo_model_parameters_section, "dc0", HMx_config%hm%dc0)
+  status = datablock_get_double(block, halo_model_parameters_section, "dc1", HMx_config%hm%dc1)
+  status = datablock_get_double(block, halo_model_parameters_section, "eta0", HMx_config%hm%eta0)
+  status = datablock_get_double(block, halo_model_parameters_section, "eta1", HMx_config%hm%eta1)
+  status = datablock_get_double(block, halo_model_parameters_section, "f0", HMx_config%hm%f0)
+  status = datablock_get_double(block, halo_model_parameters_section, "f1", HMx_config%hm%f1)
+  status = datablock_get_double(block, halo_model_parameters_section, "ks", HMx_config%hm%ks)
+  status = datablock_get_double(block, halo_model_parameters_section, "As", HMx_config%hm%As)
+  status = datablock_get_double(block, halo_model_parameters_section, "alp0", HMx_config%hm%alp0)
+  status = datablock_get_double(block, halo_model_parameters_section, "alp1", HMx_config%hm%alp1)
 
   ! HOD parameters
-  status = datablock_get_double(block, cosmological_parameters_section, "m_gal", HMx_config%hm%mgal)
-  status = datablock_get_double(block, cosmological_parameters_section, "HImin", HMx_config%hm%HImin)
-  status = datablock_get_double(block, cosmological_parameters_section, "HImax", HMx_config%hm%HImax)
+  status = datablock_get_double(block, halo_model_parameters_section, "m_gal", HMx_config%hm%mgal)
+  status = datablock_get_double(block, halo_model_parameters_section, "HImin", HMx_config%hm%HImin)
+  status = datablock_get_double(block, halo_model_parameters_section, "HImax", HMx_config%hm%HImax)
   
   ! HMx baryon parameters
   status = datablock_get_double(block, halo_model_parameters_section, "alpha", HMx_config%hm%alpha)
@@ -257,7 +323,7 @@ function execute(block, config) result(status)
      WRITE(*,*) "fcold    :", HMx_config%hm%fcold
   end if
 
-  call calculate_HMx(HMx_config%fields, &
+  call calculate_HMx(HMx_config%itype, HMx_config%nt, &
                      HMx_config%mmin, HMx_config%mmax, &
                      HMx_config%k, HMx_config%nk, &
                      HMx_config%a, HMx_config%nz, &
@@ -265,44 +331,25 @@ function execute(block, config) result(status)
                      HMx_config%hm, HMx_config%cosm, &
                      HMx_config%verbose, HMx_config%response)
 
-  ! Write power spectra to relevant section
-  if(all(HMx_config%fields == 0)) then
-     pk_section = "matter_matter_power_spectrum"
-  else if(all(HMx_config%fields == 1)) then
-     pk_section = "dm_dm_power_spectrum"
-  else if(all(HMx_config%fields == 2)) then
-     pk_section = "gas_gas_power_spectrum"
-  else if(all(HMx_config%fields == 3)) then
-     pk_section = "stars_stars_power_spectrum"
-  else if(all(HMx_config%fields == 6)) then
-     pk_section = "pressure_pressure_power_spectrum"
-  else if(any(HMx_config%fields == 0) .and. any(HMx_config%fields == 1)) then
-     pk_section = "matter_dm_power_spectrum"
-  else if(any(HMx_config%fields == 0) .and. any(HMx_config%fields == 2)) then
-     pk_section = "matter_gas_power_spectrum"
-  else if(any(HMx_config%fields == 0) .and. any(HMx_config%fields == 3)) then
-     pk_section = "matter_stars_power_spectrum"
-  else if(any(HMx_config%fields == 0) .and. any(HMx_config%fields == 6)) then
-     pk_section = "matter_pressure_power_spectrum"
-  else if(any(HMx_config%fields == 1) .and. any(HMx_config%fields == 2)) then
-      pk_section = "dm_gas_power_spectrum"
-  else
-     write(*,*) "Unsupported combination of fields:", HMx_config%fields
-     stop
-  end if
-
   if(.not. HMx_config%dimensionless_power_spectrum) then
     ! Remove the k^3/2pi^2 factor
-    forall (i=1:HMx_config%nk) pk_full(i,:) = pk_full(i,:)*2*pi**2/HMx_config%k(i)**3
+    forall (i=1:HMx_config%nk) pk_full(:,:,i,:) = pk_full(:,:,i,:)*2*pi**2/HMx_config%k(i)**3
   endif
 
-  status = datablock_put_double_grid(block, pk_section, &
-       "k_h", HMx_config%k, &
-       "z", 1.0/HMx_config%a-1.0, &
-       "p_k", pk_full)
+  do i=1,HMx_config%nt
+    do j=1,i
+      pk_section = trim(HMx_config%fields(i)%name)//"_"//trim(HMx_config%fields(j)%name)//"_power_spectrum"
+      if(i==1 .and. j==1 .and. trim(HMx_config%matter_matter_section_name) /= "") then
+        pk_section = HMx_config%matter_matter_section_name
+      end if
 
-  !write(*,*) pk_section
-  !write(*,*) pk_full(:,1)
+      status = datablock_put_double_grid(block, pk_section, &
+                                         "k_h", HMx_config%k, &
+                                         "z", 1.0/HMx_config%a-1.0, &
+                                         "p_k", pk_full(i,j,:,:))
+    end do
+  end do
+
   if(status /= 0) then
      write(*,*) "Failed to write NL power spectrum to datablock."
   end if

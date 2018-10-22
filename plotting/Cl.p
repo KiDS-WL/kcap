@@ -8,10 +8,10 @@ if(print==0){set term aqua dashed font ',14'; ell='l'}
 if(print==1){set term post enh col fontfile cmmi; set output 'Cl.eps'; ell='{/cmmi10 \140}'}
 
 #Files to plot
-linear='data/cl_linear.dat'
-twohalo='data/cl_2halo.dat'
-onehalo='data/cl_1halo.dat'
-full='data/cl_full.dat'
+cl_li='data/cl_linear.dat'
+cl_2h='data/cl_2h.dat'
+cl_1h='data/cl_1h.dat'
+cl_hm='data/cl_hm.dat'
 
 #Do linear or not
 ilin=0
@@ -86,11 +86,9 @@ if(iaxes==7){set yrange [1e-14:1e-11]}
 
 set key top left
 
-plot twohalo u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 2 ti '2-halo term',\
-     onehalo u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 3 ti '1-halo term',\
-     full    u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 1 ti 'Full'#,\
-     #f(x)                            w l lw 2 lc -1    dt 2 ti tits(ns),\
-     #linear  u 1:(column(c)*A*$1**n) w l lw 3 lc -1    dt 1 ti 'Linear'
+plot cl_2h u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 2 ti '2-halo term',\
+     cl_1h u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 3 ti '1-halo term',\
+     cl_hm u 1:(column(c)*A*$1**n) w l lw 3 lc 'red' dt 1 ti 'Halo model'
 
 if(ifunc==1){replot f(x) w l lw 2 lc -1 dt 2 ti tits(ns)}
 if(ilin==1) {replot linear  u 1:(column(c)*A*$1**n) w l lw 3 lc -1 dt 1 ti 'Linear'}
@@ -106,10 +104,10 @@ unset log y
 set yrange [0:1]
 set format y
 set mytics
-if(print==0) set ylabel 'C_{n,halo}(l) / C_{full}(l)'
-if(print==1) set ylabel 'C_{n,halo}('.ell.') / C_{full}('.ell.')'
+if(print==0) set ylabel 'C_{n,halo}(l) / C_{hm}(l)'
+if(print==1) set ylabel 'C_{n,halo}('.ell.') / C_{hm}('.ell.')'
 
-plot '<paste '.twohalo.' '.full.'' u 1:($3/$6) w l lw 3 lc 'red' dt 2 noti,\
-     '<paste '.onehalo.' '.full.'' u 1:($3/$6) w l lw 3 lc 'red' dt 3 noti
+plot '<paste '.cl_2h.' '.cl_hm.'' u 1:($3/$6) w l lw 3 lc 'red' dt 2 noti,\
+     '<paste '.cl_1h.' '.cl_hm.'' u 1:($3/$6) w l lw 3 lc 'red' dt 3 noti
 
 unset multiplot

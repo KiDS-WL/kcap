@@ -13,17 +13,17 @@ print ''
 if(!exists('z')){z=0.0}
 
 #Radius stuff
-if(thing eq 'radius') {tits(z)=sprintf('Radius; z = %1.1f',z); file(z)=sprintf('diagnostics/radius_z%1.1f.dat',z)}
+if(thing eq 'radius') {tits(z)=sprintf('Radius; z = %1.1f',z); file(z)=sprintf('data/radius_z%1.1f.dat',z)}
 if(thing eq 'radius') {vmin=5e-3; vmax=1e1; xlab='R_v / (h^{-1} Mpc)'; ylab='R_i / (h^{-1} Mpc)'; ylab2='R_i / R_v'}
 if(thing eq 'radius') {outfile='halo_radius.eps'; set format x '10^{%T}'; set format y '10^{%T}'}
 
 #Mass stuff
-if(thing eq 'mass') {tits(z)=sprintf('Mass; z = %1.1f',z); file(z)=sprintf('diagnostics/mass_z%1.1f.dat',z)}
+if(thing eq 'mass') {tits(z)=sprintf('Mass; z = %1.1f',z); file(z)=sprintf('data/mass_z%1.1f.dat',z)}
 if(thing eq 'mass') {vmin=1e8; vmax=1e17; xlab='M_v / (h^{-1} M_{sun})'; ylab='M_i / (h^{-1} M_{sun})'; ylab2='M_i / M_v'}
 if(thing eq 'mass') {outfile='halo_mass.eps'; set format x '10^{%T}'; set format y '10^{%T}'}
 
 #Concentration stuff
-if(thing eq 'concentration') {tits(z)=sprintf('Concentration; z = %1.1f',z); file(z)=sprintf('diagnostics/concentration_z%1.1f.dat',z)}
+if(thing eq 'concentration') {tits(z)=sprintf('Concentration; z = %1.1f',z); file(z)=sprintf('data/concentration_z%1.1f.dat',z)}
 if(thing eq 'concentration') {vmin=2; vmax=50; xlab='c_v'; ylab='c_i'; ylab2='c_i / c_v'}
 if(thing eq 'concentration') {outfile='halo_concentration.eps'; set format x; set format y}
 

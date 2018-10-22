@@ -4,6 +4,17 @@ MODULE special_functions
 
 CONTAINS
 
+  INTEGER FUNCTION triangle_number(n)
+
+    ! Calculates the nth triangle number
+    ! T(1) = 1; T(2) = 3; T(3) = 6; T(4) = 10; ...
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: n
+
+    triangle_number=n*(n+1)/2
+
+  END FUNCTION triangle_number
+
   REAL FUNCTION sigmoid_tanh(x)
 
     ! A function that smoothly transitions from 0 to 1 around x
@@ -87,11 +98,15 @@ CONTAINS
     !The normlaised Fourier Transform of a spherical top-hat
     IMPLICIT NONE
     REAL, INTENT(IN) :: x
-    REAL, PARAMETER :: dx=1e-3
+    
+    REAL, PARAMETER :: dx=1e-3 ! Taylor expansion for |x|<dx
+    REAL, PARAMETER :: mx=1e12 ! Set to zero to avoid problems for |x|>mx
 
     !Taylor expansion used for low x to avoid cancellation problems
     IF(x==0.) THEN
        wk_tophat=1.
+    ELSE IF(ABS(x)>mx) THEN
+       wk_tophat=0.
     ELSE IF(ABS(x)<dx) THEN
        wk_tophat=1.-x**2/10.
     ELSE
