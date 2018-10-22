@@ -3,6 +3,8 @@ dist/
 examples/output
 *.egg-info
 
+__pycache__
+
 *.o
 *.so
 *.so.dSYM
