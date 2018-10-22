@@ -4,7 +4,7 @@ from cosmosis.datablock import option_section
 from cosmosis.datablock.cosmosis_py import errors
 
 def setup(options):
-    constant_c_offset = options.get_logical_default(option_section, "constant_c_offset", "T")
+    constant_c_offset = options.get_bool(option_section, "constant_c_offset", default=True)
 
     try:
         filename = options.get_string(option_section, "xi_pm_c_file")
@@ -32,9 +32,9 @@ def execute(block, config):
         A_c = 0.0
 
     for i in range(n_bin):
-        for j in range(i):
-            block["shear_xi", f"xiplus_{i+1}_{j+1}"] += A_c**2 * xi_p_c + delta_c
-            block["shear_xi", f"ximinus_{i+1}_{j+1}"] += A_c**2 * xi_m_c + delta_c
+        for j in range(i+1):
+            block["shear_c_bias", f"xiplus_{i+1}_{j+1}"] = A_c**2 * xi_p_c + delta_c
+            block["shear_c_bias", f"ximinus_{i+1}_{j+1}"] = A_c**2 * xi_m_c + delta_c
 
     return 0
 

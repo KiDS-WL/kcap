@@ -63,6 +63,16 @@ def setup(options):
     
     inv_cov = np.linalg.inv(cov)
 
+    constant_c_offset = options.get_bool(option_section, "constant_c_offset", default=True)
+    try:
+        filename = options.get_string(option_section, "xi_pm_c_file")
+        xi_p_c, xi_m_c = np.loadtxt(filename, unpack=True, usecols=[3,4])
+        xi_p_c = np.delete(xi_p_c, cut_xi_plus_idx)
+        xi_m_c = np.delete(xi_m_c, cut_xi_minus_idx)
+    except errors.BlockNameNotFound:
+        xi_p_c = None
+        xi_m_c = None
+
     data_vectors = {}
     for i in range(n_bin):
         data_vectors[i] = {}
@@ -91,12 +101,14 @@ def setup(options):
     theta_xi_plus = np.delete(theta_xi_plus, cut_xi_plus_idx)
     theta_xi_minus = np.delete(theta_xi_minus, cut_xi_minus_idx)
 
+    add_c_term = options.get_bool(option_section, "add_c_term", True)
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
-    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, like_name, keep_theory_vector
+    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, \
+           constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector
 
 def execute(block, config):
-    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, like_name, keep_theory_vector = config
+    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
     
     n_bin = block["shear_xi", "nbin_a"]
 
@@ -118,6 +130,13 @@ def execute(block, config):
                 theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
                 intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
                 theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
+
+                if constant_c_offset:
+                    theory_xi_plus += block["shear_c_bias", "delta_c"]
+                    theory_xi_minus += block["shear_c_bias", "delta_c"]
+                if xi_p_c is not None:
+                    theory_xi_plus += block["shear_c_bias", "A_c"]**2 * xi_p_c
+                    theory_xi_minus += block["shear_c_bias", "A_c"]**2 * xi_m_c
 
                 data_xi_plus_vector.append(data_xi_plus)
                 data_xi_minus_vector.append(data_xi_minus)
@@ -141,6 +160,13 @@ def execute(block, config):
                 theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
                 intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
                 theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
+
+                if constant_c_offset:
+                    theory_xi_plus += block["shear_c_bias", "delta_c"]
+                    theory_xi_minus += block["shear_c_bias", "delta_c"]
+                if xi_p_c is not None:
+                    theory_xi_plus += block["shear_c_bias", "A_c"]**2 * xi_p_c
+                    theory_xi_minus += block["shear_c_bias", "A_c"]**2 * xi_m_c
 
                 data_xi_vector.append(np.concatenate([data_xi_plus, data_xi_minus]))
                 theory_xi_vector.append(np.concatenate([theory_xi_plus, theory_xi_minus]))
