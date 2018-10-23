@@ -101,7 +101,6 @@ def setup(options):
     theta_xi_plus = np.delete(theta_xi_plus, cut_xi_plus_idx)
     theta_xi_minus = np.delete(theta_xi_minus, cut_xi_minus_idx)
 
-    add_c_term = options.get_bool(option_section, "add_c_term", True)
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
     return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, \
@@ -162,8 +161,8 @@ def execute(block, config):
                 theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
 
                 if constant_c_offset:
-                    theory_xi_plus += block["shear_c_bias", "delta_c"]
-                    theory_xi_minus += block["shear_c_bias", "delta_c"]
+                    theory_xi_plus += block["shear_c_bias", "delta_c"]**2
+                    theory_xi_minus += block["shear_c_bias", "delta_c"]**2
                 if xi_p_c is not None:
                     theory_xi_plus += block["shear_c_bias", "A_c"]**2 * xi_p_c
                     theory_xi_minus += block["shear_c_bias", "A_c"]**2 * xi_m_c
