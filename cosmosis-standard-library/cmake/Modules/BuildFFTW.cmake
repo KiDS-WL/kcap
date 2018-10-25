@@ -26,7 +26,11 @@ if(NOT FFTW_FOUND )
     set(FFTW_INCLUDES ${CMAKE_BINARY_DIR}/extern/include/)
     set(FFTW_LIBRARIES -lfftw3)
 else()
+<<<<<<< HEAD
     if(NOT TARGET FFTW)
+=======
+    if(not TARGET FFTW)
+>>>>>>> c191e86b925f99b6d54dc06155fd185f4df423a7
         add_custom_target(FFTW)
     endif()
 endif()
