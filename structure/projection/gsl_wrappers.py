@@ -8,6 +8,7 @@ def find_gsl():
         libfile = ctypes.util.find_library("gsl")
         cblas_libfile = ctypes.util.find_library("gslcblas")
     else:
+        gsl_lib_dir = os.environ["GSL_LIB"]
         libfile_so = os.path.join(gsl_lib_dir, "libgsl.so")
         libfile_dylib = os.path.join(gsl_lib_dir, "libgsl.dylib")
         if os.path.exists(libfile_so):

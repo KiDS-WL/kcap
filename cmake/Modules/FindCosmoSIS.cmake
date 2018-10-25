@@ -58,7 +58,7 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
 
 if(NOT _COSMOSIS_SEARCH_SUCCESS MATCHES 0)
     if(CosmoSIS_FIND_REQUIRED)
-        message(STATUS "CosmoSIS not found. Try installing with pip install git+https://bitbucket.org/tilmantroester/cosmosis.git@standalone_setup_fixes#egg=cosmosis-standalone")
+        message(STATUS "CosmoSIS not found. Try installing with pip install git+https://bitbucket.org/tilmantroester/cosmosis.git@kcap#egg=cosmosis-standalone")
         message(FATAL_ERROR
                 "CosmoSIS import failure:\n${_COSMOSIS_ERROR_VALUE}")
     else()
