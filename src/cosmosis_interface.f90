@@ -1,6 +1,6 @@
 module HMx_setup
   use cosmology_functions, only: cosmology
-  use HMx, only: halomod
+  use HMx, only: halomod, field_dmonly, field_matter, field_cdm, field_gas, field_star, field_electron_pressure
   implicit none
 
   type :: field
@@ -55,19 +55,22 @@ module HMx_setup
 
         if(trim(field_str) == "matter") then
           fields_tmp(i)%name = "matter"
-          fields_tmp(i)%id = 0
+          fields_tmp(i)%id = field_matter
         else if(trim(field_str) == "dm") then
           fields_tmp(i)%name = "dm"
-          fields_tmp(i)%id = 1
+          fields_tmp(i)%id = field_cdm
         else if(trim(field_str) == "gas") then
           fields_tmp(i)%name = "gas"
-          fields_tmp(i)%id = 2
+          fields_tmp(i)%id = field_gas
         else if(trim(field_str) == "stars") then
           fields_tmp(i)%name = "stars"
-          fields_tmp(i)%id = 3
+          fields_tmp(i)%id = field_star
         else if(trim(field_str) == "pressure") then
           fields_tmp(i)%name = "pressure"
-          fields_tmp(i)%id = 6
+          fields_tmp(i)%id = field_electron_pressure
+        else if(trim(field_str) == "dmonly") then
+          fields_tmp(i)%name = "dmonly"
+          fields_tmp(i)%id = field_dmonly
         else
           write(*,*) "Field ", trim(field_str), " is not supported."
         end if
@@ -86,6 +89,7 @@ function setup(options) result(result)
   use HMx
   use array_operations
   use cosmosis_modules
+  use cosmosis_section_names
   implicit none
 
   ! Arguments
@@ -99,6 +103,9 @@ function setup(options) result(result)
   character(len=512) :: field_list_string
 
   allocate(HMx_config)
+
+  status = datablock_get_int_default(options, option_section, "verbose", 1, verbose)
+  HMx_config%verbose = verbose > 0
 
   if(datablock_get(options, option_section, "nz", HMx_config%nz) /= 0) then
      write(*,*) "Could not load nz."
@@ -128,22 +135,22 @@ function setup(options) result(result)
      stop
   end if
 
-  status = datablock_get_string(options, option_section, "fields", field_list_string)
+  status = datablock_get_string_default(options, option_section, "fields", "dmonly", field_list_string)
   HMx_config%fields = read_fields(field_list_string)
   HMx_config%nt = size(HMx_config%fields)
   allocate(HMx_config%itype(HMx_config%nt))
   HMx_config%itype = [(HMx_config%fields(i)%id, i=1,HMx_config%nt)]
 
-  write(*,*) "Read ", HMx_config%nt, " fields."
-  do i=1,HMx_config%nt
-    write(*,*) HMx_config%fields(i)%name
-  end do
+  if(HMx_config%verbose) then
+    write(*,*) "Read ", HMx_config%nt, " fields."
+    do i=1,HMx_config%nt
+      write(*,*) HMx_config%fields(i)%name
+    end do
+  end if
   status = datablock_get_string_default(options, option_section, "matter_matter_section_name", "", HMx_config%matter_matter_section_name)
 
   status = datablock_get_double_default(options, option_section, "mmin", 1e7, HMx_config%mmin)
   status = datablock_get_double_default(options, option_section, "mmax", 1e17, HMx_config%mmax)
-
-  status = datablock_get_int_default(options, option_section, "verbose", 1, verbose)
 
   ! Get halo model mode
   status = datablock_get_string_default(options, option_section, "hm_mode", "hmx", HMx_config%hm_mode)
@@ -151,9 +158,11 @@ function setup(options) result(result)
     HMx_config%ihm = 6
   else if(trim(HMx_config%hm_mode) == "hmcode") then
     HMx_config%ihm = 1
-  else if(trim(HMx_config%hm_mode) == "hmcode_one_baryon_parameter") then
-    HMx_config%ihm = 1
-    HMx_config%one_parameter_hmcode = .true.
+    HMx_config%matter_matter_section_name = matter_power_nl_section
+    if(HMx_config%nt /= 1 .or. HMx_config%fields(1)%id /= field_dmonly) then
+      write(*,*) "Mode hmcode requires fields = dmonly."
+      stop
+    end if
   else if(trim(HMx_config%hm_mode) == "vanilla_halo_model") then
     HMx_config%ihm = 3
   else
@@ -163,7 +172,7 @@ function setup(options) result(result)
   ! Get ihm value directly if supplied
   status = datablock_get_int_default(options, option_section, "ihm", HMx_config%ihm, HMx_config%ihm)
 
-  HMx_config%verbose = verbose > 0
+  status = datablock_get_logical_default(options, option_section, "one_parameter_hmcode", .true., HMx_config%one_parameter_hmcode)
 
   HMx_config%icosmo = 1
   
@@ -346,10 +355,12 @@ function execute(block, config) result(status)
   do i=1,HMx_config%nt
     do j=1,i
       pk_section = trim(HMx_config%fields(i)%name)//"_"//trim(HMx_config%fields(j)%name)//"_power_spectrum"
-      if(i==1 .and. j==1 .and. trim(HMx_config%matter_matter_section_name) /= "") then
-        pk_section = HMx_config%matter_matter_section_name
+      if(trim(HMx_config%matter_matter_section_name) /= "") then
+        if((HMx_config%fields(i)%id==field_matter .and. HMx_config%fields(i)%id==field_matter) .or. &
+           (HMx_config%fields(i)%id==field_dmonly .and. HMx_config%fields(i)%id==field_dmonly)) then
+          pk_section = HMx_config%matter_matter_section_name
+        end if
       end if
-
       status = datablock_put_double_grid(block, pk_section, &
                                          "k_h", HMx_config%k, &
                                          "z", 1.0/HMx_config%a-1.0, &
