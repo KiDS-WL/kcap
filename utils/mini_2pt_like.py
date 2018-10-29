@@ -8,6 +8,33 @@ from cosmosis.datablock import option_section, names
 
 from cosmosis.datablock.cosmosis_py import errors
 
+def get_theory_point(x, y, mode="interpolate", interpolated_x=None, bin_edges=None, weighting=None, cut_bins=None):
+    intp = scipy.interpolate.InterpolatedUnivariateSpline(np.log(x), y)
+    
+    if mode.lower() == "interpolate":
+        result = intp(np.log(interpolated_x))
+    elif mode.lower() == "integrate":
+        result = np.zeros(bin_edges.size-1)
+        for i in range(bin_edges.size-1):
+            mask = (bin_edges[i] <= x) & (x < bin_edges[i+1])
+            if isinstance(weighting, np.ndarray):
+                w = weighting[mask]
+                norm = np.trapz(w, x[mask])
+            else:
+                w = 1
+                norm = 1
+            result[i] = np.trapz(w*y[mask], x[mask])/norm
+    else:
+        raise ValueError(f"Mode {mode} not supported.")
+
+    if cut_bins is not None:
+        result = np.delete(result, cut_bins)
+
+    return result
+
+
+
+
 def setup(options):
     n_bin = options[option_section, "n_bin"]
     try:
@@ -20,6 +47,7 @@ def setup(options):
     except errors.BlockNameNotFound:
         single_filename = None
 
+
     try:
         cut_xi_plus_idx = options[option_section, "cut_xi_plus"]
     except errors.BlockNameNotFound:
@@ -28,6 +56,13 @@ def setup(options):
         cut_xi_minus_idx = options[option_section, "cut_xi_minus"]
     except errors.BlockNameNotFound:
         cut_xi_minus_idx = []
+
+    angular_binning_mode = options.get_string(option_section, "angular_binning_mode", default="interpolate")
+    if angular_binning_mode.lower() == "integrate":
+        angular_bin_edges = options[option_section, "angular_bin_edges"]
+        angular_bin_edges *= pi/180/60
+    else:
+        angular_bin_edges = None
 
     order_data = options.get_string(option_section, "order_data", "xi_pm-bin-theta").lower()
     order_cov = options.get_string(option_section, "order_cov", "xi_pm-bin-theta").lower()
@@ -73,6 +108,13 @@ def setup(options):
         xi_p_c = None
         xi_m_c = None
 
+    try:
+        m_correction = options[option_section, "m_correction"]
+        if len(m_correction) != n_bin:
+            raise ValueError(f"Number of m-correction values supplied does not match number of tomographic bins: {len(m_correction)} vs {n_bin}.")
+    except errors.BlockNameNotFound:
+        m_correction = np.zeros(n_bin)
+
     data_vectors = {}
     for i in range(n_bin):
         data_vectors[i] = {}
@@ -95,19 +137,21 @@ def setup(options):
                 theta_xi_minus = theta
                 data_vectors[i][j] = data[[1,2]]
 
+            data_vectors[i][j][0] *= 1/((1+m_correction[i])*(1+m_correction[j]))
+            data_vectors[i][j][1] *= 1/((1+m_correction[i])*(1+m_correction[j]))
+
             data_vectors[i][j][0] = np.delete(data_vectors[i][j][0], cut_xi_plus_idx)
             data_vectors[i][j][1] = np.delete(data_vectors[i][j][1], cut_xi_minus_idx)
                 
-    theta_xi_plus = np.delete(theta_xi_plus, cut_xi_plus_idx)
-    theta_xi_minus = np.delete(theta_xi_minus, cut_xi_minus_idx)
-
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
-    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, \
+    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, \
+           cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, \
+           order_cov, \
            constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector
 
 def execute(block, config):
-    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
+    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
     
     n_bin = block["shear_xi", "nbin_a"]
 
@@ -125,10 +169,18 @@ def execute(block, config):
                 theory_xi_plus = block["shear_xi", f"xiplus_{i+1}_{j+1}"]
                 theory_xi_minus = block["shear_xi", f"ximinus_{i+1}_{j+1}"]
 
-                intp_xi_plus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_plus)
-                theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
-                intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
-                theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
+                theory_xi_plus = get_theory_point(theory_theta, theory_xi_plus,
+                                                  mode=angular_binning_mode,
+                                                  interpolated_x=theta_xi_plus,
+                                                  bin_edges=angular_bin_edges,
+                                                  weighting=theory_theta,
+                                                  cut_bins=cut_xi_plus_idx)
+                theory_xi_minus = get_theory_point(theory_theta, theory_xi_minus,
+                                                   mode=angular_binning_mode,
+                                                   interpolated_x=theta_xi_minus,
+                                                   bin_edges=angular_bin_edges,
+                                                   weighting=theory_theta,
+                                                   cut_bins=cut_xi_minus_idx)
 
                 if constant_c_offset:
                     theory_xi_plus += block["shear_c_bias", "delta_c"]
@@ -155,10 +207,18 @@ def execute(block, config):
                 theory_xi_plus = block["shear_xi", f"xiplus_{j+1}_{i+1}"]
                 theory_xi_minus = block["shear_xi", f"ximinus_{j+1}_{i+1}"]
 
-                intp_xi_plus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_plus)
-                theory_xi_plus = intp_xi_plus(np.log(theta_xi_plus))
-                intp_xi_minus = scipy.interpolate.InterpolatedUnivariateSpline(np.log(theory_theta), theory_xi_minus)
-                theory_xi_minus = intp_xi_minus(np.log(theta_xi_minus))
+                theory_xi_plus = get_theory_point(theory_theta, theory_xi_plus,
+                                                  mode=angular_binning_mode,
+                                                  interpolated_x=theta_xi_plus,
+                                                  bin_edges=angular_bin_edges,
+                                                  weighting=theory_theta,
+                                                  cut_bins=cut_xi_plus_idx)
+                theory_xi_minus = get_theory_point(theory_theta, theory_xi_minus,
+                                                   mode=angular_binning_mode,
+                                                   interpolated_x=theta_xi_minus,
+                                                   bin_edges=angular_bin_edges,
+                                                   weighting=theory_theta,
+                                                   cut_bins=cut_xi_minus_idx)
 
                 if constant_c_offset:
                     theory_xi_plus += block["shear_c_bias", "delta_c"]**2
