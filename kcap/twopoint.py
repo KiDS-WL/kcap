@@ -4,7 +4,9 @@ import configparser
 import io
 
 import numpy as np
-from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, HMxModule, ProjectionModule, LoadNofzModule
+from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, \
+                            HMxModule, ProjectionModule, LoadNofzModule, \
+                            Cl2xiModule, COSEBISModule
 
 def dict_insert(d, idx, obj, after=False):
     if after: idx += 1
@@ -12,6 +14,9 @@ def dict_insert(d, idx, obj, after=False):
     return collections.OrderedDict(d_list[:idx] + [obj] + d_list[idx:])
 
 class TwoPoint:
+    supported_fields_2D = ("shear", "y")
+    supported_fields_3D = ("matter", "pressure")
+
     def __init__(self, probes={}, parameters={},
                  transfer_function="camb", nonlinear_Pk="HMx", 
                  tomographic_bin_names={}, nofz_files={},
@@ -26,14 +31,22 @@ class TwoPoint:
             statistics.append(statistic.lower())
             for field1, field2 in fields:
                 if statistic.lower() == "pk":
+                    for f in [field1, field2]:
+                        if f not in self.supported_fields_3D:
+                            raise ValueError(f"Field {f} for statistic {statistic} not supported.")
                     fields_3D += [field1, field2]
-                elif statistic.lower() == "cl" or statistic.lower() == "xi":
+                elif statistic.lower() == "cl" or statistic.lower() == "xi" or statistic.lower() == "cosebis":
+                    for f in [field1, field2]:
+                        if f not in self.supported_fields_2D:
+                            raise ValueError(f"Field {f} for statistic {statistic} not supported.")
                     fields_2D += [field1, field2]
                 else:
                     raise ValueError(f"Statistic {statistic} not supported.")
 
         # Fill in requirements if not already included
         if "xi" in statistics:
+            statistics += ["pk", "cl"]
+        if "cosebis" in statistics:
             statistics += ["pk", "cl"]
         if "cl" in statistics:
             statistics += ["pk"]
@@ -80,6 +93,12 @@ class TwoPoint:
                                      LoadNofzModule(nofz_file=nofz_files[field],
                                                     output_section=field)), before="projection")
 
+        if "xi" in self.statistics:
+            self.add_module(("cl2xi", Cl2xiModule(probes=probes["xi"])))
+
+        if "cosebis" in self.statistics:
+            self.add_module(("cosebis", COSEBISModule(probes=probes["cosebis"])))
+
     def add_module(self, module, before=None, after=None):
         if before is None and after is None:
             self.modules[module[0]] = module[1]
@@ -95,7 +114,7 @@ class TwoPoint:
         result = self.pipeline.run(parameters)
         self.pipeline_has_run = True
         return result
-
+                
     def power_spectrum(self, probes=("matter", "matter"), k=None, z=None, kind="nonlinear"):
         if "pk" not in self.statistics:
             raise ValueError(f"TwoPoint not initialized for 3D power spectra.")
@@ -117,6 +136,20 @@ class TwoPoint:
 
         return pk_grid, k_grid, z_grid
 
+    def extract_tomographic_bins(self, section, probe):
+        twopoint = []
+        bin_names = []
+        for _, key in self.data.keys(section):
+            if key[:3].lower() == "bin":
+                bin_1, bin_2 = key.split("_")[1:3]
+                twopoint.append(self.data[section, key])
+                if probe[0] in self.tomographic_bin_names:
+                    bin_1 = self.tomographic_bin_names[probe[0]][int(bin_1)-1]
+                if probe[1] in self.tomographic_bin_names:
+                    bin_2 = self.tomographic_bin_names[probe[1]][int(bin_2)-1]
+                bin_names.append((bin_1, bin_2))
+        return twopoint, bin_names
+
     def angular_power_spectrum(self, probes, ell=None,
                                return_bin_names=False):
         if "cl" not in self.statistics:
@@ -129,23 +162,53 @@ class TwoPoint:
         section = f"{probes[0]}_{probes[1]}_cl"
         if probes == ("shear", "shear") and not self.data.has_section(section):
             section = "shear_cl"
-        cl = []
-        bin_names = []
-        for _, key in self.data.keys(section):
-            if key[:3].lower() == "bin":
-                bin_1, bin_2 = key.split("_")[1:3]
-                cl.append(self.data[section, key])
-                if probes[0] in self.tomographic_bin_names:
-                    bin_1 = self.tomographic_bin_names[probes[0]][int(bin_1)-1]
-                if probes[1] in self.tomographic_bin_names:
-                    bin_2 = self.tomographic_bin_names[probes[1]][int(bin_2)-1]
-                bin_names.append((bin_1, bin_2))
+        
+        cl, bin_names = self.extract_tomographic_bins(section, probes)
 
         cl = np.array(cl)
         ell = self.data[section, "ell"]
         if return_bin_names:
             return cl, ell, bin_names
         return cl, ell
+
+    def correlation_function(self, probes, theta=None,
+                             return_bin_names=False):
+        if "xi" not in self.statistics:
+            raise ValueError(f"TwoPoint not initialized for correlation function.")
+        if probes[0] not in self.fields_2D or probes[1] not in self.fields_2D:
+            raise ValueError(f"TwoPoint not initialized for probes {probes}.")
+        if not self.pipeline_has_run:
+            self.data = self.run_pipeline(self.parameters)
+
+        section = f"{probes[0]}_{probes[1]}_xi"
+        if probes == ("shear", "shear") and not self.data.has_section(section):
+            section = "shear_xi"
+        
+        xi, bin_names = self.extract_tomographic_bins(section, probes)
+
+        xi = np.array(xi)
+        theta = self.data[section, "theta"]
+        if return_bin_names:
+            return xi, theta, bin_names
+        return xi, theta
+
+    def cosebis(self, probes, 
+                      return_bin_names=False):
+        if "cosebis" not in self.statistics:
+            raise ValueError(f"TwoPoint not initialized for COSEBIS.")
+        if probes[0] not in self.fields_2D or probes[1] not in self.fields_2D:
+            raise ValueError(f"TwoPoint not initialized for probes {probes}.")
+        if not self.pipeline_has_run:
+            self.data = self.run_pipeline(self.parameters)
+
+        section = self.modules["cosebis"].output_section_name
+        cosebis, bin_names = self.extract_tomographic_bins(section, probes)
+
+        modes = self.data[section, "cosebis_n"]
+        cosebis = np.array(cosebis)
+        if return_bin_names:
+            return cosebis, modes, bin_names
+        return cosebis, modes
 
 # class Predict2point(cosmosis_utils.CosmoSISPipeline):
 #     def __init__(self, probes=[], statistics=[], transfer_function="camb",

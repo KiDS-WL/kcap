@@ -3,6 +3,7 @@ import collections
 import os
 import configparser
 import io
+import warnings
 
 import numpy as np
 
@@ -128,6 +129,45 @@ class ProjectionModule(CosmoSISModule):
                             "get_kernel_peaks"  : "F"})
         self.config.update({"-".join(probe) : "-".join(probe) for probe in probes})
 
+class Cl2xiModule(CosmoSISModule):
+    module_name = "cl2xi"
+    
+    def __init__(self, probes=[], 
+                       module_file=r"shear/cl_to_xi_nicaea/nicaea_interface.so", base_path=r"%(CSL_PATH)s"):
+        super().__init__(module_file, base_path)
+
+        probe = probes[0]
+        if len(probes) > 1:
+            warnings.warn(f"Only first probe ({probe}) will be used.")
+        if probe[0].lower() == "shear" and probe[1].lower() == "shear":
+            corr_type = 0
+        elif probe[0].lower() == "shear" or probe[1].lower() == "shear":
+            corr_type = 1
+        else:
+            corr_type = 2
+        self.config.update({"corr_type"         : str(corr_type)})
+
+class COSEBISModule(CosmoSISModule):
+    module_name = "cosebis"
+    input_section_name = "shear_cl"
+    output_section_name = "cosebis"
+    
+    def __init__(self, probes=[], theta_min=0.5, theta_max=300.0, n_max=5, b_modes=False,
+                       module_file=r"cosebis/libcosebis_cl.so", base_path=r"%(KCAP_PATH)s"):
+        super().__init__(module_file, base_path)
+
+        probe = probes[0]
+        if len(probes) > 1:
+            warnings.warn(f"Only first probe ({probe}) will be used.")
+        if not (probe[0].lower() == "shear" and probe[1].lower() == "shear"):
+            raise ValueError("COSEBIS only support shear-shear.")
+
+        self.config.update({"theta_min"           : str(float(theta_min)),
+                            "theta_max"           : str(float(theta_max)),
+                            "n_max"               : str(int(n_max)),
+                            "input_section_name" : self.input_section_name,
+                            "output_section_name" : self.output_section_name,
+                            "is_it_bmodes"        : "1" if b_modes else "0",})
 
 class CosmoSISPipeline:
     def __init__(self, paths={}, sampler="", parameter_file="", prior_file="", 
