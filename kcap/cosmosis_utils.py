@@ -153,7 +153,7 @@ class COSEBISModule(CosmoSISModule):
     output_section_name = "cosebis"
     
     def __init__(self, probes=[], theta_min=0.5, theta_max=300.0, n_max=5, b_modes=False,
-                       module_file=r"cosebis/libcosebis_cl.so", base_path=r"%(KCAP_PATH)s"):
+                       module_file=r"libcosebis_cl.so", base_path=r"%(COSEBIS_PATH)s"):
         super().__init__(module_file, base_path)
 
         probe = probes[0]
@@ -162,12 +162,15 @@ class COSEBISModule(CosmoSISModule):
         if not (probe[0].lower() == "shear" and probe[1].lower() == "shear"):
             raise ValueError("COSEBIS only support shear-shear.")
 
-        self.config.update({"theta_min"           : str(float(theta_min)),
-                            "theta_max"           : str(float(theta_max)),
-                            "n_max"               : str(int(n_max)),
-                            "input_section_name" : self.input_section_name,
-                            "output_section_name" : self.output_section_name,
-                            "is_it_bmodes"        : "1" if b_modes else "0",})
+        self.config.update({"theta_min"            : str(float(theta_min)),
+                            "theta_max"            : str(float(theta_max)),
+                            "n_max"                : str(int(n_max)),
+                            "input_section_name"   : self.input_section_name,
+                            "output_section_name"  : self.output_section_name,
+                            "is_it_bmodes"         : "1" if b_modes else "0",
+                            "Wn_Output_FolderName" : r"%(COSEBIS_PATH)s/WnLog/",
+                            "Roots_n_Norms_FolderName" : r"%(COSEBIS_PATH)s/TLogsRootsAndNorms",
+                            "Tn_Output_FolderName"     : r"%(COSEBIS_PATH)s/TpnLog/"})
 
 class CosmoSISPipeline:
     def __init__(self, paths={}, sampler="", parameter_file="", prior_file="", 
@@ -176,6 +179,8 @@ class CosmoSISPipeline:
         self.paths["KCAP_PATH"] = os.path.split(os.path.dirname(__file__))[0]
         if "CSL_PATH" not in paths:
             self.paths["CSL_PATH"] = os.path.join(self.paths["KCAP_PATH"], "cosmosis-standard-library")
+        if "COSEBIS_PATH" not in paths:
+            self.paths["COSEBIS_PATH"] = os.path.join(self.paths["KCAP_PATH"], "cosebis")
 
         self.config_defaults = {key : path for key, path in self.paths.items()}
 
@@ -203,7 +208,7 @@ class CosmoSISPipeline:
         else:
             values = None
         
-        # print("INI", config_to_string(ini))
+        print("INI", config_to_string(ini), flush=True)
         cosmosis_ini = config_to_cosmosis_ini(ini)
         pipeline = cosmosis.runtime.pipeline.LikelihoodPipeline(cosmosis_ini, values=values)
         return pipeline, ini
