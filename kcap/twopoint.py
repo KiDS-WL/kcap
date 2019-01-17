@@ -6,7 +6,8 @@ import io
 import numpy as np
 from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, \
                             HMxModule, ProjectionModule, LoadNofzModule, \
-                            Cl2xiModule, COSEBISModule
+                            Cl2xiModule, COSEBISModule, \
+                            config_to_string
 
 def dict_insert(d, idx, obj, after=False):
     if after: idx += 1
@@ -118,6 +119,11 @@ class TwoPoint:
         elif after is not None:
             idx = list(self.modules.keys()).index(after)
             self.modules = dict_insert(self.modules, idx, module, after=True)
+
+    def get_pipeline_config(self):
+        self.pipeline.modules = list(self.modules.values())
+        ini, _ = self.pipeline.assemble_ini()
+        return config_to_string(ini)
 
     def run_pipeline(self, parameters={}):
         self.pipeline.modules = list(self.modules.values())

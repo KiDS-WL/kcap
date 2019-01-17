@@ -190,7 +190,7 @@ class CosmoSISPipeline:
 
         self.modules = []
 
-    def create_pipeline(self, parameters=None):
+    def assemble_ini(self, parameters=None):
         ini = configparser.ConfigParser(defaults=self.config_defaults)
         ini.read_dict(self.cosmosis_config)
 
@@ -208,13 +208,16 @@ class CosmoSISPipeline:
         else:
             values = None
         
-        print("INI", config_to_string(ini), flush=True)
+        return ini, values
+
+    def create_pipeline(self, ini, values):
         cosmosis_ini = config_to_cosmosis_ini(ini)
         pipeline = cosmosis.runtime.pipeline.LikelihoodPipeline(cosmosis_ini, values=values)
-        return pipeline, ini
+        return pipeline
 
     def run(self, parameters={}):
-        self.pipeline, self.pipeline_ini = self.create_pipeline()
+        self.pipeline_ini, values = self.assemble_ini()
+        self.pipeline = self.create_pipeline(self.pipeline_ini, values)
         p = [p.start for p in self.pipeline.parameters]
         for section in parameters.keys():
             for name, value in parameters[section].items():
