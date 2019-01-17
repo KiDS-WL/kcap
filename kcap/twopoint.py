@@ -20,6 +20,7 @@ class TwoPoint:
     def __init__(self, probes={}, parameters={},
                  transfer_function="camb", nonlinear_Pk="HMx", 
                  tomographic_bin_names={}, nofz_files={},
+                 module_configs={},
                  module_paths={}):
 
         self.probes = probes
@@ -77,27 +78,36 @@ class TwoPoint:
         self.add_module(("consistency", ConsistencyModule()))
 
         if "pk" in self.statistics:
-            self.add_module(("camb", CAMBModule(transfer_function=transfer_function.lower() == "camb")))
+            self.add_module(("camb", CAMBModule(transfer_function=transfer_function.lower() == "camb", 
+                                                **module_configs.get("camb", {}))))
             if nonlinear_Pk.lower() == "hmx":
-                self.add_module(("HMx", HMxModule(hm_mode="hmx", fields=self.fields_3D, transfer_function=transfer_function)))
+                self.add_module(("HMx", HMxModule(hm_mode="hmx", fields=self.fields_3D, 
+                                                  transfer_function=transfer_function,
+                                                  **module_configs.get("HMx", {}))))
             elif nonlinear_Pk.lower() == "hmcode":
-                self.add_module(("HMx", HMxModule(hm_mode="hmcode", transfer_function=transfer_function)))
+                self.add_module(("HMx", HMxModule(hm_mode="hmcode", 
+                                                  transfer_function=transfer_function,
+                                                  **module_configs.get("HMx", {}))))
             else:
                 raise ValueError(f"Nonlinear P(k) method {nonlinear_Pk} not supported.")
 
         if "cl" in self.statistics:
-            self.add_module(("projection", ProjectionModule(probes=probes["cl"])))
+            self.add_module(("projection", ProjectionModule(probes=probes["cl"],
+                                                            **module_configs.get("projection", {}))))
             for field in self.fields_2D:
                 if field in nofz_files:
                     self.add_module((f"load_nofz_{field}", 
                                      LoadNofzModule(nofz_file=nofz_files[field],
-                                                    output_section=field)), before="projection")
+                                                    output_section=field,
+                                                    **module_configs.get("projection", {}))), before="projection")
 
         if "xi" in self.statistics:
-            self.add_module(("cl2xi", Cl2xiModule(probes=probes["xi"])))
+            self.add_module(("cl2xi", Cl2xiModule(probes=probes["xi"],
+                                                  **module_configs.get("cl2xi", {}))))
 
         if "cosebis" in self.statistics:
-            self.add_module(("cosebis", COSEBISModule(probes=probes["cosebis"])))
+            self.add_module(("cosebis", COSEBISModule(probes=probes["cosebis"],
+                                                      **module_configs.get("cosebis", {}))))
 
     def add_module(self, module, before=None, after=None):
         if before is None and after is None:
@@ -171,7 +181,7 @@ class TwoPoint:
             return cl, ell, bin_names
         return cl, ell
 
-    def correlation_function(self, probes, theta=None,
+    def correlation_function(self, probes, theta=None, kind="plus",
                              return_bin_names=False):
         if "xi" not in self.statistics:
             raise ValueError(f"TwoPoint not initialized for correlation function.")
@@ -182,7 +192,7 @@ class TwoPoint:
 
         section = f"{probes[0]}_{probes[1]}_xi"
         if probes == ("shear", "shear") and not self.data.has_section(section):
-            section = "shear_xi"
+            section = f"shear_xi_{kind}"
         
         xi, bin_names = self.extract_tomographic_bins(section, probes)
 
