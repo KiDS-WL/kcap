@@ -5,9 +5,9 @@ TpnLog::TpnLog()
 	thetamin=thetamax=1.; n=0;
 }
 
-TpnLog::TpnLog(number thetamin1,number thetamax1,int nMax)
+TpnLog::TpnLog(number thetamin1,number thetamax1,int nMax,string TnFolderName,string foldername)
 {
-	setTheta(thetamin1,thetamax1,nMax);
+	setTheta(thetamin1,thetamax1,nMax,TnFolderName,foldername);
 }
 
 TpnLog::~TpnLog(){}
@@ -20,19 +20,20 @@ number TpnLog::integrant(number y)
 	return integ;
 }
 
-void TpnLog::setTheta(number thetamin1,number thetamax1,int nMax)
+void TpnLog::setTheta(number thetamin1,number thetamax1,int nMax,string TnFolderName,string foldername1)
 {
 	clog<<"setting thetamin,thetamax,nMax"<<endl;
 	clog<<"nMax="<<nMax<<endl;
+	foldername=foldername1;
 	lookupTableDone=false;
 	thetamin=thetamin1;
 	thetamax=thetamax1;
 	root.clear();
 	norm.clear();
 	rootTheta.clear();
-	ifstream fRoot((string("cosebis/TLogsRootsAndNorms/Root_")+toString(thetamin/arcmin,2)+string("-")
+	ifstream fRoot((TnFolderName+string("/Root_")+toString(thetamin/arcmin,2)+string("-")
 	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
-	ifstream fNorm((string("cosebis/TLogsRootsAndNorms/Normalization_")+toString(thetamin/arcmin,2)+string("-")
+	ifstream fNorm((TnFolderName+string("/Normalization_")+toString(thetamin/arcmin,2)+string("-")
 	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
 	if(fRoot.fail())
 	{
@@ -113,8 +114,7 @@ void TpnLog::writeTpLog(int n1)
 		theta_mat.load(i,thetalog);
 		Tpn_mat.load(i,TpLog(thetalog-thetaminlog));
 	}
-	string myname =
-		string("TLogs/TpRadian")+toString(n)+string("_")
+	string myname =foldername+string("/TpRadian")+toString(n)+string("_")
 		+toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	Tp_table.setName(myname.c_str(),function_cosebis::NONAMECOUNTER);
 	Tp_table.loadWithValues(theta_mat, Tpn_mat,true);
@@ -168,8 +168,7 @@ void TpnLog::writeTnLog(int n1)
 		theta_mat.load(i,(thetalog));
 		Tnn_mat.load(i,TnLog(thetalog-thetaminlog));
 	}
-	string myname =
-		string("TLogs/TmRadian")+toString(n)+string("_")
+	string myname =foldername+string("/TmRadian")+toString(n)+string("_")
 		+toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	Tn_table.setName(myname.c_str(),function_cosebis::NONAMECOUNTER);
 	Tn_table.loadWithValues(theta_mat, Tnn_mat,true);
@@ -181,8 +180,8 @@ void TpnLog::PrepareLookupTables(int n1)
 	lookupTableDone=true;
 	clog<<"in PrepareLookupTables"<<endl;
 	n=n1;
-	string myname =
-		string("TLogs/TpRadian")+toString(n)+string("_")
+	string myname =foldername+
+		string("/TpRadian")+toString(n)+string("_")
 		+toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	clog<<myname<<endl;
 	ifstream fTp((myname+string(".table")).c_str());
@@ -202,8 +201,8 @@ void TpnLog::PrepareLookupTables(int n1)
 	Tp_table.extrapolationOff();
 	fTp.close();
 	clog<<"Tp loaded"<<endl;
-	myname =
-		string("TLogs/TmRadian")+toString(n)+string("_")
+	myname =foldername+
+		string("/TmRadian")+toString(n)+string("_")
 		+toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	ifstream fTn((myname+string(".table")).c_str());
 

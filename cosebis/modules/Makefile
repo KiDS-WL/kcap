@@ -13,7 +13,7 @@ LIBNAME  = libpslib.a
 #-----------------------------------
 
 # make objects (components) of library
-%.o : %.cc
+%.o : %.cc 
 	$(CXX) $(CXXFLAGS) -c $<
 #%.o: %.cc
 #	$(CXX) -o $@ -c $(CXXFLAGS) $*.cc
