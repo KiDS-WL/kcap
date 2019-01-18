@@ -25,10 +25,16 @@ module camb_interface_tools
 	logical :: distances_to_lss
 	integer :: n_highz_distance
 
-
-
 	integer :: k_eta_max_scalar = 2400
 	logical :: do_lensing, do_nonlinear, do_tensors
+
+	integer :: matter_power_lin_version = 1  ! Consider this a bit-field
+	                                 ! indicating which spectra are to
+	                                 ! be produced.
+	integer, parameter :: MATTER_POWER_LIN_            =  1
+	integer, parameter :: MATTER_POWER_LIN_CDM_BARYON  =  2
+	integer, parameter :: MATTER_POWER_LIN_BOTH        =  3
+
 	integer :: sterile_neutrino = 0
 	real(dl) :: delta_neff = 0.0
 	real(dl) :: sterile_mass_fraction = 0.0
@@ -175,6 +181,7 @@ module camb_interface_tools
 
 		status = status + datablock_get_logical_default(block, option_section, "do_nonlinear", .false. , do_nonlinear)
 		status = status + datablock_get_logical_default(block, option_section, "do_lensing", .false. , do_lensing)
+		status = status + datablock_get_int_default(block, option_section, "matter_power_lin_version", MATTER_POWER_LIN_, matter_power_lin_version)
 
 
 		status = status + datablock_get_logical_default(block, option_section, "distances_to_lss", .false. , distances_to_lss)
@@ -455,9 +462,67 @@ module camb_interface_tools
 		status = status + datablock_put_double(block, cosmological_parameters_section, "SIGMA_8", sigma8)
 		return
 	end function
-	
-	function camb_interface_save_transfer(block) result(status)
+
+	function camb_interface_save_sigmas(block) result(status)
+		!Save sigma8 and sigma2_vdelta_8 for all z to the growth section of the file
+		!and sigma8 at z=0 to the cosmological parameter section
 		integer (cosmosis_block) :: block
+		integer (cosmosis_status) :: status
+		real(8), allocatable, dimension(:) :: sigma8, sigma2_vdelta_8,z
+		real(8), parameter :: radius8 = 8.0_8
+		integer :: nz, iz
+		character(len=128) :: growth_section_name
+
+		growth_section_name = "growth"
+
+		!Ask camb for sigma8
+		status = 0
+		sigma8=0.0
+		call Transfer_Get_sigmas(MT,radius8)
+		
+		!It gives us the array sigma8(z).
+		nz = CP%Transfer%num_redshifts
+		allocate(z(nz), sigma8(nz), sigma2_vdelta_8(nz))
+		do iz=1,nz
+			z(iz) = CP%Transfer%Redshifts(nz-iz+1)
+		enddo
+		sigma8 = MT%sigma_8(:,1)
+		sigma2_vdelta_8 = MT%sigma2_vdelta_8(:,1)
+
+		status = status + datablock_put_double(block, cosmological_parameters_section, "SIGMA_8", sigma8(nz))
+		
+		status = status + datablock_put_int(block, growth_section_name, "NZ", nz)
+		status = status + datablock_put_double_array_1d(block, growth_section_name, "Z", z)
+		status = status + datablock_put_double_array_1d(block, growth_section_name, "SIGMA_8", sigma8)
+		status = status + datablock_put_double_array_1d(block, growth_section_name, "SIGMA2_VDELTA_8", sigma2_vdelta_8)
+
+		deallocate(z, sigma8, sigma2_vdelta_8)
+		return
+	end function
+	
+
+
+	function  camb_interface_save_transfer (block)  result(status)
+   		integer (cosmosis_block)  ::  block
+		integer  (cosmosis_status)  ::  status
+
+        	status  =  0
+
+		if  (iand (matter_power_lin_version, MATTER_POWER_LIN_)  .ne.  0)  then
+			status = status + camb_interface_save_transfer__ (block, MATTER_POWER_LIN_)
+		endif
+
+		if  (iand (matter_power_lin_version, MATTER_POWER_LIN_CDM_BARYON)  .ne.  0)  then
+			status  =  status  +  camb_interface_save_transfer__ (block, MATTER_POWER_LIN_CDM_BARYON)
+		endif
+
+      end function camb_interface_save_transfer
+
+
+
+	function camb_interface_save_transfer__ (block, matter_power_lin_version__)  result(status)
+		integer (cosmosis_block) :: block
+		integer  ::  matter_power_lin_version__
 		integer (cosmosis_status) :: status
 		Type(MatterPowerData) :: PK
 		integer nz, nk, iz, ik
@@ -465,7 +530,11 @@ module camb_interface_tools
 		real(8), allocatable, dimension(:) :: k, z
 		real(8), allocatable, dimension(:,:) :: T
 
-		call Transfer_GetMatterPowerData(MT, PK, 1)
+		if  (matter_power_lin_version__  .eq.  MATTER_POWER_LIN_)   then
+			call Transfer_GetMatterPowerData  (MT, PK, 1)
+		elseif (matter_power_lin_version__  .eq.  MATTER_POWER_LIN_CDM_BARYON)  then
+			call Transfer_GetMatterPowerData  (MT, PK, 1, var1=transfer_nonu, var2=transfer_nonu)
+		endif
 
 		nz = CP%Transfer%num_redshifts
 		nk = MT%num_q_trans
@@ -489,30 +558,38 @@ module camb_interface_tools
 		enddo
 
 
-		status = datablock_put_double_grid(block, linear_cdm_transfer_section, &
-        	"k_h", k, "z", z, "delta_cdm", T)
+        	status = 0
 
-		if (status .ne. 0) then
-			write(*,*) "Failed to save transfer function in CAMB."
+        	if (.not.  datablock_has_section (block, linear_cdm_transfer_section))  then
+			status = datablock_put_double_grid(block, linear_cdm_transfer_section, &
+						"k_h", k, "z", z, "delta_cdm", T)
+
+			if (status .ne. 0) then
+				write(*,*) "Failed to save transfer function in CAMB."
+			endif
+
 		endif
 
 		deallocate(k, z, T)
 
 		!Now save the matter power
-		status = status + camb_interface_save_matter_power(block, PK)
+		status = status + camb_interface_save_matter_power(block, PK, matter_power_lin_version__)
 
 		call MatterPowerdata_Free(PK)
 	end function
 
-	function camb_interface_save_matter_power(block, PK) result(status)
+
+
+	function camb_interface_save_matter_power(block, PK, matter_power_lin_version__)  result(status)
 		integer (cosmosis_block) :: block
+		integer  ::  matter_power_lin_version__
 		integer (cosmosis_status) :: status
 		Type(MatterPowerData) :: PK
 		integer nz, nk, iz, ik
 		real(8) :: log_kmin, log_kmax
 		real(8), allocatable, dimension(:) :: k, z
 		real(8), allocatable, dimension(:,:) :: P
-
+		character(50) :: datablock_section
 
 		! z values to use.  Use sample values from camb,
 		! which were set in the input
@@ -553,8 +630,14 @@ module camb_interface_tools
 			enddo
 		enddo
 
-		status = datablock_put_double_grid(block, matter_power_lin_section, &
-        	"k_h", k, "z", z, "P_k", P)
+		if  (matter_power_lin_version__  .eq.  MATTER_POWER_LIN_)  then
+			datablock_section  =  matter_power_lin_section
+		elseif  (matter_power_lin_version__  .eq.  MATTER_POWER_LIN_CDM_BARYON)  then
+			datablock_section  =  matter_power_lin_cdm_baryon_section
+		endif
+
+		status = datablock_put_double_grid(block, datablock_section, &
+					"k_h", k, "z", z, "P_k", P)
 
 		if (status .ne. 0) then
 			write(*,*) "Failed to save matter power in CAMB."
@@ -620,8 +703,7 @@ module camb_interface_tools
 		!if (density) allocate(rho(nz))
 
 !Vivian begins
-		!do i=1,nz
-		do i=1,back_nz
+		do i=1,nz
 			if (i<=nz_regular) then
 				! The low redshift regime
 				!z(i) = params%transfer%redshifts(nz_regular-i+1)

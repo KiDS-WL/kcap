@@ -51,7 +51,7 @@ IFORTRUNTIME = -L$(IFORTLIBPATH) -lintlc -limf -lsvml -liomp5 -lifportmt -lifcor
 # gfortran
 # if you are using gfortran set here where the lib are installed
 # and check the runtime libs
-GFORTRANLIBPATH := $(GFORTRAN_LIBPATH)
+GFORTRANLIBPATH = $(GFORTRAN_LIBPATH)
 GFORTRANRUNTIME = -L$(GFORTRANLIBPATH) -lgfortran -lgomp
 
 # if you are on linux and using mkl, you need to set this 
