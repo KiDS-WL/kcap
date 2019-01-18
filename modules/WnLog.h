@@ -24,15 +24,18 @@ class WnLog : public function_cosebis
 public:
 
 	WnLog();
-	WnLog(number thetamin1,number thetamax1,int nMax,string WnFileName="WnLog/WnLog");
+	WnLog(number thetamin1,number thetamax1,int nMax
+		,string TnFolderName="cosmosis-standard-library/cosebis/Tn"
+		,string WnFolderName="cosmosis-standard-library/cosebis/WnLog/"
+		,string WnFileName="WnLog");
 	~WnLog();
 
 	/// integrant for Wn(l), depends on internal parameters (thetamin,thetamax,n)
 	number integrant(number x);
 	///sets thetamin thetamax and nMax to read the roots and the normalization from disk
 	void setTheta(number thetamin1,number thetamax1,int nMax);
-	///sets the Folder and the start of the WnLog file name. 
-	void setWnLogName(string WnFileName);
+	///sets the Folder for WnLog and the root and normalisation and the start of the WnLog file name. 
+	void setWnLogName(string TnFolderName,string WnFolderName,string WnFileName);
 	/// sets the internal parameters (n) to open Wn file or make it
 	void set(int order);
 	///returns n 
@@ -66,7 +69,7 @@ private:
 	number   thetamax;
 	number   B;
 	number LHIGH;
-	string WnFileName;
+	string TnFolderName,WnFolderName,WnFileName;
 };
 
 #endif

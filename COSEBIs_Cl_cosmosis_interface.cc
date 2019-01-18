@@ -81,11 +81,47 @@ extern "C" {
 		else
 			clog<<"Caluclating E-modes"<<endl;
 
+		string WnFolderName,TnFolderName,OutputTnFolderName;
+		bool defaultFolderName=false;
+		status=options->get_val<string>(sectionName, string("Wn_Output_FolderName"), WnFolderName);
+		if(status)
+		{
+			clog<<"Could not find WnLog folder name in Wn_Output_FolderName, setting to default"<<endl;
+			defaultFolderName=true;
+		}
+		else
+			clog<<"WnLog folder name is:"<<WnFolderName<<endl;
+
+		status=options->get_val<string>(sectionName, string("Roots_n_Norms_FolderName"), TnFolderName);
+		if(status)
+		{
+			clog<<"Could not find Root and Norms folder name in Roots_n_Norms_FolderName, setting to default"<<endl;
+			defaultFolderName=true;
+		}
+		else
+			clog<<"Root and Norms folder name is:"<<TnFolderName<<endl;
+
+
+		status=options->get_val<string>(sectionName, string("Tn_Output_FolderName"), OutputTnFolderName);
+		if(status)
+		{
+			clog<<"Could not find T_pm folder name in Tn_Output_FolderName, setting to default"<<endl;
+			defaultFolderName=true;
+	  	}
+		else
+			clog<<"T_pm folder name is:"<<OutputTnFolderName<<endl;
+
 		COSEBIs *cosebis = new COSEBIs();
 		
-		cosebis->initialize(config.n_max,config.theta_min,config.theta_max,1);//npair set to one for now, will be set seperately in execute to the correct value
+		if(defaultFolderName)
+			cosebis->initialize(config.n_max,config.theta_min,config.theta_max,1);//npair set to one for now, will be set seperately in execute to the correct value
+		else
+			cosebis->initialize(config.n_max,config.theta_min,config.theta_max,1 //npair set to one for now, will be set seperately in execute to the correct value
+				,TnFolderName,WnFolderName,OutputTnFolderName);
+
 		cosebis->setWns(config.n_max);
-		status=options->get_val<string>(sectionName, string("input_section_name"), string("shear_cl"), config.input_section_name);
+		status=options->get_val<string>(sectionName, string("input_section_name"), string("shear_cl"),
+			config.input_section_name);
 		config.cosebis=cosebis;
   		return &config;
   		// config is sent to execute 
@@ -157,7 +193,7 @@ extern "C" {
 				//clog<<name_in<<endl;
 				status = block->get_val(config->input_section_name, name_in, C_ell);
 				string name_Cl=string("Cl_bin_")+toString(j_bin)+string("_")+toString(i_bin)+string(".ascii");
-				status = block->put_val<vector<number> >(config->output_section_name, name_Cl, C_ell);
+				//status = block->put_val<vector<number> >(config->output_section_name, name_Cl, C_ell);
 				if (status) 
 				{
 					clog<<"Could not load bin "<<j_bin<<"_"<< i_bin<<" in C_ell to COSEBIs"<<endl;
@@ -168,7 +204,7 @@ extern "C" {
 				nPairs++;
 			}
 		}
-		status = block->put_val<vector<number> >(config->output_section_name, string("ell.ascii"), ell);
+		//status = block->put_val<vector<number> >(config->output_section_name, string("ell.ascii"), ell);
 		config->cosebis->setZbins(nPairs);
 		config->cosebis->setPower(logell,InputPower_vec_vec);
 		clog<<"ell="<<15<<"    Power="<<config->cosebis->ReturnPower(15.,0);
@@ -188,16 +224,16 @@ extern "C" {
 				//int p1=cosebis.calP(nBins,bin1,bin2);
 				for(int n1=n_max*p1,m=0 ;n1<n_max*(p1+1) ;n1++,m++)
 					En_vec[m]=En_mat.get(n1);
-				if(config->IsItBmodes)
-					name_En=string("cosebis_Bn_From_Cl_bin_")+toString(j_bin+1)+string("_")+toString(i_bin+1)+string("_thetamin_")
-						+toString(config->theta_min,2)+string("_thetamax_")+toString(config->theta_max,2);
-				else
-					name_En=string("cosebis_En_From_Cl_bin_")+toString(j_bin+1)+string("_")+toString(i_bin+1)+string("_thetamin_")
-						+toString(config->theta_min,2)+string("_thetamax_")+toString(config->theta_max,2);
+				name_En=string("bin_")+toString(j_bin+1)+string("_")+toString(i_bin+1);
 				status = block->put_val<vector<double> >(config->output_section_name, name_En, En_vec);
 				p1++;
 			}
 		}
+		status = block->put_val<int>(config->output_section_name, string("n_mode"), n_max);
+		status = block->put_val<bool>(config->output_section_name, string("b_modes"), config->IsItBmodes);
+		status = block->put_val<double>(config->output_section_name, string("theta_min"), config->theta_min);
+		status = block->put_val<double>(config->output_section_name, string("theta_max"), config->theta_max);
+
 		for(int n=0;n<n_max;n++)
 			n_vals[n]=n+1;
 

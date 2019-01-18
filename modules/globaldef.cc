@@ -20,6 +20,22 @@ bool CheckFilesExist(const vector<string> filename_vec)
   return true;
 }
 
+bool CheckFolderExist(const string& folderName)
+{
+  struct stat sb;
+  if( stat(folderName.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))
+  {
+    clog<<"folder: "<<folderName<<" exists."<<endl;
+    return true;
+  }
+  else
+  {
+      clog<<"folder: "<<folderName<<" does not exist."<<endl;
+    return false;
+  }
+}
+
+
 void writeValue(number value,FILE* handler)
 {
   float dummy = value;

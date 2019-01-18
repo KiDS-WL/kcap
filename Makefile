@@ -2,11 +2,11 @@
 # replace all of this, but you need to keep this line
 # at the top:
 include ${COSMOSIS_SRC_DIR}/config/compilers.mk
-export MODULE   = ./modules
-export 
+
+MODULE = ./modules
 
 USER_CXXFLAGS += -I${GSL_INC}
-USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L $(MODULE) -lpslib -lstdc++ -lz -Wno-deprecated -I $(MODULE)
+USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L$(MODULE) -lpslib -lstdc++ -lz -Wno-deprecated -I$(MODULE)
 #fgas
 #USER_CXXFLAGS += -I${GSL_INC}
 #USER_LDFLAGS += -lcosmosis -L${GSL_LIB}  -lgsl -lgslcblas
@@ -16,30 +16,43 @@ USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L $(MODULE) -lpsli
 #--- linker
 #-----------------------------------
 
-MYLIB     = libpslib.a
+PSLIB     = libpslib.a
 
 #-----------------------------------
 #--- rules
 #-----------------------------------
-all: libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so lib2pcfs_likelihood.so
+all: $(MODULE)/$(PSLIB) libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so lib2pcfs_likelihood.so
 
-libcosebis_cl.so: COSEBIs_Cl_cosmosis_interface.cc $(MYLIB)
+$(MODULE)/$(PSLIB)::
+	cd $(MODULE) && $(MAKE)
+
+libcosebis_cl.so: COSEBIs_Cl_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_Cl_cosmosis_interface.cc -shared -o libcosebis_cl.so $(LDFLAGS) $(USER_LDFLAGS)
 
-libcosebis_2pcfs.so: COSEBIs_2PCFs_cosmosis_interface.cc $(MYLIB)
+libcosebis_2pcfs.so: COSEBIs_2PCFs_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_2PCFs_cosmosis_interface.cc -shared -o libcosebis_2pcfs.so $(LDFLAGS) $(USER_LDFLAGS)
 
-libcosebis_likelihood.so: COSEBIs_likelihood_cosmosis_interface.cc $(MYLIB)
+libcosebis_likelihood.so: COSEBIs_likelihood_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_likelihood_cosmosis_interface.cc -shared -o libcosebis_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
 
-lib2pcfs_likelihood.so: 2pcfs_likelihood_cosmosis_interface.cc $(MYLIB)
+lib2pcfs_likelihood.so: 2pcfs_likelihood_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) 2pcfs_likelihood_cosmosis_interface.cc -shared -o lib2pcfs_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
 
 #fgas.so: fgas_cosmosis.cpp src/libclusters.a
 #	$(CXX) $(CXXFLAGS) fgas_cosmosis.cpp -shared -o fgas.so $(LDFLAGS) src/libclusters.a
 
-
-$(MYLIB):
-	$(MAKE) -C $(MODULE) all
 #src/libclusters.a:
 #	$(MAKE) -C src
+
+# Clean up
+.PHONY: clean
+clean:
+	cd $(MODULE) && $(MAKE) clean
+	rm -f libcosebis_cl.so
+	rm -f libcosebis_2pcfs.so
+	rm -f libcosebis_likelihood.so
+	rm -f lib2pcfs_likelihood.so
+	test -n "./" && rm -rf ./libcosebis_cl.so.dSYM/
+	test -n "./" && rm -rf ./libcosebis_2pcfs.so.dSYM/
+	test -n "./" && rm -rf ./libcosebis_likelihood.so.dSYM/
+	test -n "./" && rm -rf ./lib2pcfs_likelihood.so.dSYM/

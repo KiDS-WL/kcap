@@ -1,11 +1,19 @@
 #include "WnLog.h"
 
 WnLog::WnLog(): Wn_table()
-{l=thetamin=thetamax=1.;n=0;lthresh=0.;}
-WnLog::WnLog(number thetamin1,number thetamax1,int nMax,string WnFileName)
 {
-  setWnLogName(WnFileName);
-  	setTheta(thetamin1,thetamax1,nMax);
+	l=thetamin=thetamax=1.;
+	n=0;
+	lthresh=0.;
+	TnFolderName="cosmosis-standard-library/cosebis/Tn";
+	WnFolderName="cosmosis-standard-library/cosebis/WnLog/";
+	WnFileName="WnLog";
+}
+WnLog::WnLog(number thetamin1,number thetamax1,int nMax,string TnFolderName,string WnFolderName
+		,string WnFileName)
+{
+  setWnLogName(TnFolderName,WnFolderName,WnFileName);
+  setTheta(thetamin1,thetamax1,nMax);
 }
 
 WnLog::~WnLog(){}
@@ -17,9 +25,20 @@ number WnLog::integrant(number x)
 	return integ;
 }
 
-void WnLog::setWnLogName(string WnFileName1)
+void WnLog::setWnLogName(string TnFolderName1,string WnFolderName1,string WnFileName1)
 {
+	TnFolderName=TnFolderName1;
+	WnFolderName=WnFolderName1;
 	WnFileName=WnFileName1;
+	// Set folder names to "." if empty so that files are written to the cwd
+	if(TnFolderName.empty()) 
+	{
+		TnFolderName = ".";
+	}
+	if(WnFolderName.empty()) 
+	{
+		WnFolderName = ".";
+	}
 }
 
 void WnLog::setTheta(number thetamin1,number thetamax1,int nMax)
@@ -32,19 +51,23 @@ void WnLog::setTheta(number thetamin1,number thetamax1,int nMax)
 	root.clear();
 	norm.clear();
 	rootTheta.clear();
-	ifstream fRoot((string("cosmosis-standard-library/cosebis/TLogsRootsAndNorms/Root_")+toString(thetamin/arcmin,2)+string("-")
-	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
-	ifstream fNorm((string("cosmosis-standard-library/cosebis/TLogsRootsAndNorms/Normalization_")+toString(thetamin/arcmin,2)+string("-")
-	    +toString(thetamax/arcmin,2)+string(".table")).c_str());
+	string fRoot_name=TnFolderName+string("/Root_")+toString(thetamin/arcmin,2)+string("-")
+	    +toString(thetamax/arcmin,2)+string(".table");
+	string fNorm_name=TnFolderName+string("/Normalization_")+toString(thetamin/arcmin,2)+string("-")
+	    +toString(thetamax/arcmin,2)+string(".table");
+	ifstream fRoot((fRoot_name).c_str());
+	ifstream fNorm((fNorm_name).c_str());
 	if(fRoot.fail())
 	{
-		clog<<"error occured during opening Root file"<<endl;
+		clog<<"in WnLog.cc: error occured during opening Root file:"<<fRoot_name<<endl;
+		clog<<"exiting now ..."<<endl;
 		exit(1);
 	}
 
 	if(fNorm.fail())
 	{
-		clog<<"error occured during opening Normalization file"<<endl;
+		clog<<"in WnLog.cc: error occured during opening Normalization file:"<<fNorm_name<<endl;
+		clog<<"exiting now ..."<<endl;
 		exit(1);
 	}
 
@@ -52,7 +75,7 @@ void WnLog::setTheta(number thetamin1,number thetamax1,int nMax)
 	{
 		if(fRoot.eof())
 		{
-			clog<<"nMax is too big"<<endl;
+			clog<<"nMax is too big, nMax="<<nMax<<", exiting now ..."<<endl;
 			exit(1);
 		}
 		int r=0;
@@ -84,14 +107,18 @@ void WnLog::set(int order)
 	clog<<"set order of WnLog"<<endl;
 	n= order;
 	// is there a table on disk?
-	string myname =string("cosmosis-standard-library/cosebis/")+
-		 string(WnFileName)+toString(n)+string("-")
+	string myname =WnFolderName+string("/")+WnFileName+toString(n)+string("-")
 		 +toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	setName(myname.c_str(),function_cosebis::NONAMECOUNTER);
 	ifstream fhandler((myname+string(".table")).c_str());
 	// NO?
 	if (fhandler.fail())
 	{
+		if(!CheckFolderExist(WnFolderName))
+		{
+			clog<<"making foler for Wn:"<<WnFolderName<<endl;
+			mkdir((WnFolderName).c_str(), 0777);
+		}
 		clog<<"writing table:"<<myname<<endl;
 		StepFinder();
 		// transition point between the different orders for the Gauss-Legendere integration

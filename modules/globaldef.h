@@ -69,6 +69,7 @@ void   writeValue(number,FILE*);
 ///returns true if the file(s) exists
 bool CheckFilesExist(const string& filename);
 bool CheckFilesExist(const vector<string> filename_vec);
+bool CheckFolderExist(const string& folderName);
 
 /// read number from binary data file
 double read(FILE*);
