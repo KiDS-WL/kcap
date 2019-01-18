@@ -68,7 +68,7 @@ function execute_all(block, config) result(status)
 		return
 	endif
 	
-	status = camb_interface_save_sigma8(block)
+	status = camb_interface_save_sigmas(block)
 	if (status .ne. 0) then
 		write(*,*) "Failed to save sigma8 parameter. Error", status
 		return
