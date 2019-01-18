@@ -95,6 +95,8 @@ class HMxModule(CosmoSISModule):
                             "one_parameter_hmcode" : "T" if one_parameter_hmcode else "F"})
         if ihm is not None:
             self.config["ihm"] = str(ihm)
+        elif hm_mode.lower() == "hmx":
+            self.config["ihm"] = "18"
 
         self.default_parameters = {"halo_model_parameters" : {"log10_Theat" : "7.8"}}
         
