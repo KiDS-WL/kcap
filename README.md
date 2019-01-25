@@ -34,16 +34,6 @@ We can now build kcap (which installs a standalone version of CosmoSIS):
 python build.py
 ```
 
-To test that everything is working, run the tests (todo...) examples in `examples/`:
-```
-mkdir examples/output
-cosmosis examples/example_b.ini
-```
-For MPI:
-```
-mpirun -n 4 cosmosis --mpi examples/example_b.ini
-```
-
 To uninstall CosmoSIS (for example if you need to get the newest version), run `pip uninstall cosmosis_standalone`. To make a fresh installation of kcap, run `python build.py --clean`.
 
 ### Installation on macOS and other details
@@ -62,6 +52,19 @@ chmod +x Miniconda3-latest-Linux-x86_64.sh
 ```
 
 The installation will ask whether you want to add this conda installation to your `PATH` by adding some lines to your `.bashrc`. If you choose not to (for example because you don't want it to be the default installation), make sure the installation is accessible when building and running kcap.
+
+## Usage
+
+Make sure `conda` and MPI are accesible (e.g., by running `module load anaconda` and `module load openmpi`) and that `kcap_env` is activated (`source activate kcap_env`).
+To test that everything is working, run the tests (todo...) examples in `examples/`:
+```
+mkdir examples/output
+cosmosis examples/example_b.ini
+```
+For MPI:
+```
+mpirun -n 4 cosmosis --mpi examples/example_b.ini
+```
 
 ## Development
 
