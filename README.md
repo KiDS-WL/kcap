@@ -27,7 +27,7 @@ Now set up the conda environment using the provided `conda_env.yaml` file:
 ```
 conda env create -f conda_env.yaml
 ```
-This creates a `kcap_env` environment that should have all the necessary dependencies. Activate the environment with `source activate kcap_test`.
+This creates a `kcap_env` environment that should have all the necessary dependencies. Activate the environment with `source activate kcap_env`.
 
 We can now build kcap (which installs a standalone version of CosmoSIS):
 ```
@@ -48,7 +48,7 @@ To uninstall CosmoSIS (for example if you need to get the newest version), run `
 
 ### Installation on macOS and other details
 
-On macOS the current standard compiler suite is too old for building CosmoSIS. To alleviate this, install an up-to-date version of gcc (e.g., with `homebrew` by running `brew install gcc`) and set the environmental variables `CC`, `CXX`, (and `FC` and `MPIFC`, in case Fortran compilers other than `gfortran` and `mpif90` are needed). 
+On macOS the current standard compiler suite is too old for building CosmoSIS. To alleviate this, install an up-to-date version of gcc (e.g., with `homebrew` by running `brew install gcc`) and set the environmental variables `CC`, `CXX`, (and `FC` and `MPIFC`, in case Fortran compilers other than `gfortran` and `mpif90` are needed). For example, assuming you have gcc 8 installed, set `CC=gcc-8` and `CXX=g++-8`
 
 If no MPI support is required, run `python build.py --no-mpi`.
 
