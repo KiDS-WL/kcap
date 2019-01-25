@@ -1,0 +1,11 @@
+name: kcap_env
+dependencies:
+  - python=3
+  - future
+  - pyyaml
+  - numpy
+  - scipy
+  - astropy
+  - mpi4py
+  - pip:
+    - emcee
