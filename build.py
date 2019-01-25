@@ -10,7 +10,7 @@ minimum_cosmosis_version = pkg_resources.parse_version("0.0.8")
 minimum_cc_version = pkg_resources.parse_version("5.0.0")
 minimum_cxx_version = pkg_resources.parse_version("5.0.0")
 
-def check_cosmosis():
+def check_cosmosis(mpi=False):
     try:
         import cosmosis
         try:
@@ -22,7 +22,7 @@ def check_cosmosis():
         if minimum_cosmosis_version > cosmosis_version:
             raise ModuleNotFoundError(f"Installed CosmoSIS version ({cosmosis_version}) does not meet requirements ({minimum_cosmosis_version}).")
     except ModuleNotFoundError:
-        env = check_compilers()
+        env = check_compilers(mpi)
         install_cosmosis(env)
 
     import cosmosis
@@ -33,11 +33,11 @@ def install_cosmosis(env):
     cosmosis_source = "git+https://bitbucket.org/tilmantroester/cosmosis.git@kcap#egg=cosmosis-standalone"
     subprocess.check_call([sys.executable, "-m", "pip", "install", cosmosis_source], env=env)
 
-def check_compilers():
+def check_compilers(mpi=False):
     default_cc    = "gcc"
     default_cxx   = "g++"
     default_fc    = "gfortran"
-    default_mpifc = "" # Disable MPI be default, else set to "mpif90"
+    default_mpifc = "mpif90" if mpi else ""
 
     env = {"PATH"  : os.environ["PATH"] if "PATH" in os.environ else "/usr/bin/",
            "CC"    : os.environ["CC"] if "CC" in os.environ else default_cc,
@@ -62,9 +62,9 @@ def check_compilers():
  
     return env
 
-def build():
+def build(mpi=False):
     # Check for sufficiently recent CosmoSIS-standalone installation
-    cosmosis_env = check_cosmosis()
+    cosmosis_env = check_cosmosis(mpi)
 
     os.makedirs("build", exist_ok=True)
     print("Running cmake.")
@@ -95,10 +95,10 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Build the KiDS cosmology pipeline.", add_help=True)
     parser.add_argument("--clean", action='store_true', help="Clean up.")
+    parser.add_argument("--no-mpi", action='store_true', help="Don't try to install with MPI support.")
     args = parser.parse_args(sys.argv[1:])
 
     if args.clean:
         clean()
     else:
-        build()
-        install_requirements()
+        build(mpi=not args.no_mpi)
