@@ -107,12 +107,7 @@ void WnLog::set(int order)
 	clog<<"set order of WnLog"<<endl;
 	n= order;
 	// is there a table on disk?
-<<<<<<< HEAD
-	string myname =string("cosebis/")+
-		 string(WnFileName)+toString(n)+string("-")
-=======
 	string myname =WnFolderName+string("/")+WnFileName+toString(n)+string("-")
->>>>>>> 5eb71d88d92fbbceb8b74a4e14e1cd88dd1f9343
 		 +toString(thetamin/arcmin,2)+string("-")+toString(thetamax/arcmin,2);
 	setName(myname.c_str(),function_cosebis::NONAMECOUNTER);
 	ifstream fhandler((myname+string(".table")).c_str());
