@@ -153,7 +153,7 @@ def setup(options):
 def execute(block, config):
     inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
     
-    n_bin = block["shear_xi", "nbin_a"]
+    n_bin = block["shear_xi_plus", "nbin_a"]
 
     if order_cov == "xi_pm-bin-theta":
         theory_xi_plus_vector = []
@@ -165,26 +165,27 @@ def execute(block, config):
             for j in range(i+1):
                 data_xi_plus, data_xi_minus = data_vectors[i][j]
 
-                theory_theta = block["shear_xi", "theta"]
-                theory_xi_plus = block["shear_xi", f"xiplus_{i+1}_{j+1}"]
-                theory_xi_minus = block["shear_xi", f"ximinus_{i+1}_{j+1}"]
+                theory_xi_plus_theta = block["shear_xi_plus", "theta"]
+                theory_xi_plus = block["shear_xi_plus", f"bin_{i+1}_{j+1}"]
+                theory_xi_minus_theta = block["shear_xi_minus", "theta"]
+                theory_xi_minus = block["shear_xi_minus", f"bin_{i+1}_{j+1}"]
 
-                theory_xi_plus = get_theory_point(theory_theta, theory_xi_plus,
+                theory_xi_plus = get_theory_point(theory_xi_plus_theta, theory_xi_plus,
                                                   mode=angular_binning_mode,
                                                   interpolated_x=theta_xi_plus,
                                                   bin_edges=angular_bin_edges,
-                                                  weighting=theory_theta,
+                                                  weighting=theory_xi_plus_theta,
                                                   cut_bins=cut_xi_plus_idx)
-                theory_xi_minus = get_theory_point(theory_theta, theory_xi_minus,
+                theory_xi_minus = get_theory_point(theory_xi_minus_theta, theory_xi_minus,
                                                    mode=angular_binning_mode,
                                                    interpolated_x=theta_xi_minus,
                                                    bin_edges=angular_bin_edges,
-                                                   weighting=theory_theta,
+                                                   weighting=theory_xi_minus_theta,
                                                    cut_bins=cut_xi_minus_idx)
 
                 if constant_c_offset:
                     theory_xi_plus += block["shear_c_bias", "delta_c"]
-                    theory_xi_minus += block["shear_c_bias", "delta_c"]
+                    # theory_xi_minus += block["shear_c_bias", "delta_c"]
                 if xi_p_c is not None:
                     theory_xi_plus += block["shear_c_bias", "A_c"]**2 * xi_p_c
                     theory_xi_minus += block["shear_c_bias", "A_c"]**2 * xi_m_c
@@ -203,26 +204,27 @@ def execute(block, config):
             for j in range(i,n_bin):
                 data_xi_plus, data_xi_minus = data_vectors[j][i]
 
-                theory_theta = block["shear_xi", "theta"]
-                theory_xi_plus = block["shear_xi", f"xiplus_{j+1}_{i+1}"]
-                theory_xi_minus = block["shear_xi", f"ximinus_{j+1}_{i+1}"]
+                theory_xi_plus_theta = block["shear_xi_plus", "theta"]
+                theory_xi_plus = block["shear_xi_plus", f"bin_{j+1}_{i+1}"]
+                theory_xi_minus_theta = block["shear_xi_minus", "theta"]
+                theory_xi_minus = block["shear_xi_minus", f"bin_{j+1}_{i+1}"]
 
-                theory_xi_plus = get_theory_point(theory_theta, theory_xi_plus,
+                theory_xi_plus = get_theory_point(theory_xi_plus_theta, theory_xi_plus,
                                                   mode=angular_binning_mode,
                                                   interpolated_x=theta_xi_plus,
                                                   bin_edges=angular_bin_edges,
-                                                  weighting=theory_theta,
+                                                  weighting=theory_xi_plus_theta,
                                                   cut_bins=cut_xi_plus_idx)
-                theory_xi_minus = get_theory_point(theory_theta, theory_xi_minus,
+                theory_xi_minus = get_theory_point(theory_xi_minus_theta, theory_xi_minus,
                                                    mode=angular_binning_mode,
                                                    interpolated_x=theta_xi_minus,
                                                    bin_edges=angular_bin_edges,
-                                                   weighting=theory_theta,
+                                                   weighting=theory_xi_minus_theta,
                                                    cut_bins=cut_xi_minus_idx)
 
                 if constant_c_offset:
                     theory_xi_plus += block["shear_c_bias", "delta_c"]**2
-                    theory_xi_minus += block["shear_c_bias", "delta_c"]**2
+                    # theory_xi_minus += block["shear_c_bias", "delta_c"]**2
                 if xi_p_c is not None:
                     theory_xi_plus += block["shear_c_bias", "A_c"]**2 * xi_p_c
                     theory_xi_minus += block["shear_c_bias", "A_c"]**2 * xi_m_c
