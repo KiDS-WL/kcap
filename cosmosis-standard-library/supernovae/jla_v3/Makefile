@@ -1,8 +1,8 @@
 include ${COSMOSIS_SRC_DIR}/config/compilers.mk
 
 
-USER_CXXFLAGS+= -I${GSL_INC}
-USER_LDFLAGS+=  -lcosmosis ${LAPACK_LINK} -L${GSL_LIB} -lgslcblas -lgsl 
+USER_CXXFLAGS+= -I ${GSL_INC}
+USER_LDFLAGS+=  -lcosmosis ${LAPACK_LINK} -L ${GSL_LIB} -lgslcblas -lgsl
 
 
 all: libjla.a jla.so

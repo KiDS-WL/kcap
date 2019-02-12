@@ -4,12 +4,14 @@ COSEBIs::COSEBIs(){}
 
 COSEBIs::~COSEBIs(){}
 
-COSEBIs::COSEBIs(int nMaximum,number thetamin, number thetamax, int nPairs)
+COSEBIs::COSEBIs(int nMaximum,number thetamin, number thetamax, int nPairs
+	,string WnFolderName,string TnFolderName,string OutputTnFolderName)
 {
-	initialize(nMaximum,thetamin, thetamax, nPairs);
+	initialize(nMaximum,thetamin, thetamax, nPairs, WnFolderName, TnFolderName,OutputTnFolderName);
 }
 
-void COSEBIs::initialize(int nMaximum,number thetamin, number thetamax, int nPairs)
+void COSEBIs::initialize(int nMaximum,number thetamin, number thetamax, int nPairs
+	,string WnFolderName1,string TnFolderName1,string OutputTnFolderName1)
 {
 	clog<<"in COSEBIs initialize"<<endl;
 	DEn_calculated=false;
@@ -20,6 +22,9 @@ void COSEBIs::initialize(int nMaximum,number thetamin, number thetamax, int nPai
     EnInteglimitSet=false;
 	//isFlat=false;
 	TpmNotDone=true;
+	WnFolderName=WnFolderName1;
+	TnFolderName=TnFolderName1;
+	OutputTnFolderName=OutputTnFolderName1;
 	setEparam(nMaximum,thetamin*arcmin,thetamax*arcmin);
 	setZbins(nPairs);
 	//setNoise(A,sigmaE,nBar);
@@ -55,7 +60,7 @@ void COSEBIs::setWns(int nMaximum)
 	{
         EnInteglimitSet=false;
 		clog<<"Wn not set setting now:"<<endl;
-		WnLog WnL(thetamin,thetamax,nMaximum);
+		WnLog WnL(thetamin,thetamax,nMaximum,WnFolderName,TnFolderName);
 		Wn_vec.clear();
 		///these need to be in separate for loops, otherwise a segmentation fault happens!
 		for(int n=0; n<nMaximum; n++)
@@ -71,7 +76,7 @@ void COSEBIs::setTs(int nMaximum)
 	if(!TnSet)
 	{
 		clog<<"setting Tpm in COSEBIs"<<endl;
-		TpnLog Tpn(thetamin,thetamax,nMaximum);
+		TpnLog Tpn(thetamin,thetamax,nMaximum,TnFolderName,OutputTnFolderName);
 		for(int n=0; n<nMaximum; n++)
 			Tpn_vec.push_back(Tpn);
 		for(int n=0; n<nMaximum; n++)

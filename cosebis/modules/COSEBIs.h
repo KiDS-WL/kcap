@@ -30,8 +30,12 @@ class COSEBIs : public function_cosebis
 public:
 	COSEBIs();
 	~COSEBIs();
-	COSEBIs(int nMax,number thetamin, number thetamax, int nPairs);
-	void initialize(int nMax,number thetamin, number thetamax, int nPairs);
+	COSEBIs(int nMax,number thetamin, number thetamax, int nPairs,string WnFolderName,string TnFolderName,string OutputTnFolderName);
+	//void initialize(int nMax,number thetamin, number thetamax, int nPairs);
+	void initialize(int nMaximum,number thetamin, number thetamax, int nPairs
+		,string WnFolderName1="cosmosis-standard-library/cosebis/WnLog/"
+		,string TnFolderName1="cosmosis-standard-library/cosebis/TLogsRootsAndNorms/"
+		,string OutputTnFolderName="cosmosis-standard-library/cosebis/TpnLog");
 	void setZbins(int nPairs1);
 	///sets the COSEBIs parameters
 	void setEparam(int nMax1,number thetamin1, number thetamax1);
@@ -149,6 +153,7 @@ public:
 
 	
 private:
+  string WnFolderName,TnFolderName,OutputTnFolderName;
   vector<WnLog> Wn_vec;
   vector<TpnLog> Tpn_vec; 
   vector<function_cosebis> powerspectrum_vec;
