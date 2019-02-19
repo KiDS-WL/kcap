@@ -3,7 +3,7 @@ import numpy as np
 from cosmosis.datablock import option_section
 
 def setup(options):
-    alpha = options.get_string(option_section, "alpha", 0.5)
+    alpha = options.get_double(option_section, "alpha", default=0.5)
     return alpha
 
 def execute(block, config):

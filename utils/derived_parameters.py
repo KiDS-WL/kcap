@@ -15,7 +15,7 @@ def setup(options):
         if p not in ["s8", "s_star"]:
             raise ValueError(f"Derived parameter {p} not supported.")
         if p == "s8" or p == "s_star":
-            config["alpha"] = options.get_string(option_section, "alpha", 0.5)
+            config["alpha"] = options.get_double(option_section, "alpha", default=0.5)
 
     return config
 
