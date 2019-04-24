@@ -47,26 +47,27 @@ class ConsistencyModule(CosmoSISModule):
 class CAMBModule(CosmoSISModule):
     module_name = "camb"
     def __init__(self, module_file="boltzmann/camb/camb.so", base_path=r"%(CSL_PATH)s",
-                       z_min=0.0, z_max=6.0, n_z=100, transfer_function=True):
+                       transfer_function=True, **kwargs):
         super().__init__(module_file, base_path)
 
         self.config.update({"mode"              : "all" if transfer_function else "background",
                             "lmax"              : "2500",
                             "feedback"          : "0",
-                            "zmax"              : str(float(z_max)),
-                            "nz"                : str(n_z),
-                            "background_zmax"   : str(float(z_max)),
-                            "background_nz"     : str(int(z_max*100)),})
+                            "zmax"              : str(float(kwargs.pop("zmax", 6.0))),
+                            "nz"                : str(int(kwargs.pop("nz", 100))),
+                            "background_zmax"   : str(float(kwargs.pop("background_zmax", 6.0))),
+                            "background_nz"     : str(int(kwargs.pop("background_nz", 600))),})
+        self.config.update({k : str(v) for k,v in kwargs.items()})
 
-        self.default_parameters = {"cosmological_parameters" : {"omega_m"  : "0.3",
-                                                                "h0"       : "0.70",
-                                                                "omega_b"  : "0.05",
-                                                                "tau"      : "0.089",
-                                                                "n_s"      : "0.96",
-                                                                "omega_k"  : "0.0",
-                                                                "w"       : "-1.0",
-                                                                "wa"      : "0.0",
-                                                                "A_s"      : "2.1e-9",}}
+        self.default_parameters = {}#"cosmological_parameters" : {"omega_m"  : "0.3",
+        #                                                         "h0"       : "0.70",
+        #                                                         "omega_b"  : "0.05",
+        #                                                         "tau"      : "0.089",
+        #                                                         "n_s"      : "0.96",
+        #                                                         "omega_k"  : "0.0",
+        #                                                         "w"       : "-1.0",
+        #                                                         "wa"      : "0.0",
+        #                                                         "A_s"      : "2.1e-9",}}
 
 class HMxModule(CosmoSISModule):
     module_name = "HMx"
@@ -174,6 +175,28 @@ class COSEBISModule(CosmoSISModule):
                             "Roots_n_Norms_FolderName" : r"%(COSEBIS_PATH)s/TLogsRootsAndNorms",
                             "Tn_Output_FolderName"     : r"%(COSEBIS_PATH)s/TpnLog/"})
 
+class BOSSModule(CosmoSISModule):
+    module_name = "boss"
+    output_section_name = "xi_wedges"
+    
+    def __init__(self, probes=[], window_file="", bands_file="", verbose=False,
+                       module_file=r"cosmosis_module.py", base_path=r"%(BOSS_PATH)s",
+                       **kwargs):
+        super().__init__(module_file, base_path)
+
+        probe = probes[0]
+        if len(probes) > 1:
+            warnings.warn(f"Only first probe ({probe}) will be used.")
+        if not (probe[0].lower() == "galaxy" and probe[1].lower() == "galaxy"):
+            raise ValueError("BOSS only supports galaxy-galaxy.")
+
+        self.config.update({"window_file"          : window_file,
+                            "bands_file"           : bands_file,
+                            "output_section_name"  : self.output_section_name,
+                            "verbose"              : "T" if verbose else "F",
+                            })
+        self.config.update({k : str(v) for k,v in kwargs.items()})
+
 class CosmoSISPipeline:
     def __init__(self, paths={}, sampler="", parameter_file="", prior_file="", 
                        verbose=0, debug=False):
@@ -183,6 +206,8 @@ class CosmoSISPipeline:
             self.paths["CSL_PATH"] = os.path.join(self.paths["KCAP_PATH"], "cosmosis-standard-library")
         if "COSEBIS_PATH" not in paths:
             self.paths["COSEBIS_PATH"] = os.path.join(self.paths["KCAP_PATH"], "cosebis")
+        if "BOSS_PATH" not in paths:
+            self.paths["BOSS_PATH"] = os.path.join(self.paths["KCAP_PATH"], "boss")
 
         self.config_defaults = {key : path for key, path in self.paths.items()}
 
@@ -218,7 +243,7 @@ class CosmoSISPipeline:
         return pipeline
 
     def run(self, parameters={}):
-        self.pipeline_ini, values = self.assemble_ini()
+        self.pipeline_ini, values = self.assemble_ini(parameters)
         self.pipeline = self.create_pipeline(self.pipeline_ini, values)
         p = [p.start for p in self.pipeline.parameters]
         for section in parameters.keys():

@@ -6,7 +6,7 @@ import io
 import numpy as np
 from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, \
                             HMxModule, ProjectionModule, LoadNofzModule, \
-                            Cl2xiModule, COSEBISModule, \
+                            Cl2xiModule, COSEBISModule, BOSSModule, \
                             config_to_string
 
 def dict_insert(d, idx, obj, after=False):
@@ -15,14 +15,15 @@ def dict_insert(d, idx, obj, after=False):
     return collections.OrderedDict(d_list[:idx] + [obj] + d_list[idx:])
 
 class TwoPoint:
-    supported_fields_2D = ("shear", "y")
-    supported_fields_3D = ("matter", "pressure")
+    supported_fields_2D = ("shear", "galaxy", "y")
+    supported_fields_3D = ("matter", "galaxy", "pressure")
 
     def __init__(self, probes={}, parameters={},
                  transfer_function="camb", nonlinear_Pk="HMx", 
                  tomographic_bin_names={}, nofz_files={},
                  module_configs={},
-                 module_paths={}):
+                 module_paths={},
+                 verbose=0, debug=False):
 
         self.probes = probes
 
@@ -37,7 +38,8 @@ class TwoPoint:
                         if f not in self.supported_fields_3D:
                             raise ValueError(f"Field {f} for statistic {statistic} not supported.")
                     fields_3D += [field1, field2]
-                elif statistic.lower() == "cl" or statistic.lower() == "xi" or statistic.lower() == "cosebis":
+                elif statistic.lower() == "cl" or statistic.lower() == "xi" \
+                     or statistic.lower() == "cosebis" or statistic.lower() == "wedges":
                     for f in [field1, field2]:
                         if f not in self.supported_fields_2D:
                             raise ValueError(f"Field {f} for statistic {statistic} not supported.")
@@ -50,12 +52,14 @@ class TwoPoint:
             statistics += ["pk", "cl"]
         if "cosebis" in statistics:
             statistics += ["pk", "cl"]
+        if "wedges" in statistics:
+            statistics += ["pk",]
         if "cl" in statistics:
             statistics += ["pk"]
         if "shear" in fields_2D:
             fields_3D += ["matter"]
         if "galaxy" in fields_2D:
-            fields_3D += ["matter"]
+            fields_3D += ["galaxy"]
         if "y" in fields_2D:
             fields_3D += ["pressure"]
 
@@ -72,7 +76,7 @@ class TwoPoint:
         paths = {"HMX_PATH" : "%(KCAP_PATH)s/HMx/"}
         paths.update(module_paths)
 
-        self.pipeline = CosmoSISPipeline(paths=paths)
+        self.pipeline = CosmoSISPipeline(paths=paths, verbose=verbose, debug=debug)
 
         self.modules = collections.OrderedDict()
 
@@ -89,6 +93,8 @@ class TwoPoint:
                 self.add_module(("HMx", HMxModule(hm_mode="hmcode", 
                                                   transfer_function=transfer_function,
                                                   **module_configs.get("HMx", {}))))
+            elif nonlinear_Pk.lower() == "none":
+                pass
             else:
                 raise ValueError(f"Nonlinear P(k) method {nonlinear_Pk} not supported.")
 
@@ -109,6 +115,10 @@ class TwoPoint:
         if "cosebis" in self.statistics:
             self.add_module(("cosebis", COSEBISModule(probes=probes["cosebis"],
                                                       **module_configs.get("cosebis", {}))))
+
+        if "wedges" in self.statistics:
+            self.add_module(("boss", BOSSModule(probes=probes["wedges"],
+                                                      **module_configs.get("boss", {}))))
 
     def add_module(self, module, before=None, after=None):
         if before is None and after is None:
@@ -225,6 +235,49 @@ class TwoPoint:
         if return_bin_names:
             return cosebis, modes, bin_names
         return cosebis, modes
+
+    def wedges(self, probes, 
+                     return_bin_names=False):
+        if "wedges" not in self.statistics:
+            raise ValueError(f"TwoPoint not initialized for wedges.")
+        if probes[0] not in self.fields_2D or probes[1] not in self.fields_2D:
+            raise ValueError(f"TwoPoint not initialized for probes {probes}.")
+        if not self.pipeline_has_run:
+            self.data = self.run_pipeline(self.parameters)
+
+        section = self.modules["boss"].output_section_name
+
+        vtheo = self.data[section, "vtheo"]
+        bands = self.data[section, "bands"]
+        vtheo_convolved = self.data[section, "vtheo_convolved"]
+
+        return (vtheo, bands), (vtheo_convolved, None)
+
+class StaticTwoPoint(TwoPoint):
+    def __init__(self, sampler, sampler_config, values_file, prior_file, 
+                       likelihood="2pt_likelihood",
+                       probes={}, parameters={},
+                       transfer_function="camb", nonlinear_Pk="HMx", 
+                       tomographic_bin_names={}, nofz_files={},
+                       module_configs={},
+                       module_paths={}):
+        super().__init__(probes, parameters, transfer_function, nonlinear_Pk, 
+                         tomographic_bin_names, nofz_files,
+                         module_configs, module_paths)
+
+        
+        self.pipeline["runtime"]["sampler"] = sampler
+        self.pipeline[sampler] = sampler_config
+        
+        self.pipeline["pipeline"]["likelihoods"] = likelihood
+        self.pipeline["pipeline"]["values"] = values_file
+        self.pipeline["pipeline"]["priors"] = prior_file
+
+        if likelihood.lower() == "2pt_likelihood":
+            self.add_module(("2pt_likelihood", TwoPointLikelihoodModule()))
+
+    def run_pipeline(self, parameters={}):
+        raise RuntimeError(f"{type(self)} only produces ini files and should not be run directly.")
 
 # class Predict2point(cosmosis_utils.CosmoSISPipeline):
 #     def __init__(self, probes=[], statistics=[], transfer_function="camb",
