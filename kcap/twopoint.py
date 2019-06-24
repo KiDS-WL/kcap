@@ -5,8 +5,8 @@ import io
 
 import numpy as np
 from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, \
-                            HMxModule, ProjectionModule, LoadNofzModule, \
-                            Cl2xiModule, COSEBISModule, BOSSModule, \
+                            HalofitModule, HMxModule, ProjectionModule, LoadNofzModule, \
+                            Cl2xiModule, COSEBISModule, BOSSModule, InterpolatePowerSpectrumModule, \
                             config_to_string
 
 def dict_insert(d, idx, obj, after=False):
@@ -54,6 +54,7 @@ class TwoPoint:
             statistics += ["pk", "cl"]
         if "wedges" in statistics:
             statistics += ["pk",]
+            fields_3D += ["galaxy"]
         if "cl" in statistics:
             statistics += ["pk"]
         if "shear" in fields_2D:
@@ -93,6 +94,8 @@ class TwoPoint:
                 self.add_module(("HMx", HMxModule(hm_mode="hmcode", 
                                                   transfer_function=transfer_function,
                                                   **module_configs.get("HMx", {}))))
+            elif nonlinear_Pk.lower() == "halofit":
+                self.add_module(("halofit", HalofitModule(**module_configs.get("halofit", {}))))
             elif nonlinear_Pk.lower() == "none":
                 pass
             else:
@@ -116,19 +119,38 @@ class TwoPoint:
             self.add_module(("cosebis", COSEBISModule(probes=probes["cosebis"],
                                                       **module_configs.get("cosebis", {}))))
 
-        if "wedges" in self.statistics:
-            self.add_module(("boss", BOSSModule(probes=probes["wedges"],
-                                                      **module_configs.get("boss", {}))))
+        if "galaxy" in self.fields_3D:
+            self.add_module(("boss", BOSSModule(output_section_pk_gm="galaxy_matter_power_spectrum_pt",
+                                                output_section_pk_mm="matter_matter_power_spectrum_pt",
+                                                **module_configs.get("boss", {}))), before="projection")
+            
+            if "matter" in self.fields_3D:
+                self.add_module(("interpolate_power_spectrum", 
+                                 InterpolatePowerSpectrumModule(output_section="matter_galaxy_power", 
+                                                                Pk_gm_section="galaxy_matter_power_spectrum_pt",
+                                                                Pk_mm_section="matter_matter_power_spectrum_pt",
+                                                                Pk_mm_nonlin_section="matter_power_nl",
+                                                                Pk_mm_lin_section="matter_power_lin",
+                                                                **module_configs.get("interpolate_power_spectrum", {}))), before="projection")
+
+        # Add BOSS for galaxies, HMx for pressure
+        # translate galaxy->positon for limber module
 
     def add_module(self, module, before=None, after=None):
         if before is None and after is None:
             self.modules[module[0]] = module[1]
         elif before is not None:
-            idx = list(self.modules.keys()).index(before)
-            self.modules = dict_insert(self.modules, idx, module)
+            try:
+                idx = list(self.modules.keys()).index(before)
+                self.modules = dict_insert(self.modules, idx, module)
+            except ValueError:
+                self.modules[module[0]] = module[1]
         elif after is not None:
-            idx = list(self.modules.keys()).index(after)
-            self.modules = dict_insert(self.modules, idx, module, after=True)
+            try:
+                idx = list(self.modules.keys()).index(after)
+                self.modules = dict_insert(self.modules, idx, module, after=True)
+            except ValueError:
+                self.modules[module[0]] = module[1]
 
     def get_pipeline_config(self):
         self.pipeline.modules = list(self.modules.values())
@@ -245,11 +267,12 @@ class TwoPoint:
         if not self.pipeline_has_run:
             self.data = self.run_pipeline(self.parameters)
 
-        section = self.modules["boss"].output_section_name
+        section = self.modules["boss"].output_section_name_wedges
+        z_eff = self.data[section, "z"]
 
-        vtheo = self.data[section, "vtheo"]
+        vtheo = np.array([self.data[section, f"vtheo_bin_{i+1}"] for i in range(len(z_eff))]).squeeze()
+        vtheo_convolved = np.array([self.data[section, f"bin_{i+1}"] for i in range(len(z_eff))]).squeeze()
         bands = self.data[section, "bands"]
-        vtheo_convolved = self.data[section, "vtheo_convolved"]
 
         return (vtheo, bands), (vtheo_convolved, None)
 

@@ -50,7 +50,7 @@ class CAMBModule(CosmoSISModule):
                        transfer_function=True, **kwargs):
         super().__init__(module_file, base_path)
 
-        self.config.update({"mode"              : "all" if transfer_function else "background",
+        self.config.update({"mode"              : "transfer" if transfer_function else "background",
                             "lmax"              : "2500",
                             "feedback"          : "0",
                             "zmax"              : str(float(kwargs.pop("zmax", 6.0))),
@@ -68,6 +68,15 @@ class CAMBModule(CosmoSISModule):
         #                                                         "w"       : "-1.0",
         #                                                         "wa"      : "0.0",
         #                                                         "A_s"      : "2.1e-9",}}
+
+class HalofitModule(CosmoSISModule):
+    module_name = "halofit"
+    def __init__(self, module_file=r"boltzmann/halofit_takahashi/halofit_interface.so", base_path=r"%(CSL_PATH)s",
+                       **kwargs):
+        super().__init__(module_file, base_path)
+        self.config.update({k : str(v) for k,v in kwargs.items()})
+
+        
 
 class HMxModule(CosmoSISModule):
     module_name = "HMx"
@@ -106,6 +115,7 @@ class LoadNofzModule(CosmoSISModule):
     
     def __init__(self, nofz_file, output_section="shear",
                        module_file=r"number_density/load_nz/load_nz.py", base_path=r"%(CSL_PATH)s",):
+        self.module_name = self.module_name + "_" + output_section
         super().__init__(module_file, base_path)
         
         if isinstance(nofz_file, str):
@@ -130,7 +140,10 @@ class ProjectionModule(CosmoSISModule):
                             "n_ell"             : str(n_ell),
                             "verbose"           : "T" if verbose else "F",
                             "get_kernel_peaks"  : "F"})
-        self.config.update({"-".join(probe) : "-".join(probe) for probe in probes})
+
+        translate = {"galaxy" : "position"}
+        probes_translated = [(translate.get(p,p) for p in probe) for probe in probes]
+        self.config.update({"-".join(probe_t) : "-".join(probe) for probe_t, probe in zip(probes_translated,probes)})
 
 class Cl2xiModule(CosmoSISModule):
     module_name = "cl2xi"
@@ -177,24 +190,26 @@ class COSEBISModule(CosmoSISModule):
 
 class BOSSModule(CosmoSISModule):
     module_name = "boss"
-    output_section_name = "xi_wedges"
+    output_section_name_wedges = "xi_wedges"
     
-    def __init__(self, probes=[], window_file="", bands_file="", verbose=False,
+    def __init__(self, window_file="", bands_file="", z_eff=[0.61], verbose=False,
                        module_file=r"cosmosis_module.py", base_path=r"%(BOSS_PATH)s",
                        **kwargs):
         super().__init__(module_file, base_path)
 
-        probe = probes[0]
-        if len(probes) > 1:
-            warnings.warn(f"Only first probe ({probe}) will be used.")
-        if not (probe[0].lower() == "galaxy" and probe[1].lower() == "galaxy"):
-            raise ValueError("BOSS only supports galaxy-galaxy.")
-
         self.config.update({"window_file"          : window_file,
                             "bands_file"           : bands_file,
-                            "output_section_name"  : self.output_section_name,
+                            "z_eff"                : " ".join([str(z) for z in z_eff]),
+                            "output_section_name_wedges"  : self.output_section_name_wedges,
                             "verbose"              : "T" if verbose else "F",
                             })
+        self.config.update({k : str(v) for k,v in kwargs.items()})
+
+class InterpolatePowerSpectrumModule(CosmoSISModule):
+    module_name = "interpolate_power_spectrum"
+    def __init__(self, module_file=r"utils/interpolate_power_spectrum.py", base_path=r"%(KCAP_PATH)s",
+                       **kwargs):
+        super().__init__(module_file, base_path)
         self.config.update({k : str(v) for k,v in kwargs.items()})
 
 class CosmoSISPipeline:
