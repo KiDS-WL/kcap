@@ -13,6 +13,7 @@ module camb_interface_tools
 	integer, parameter :: CAMB_MODE_CMB = 2
 	integer, parameter :: CAMB_MODE_BG  = 3
 	integer, parameter :: CAMB_MODE_THERMAL  = 4
+	integer, parameter :: CAMB_MODE_TRANSFER  = 5
 
 	real(8) :: linear_zmin=0.0, linear_zmax=4.0
 	integer :: linear_nz = 101
@@ -128,6 +129,8 @@ module camb_interface_tools
 				mode=CAMB_MODE_ALL
 			else if (trim(mode_name) == "thermal") then
 				mode=CAMB_MODE_THERMAL
+			else if (trim(mode_name) == "transfer") then
+				mode=CAMB_MODE_TRANSFER
 			else
 				write(*,*) "You need to specify a mode to use the camb module you chose."
 				write(*,*) "In the camb section of your ini file, please specify one of:"
@@ -135,6 +138,7 @@ module camb_interface_tools
 				write(*,*) "mode=cmb         ; For background + cmb power spectra"
 				write(*,*) "mode=all         ; For background + cmb + linear matter power spectra"
 				write(*,*) "mode=thermal     ; For background + thermal history params"
+				write(*,*) "mode=transfer    ; For background + linear matter power spectra"
 				write(*,*) ""
 				write(*,*) "We found error status: ", status
 				write(*,*) "And mode=", mode_name
@@ -241,7 +245,7 @@ module camb_interface_tools
 		integer :: sterile_neutrino
 		real(8), dimension(:), allocatable :: w_array, a_array
 		character(*), parameter :: cosmo = cosmological_parameters_section
-		perturbations = (mode .eq. CAMB_MODE_CMB) .or. (mode .eq. CAMB_MODE_ALL)
+		perturbations = (mode .eq. CAMB_MODE_CMB) .or. (mode .eq. CAMB_MODE_ALL) .or. (mode .eq. CAMB_MODE_TRANSFER)
 
 	
 		call CAMB_SetDefParams(params)
@@ -340,7 +344,7 @@ module camb_interface_tools
 		endif	
 
 
-		params%wantTransfer = (mode==CAMB_MODE_ALL)
+		params%wantTransfer = (mode==CAMB_MODE_ALL) .or. (mode==CAMB_MODE_TRANSFER)
 		params%transfer%kmax = standard_kmax
 		params%wantTensors = (params%initpower%rat(1) .ne. 0.0) .or. do_tensors
 
@@ -483,13 +487,11 @@ module camb_interface_tools
 		!It gives us the array sigma8(z).
 		nz = CP%Transfer%num_redshifts
 		allocate(z(nz), sigma8(nz), sigma2_vdelta_8(nz))
-		do iz=1,nz
-			z(iz) = CP%Transfer%Redshifts(nz-iz+1)
-		enddo
-		sigma8 = MT%sigma_8(:,1)
-		sigma2_vdelta_8 = MT%sigma2_vdelta_8(:,1)
+		z = CP%Transfer%Redshifts(nz:1:-1)
+		sigma8 = MT%sigma_8(nz:1:-1,1)
+		sigma2_vdelta_8 = MT%sigma2_vdelta_8(nz:1:-1,1)
 
-		status = status + datablock_put_double(block, cosmological_parameters_section, "SIGMA_8", sigma8(nz))
+		status = status + datablock_put_double(block, cosmological_parameters_section, "SIGMA_8", sigma8(1))
 		
 		status = status + datablock_put_int(block, growth_section_name, "NZ", nz)
 		status = status + datablock_put_double_array_1d(block, growth_section_name, "Z", z)

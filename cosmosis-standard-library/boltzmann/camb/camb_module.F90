@@ -86,7 +86,86 @@ function execute_all(block, config) result(status)
 
 end function execute_all
 
+function execute_transfer(block, config) result(status)
+	use cosmosis_modules
+	use camb
+	use camb_interface_tools
+	
+	implicit none
+	integer(cosmosis_status) :: status
+	integer(cosmosis_block), value :: block
+	integer(c_size_t), value :: config
+	type(CAMBparams) :: params
+	
+	status = 0
 
+	if (block==0) then
+		write(*,*) "Could not get block in CAMB. Error", status
+		status=1
+		return
+	endif
+	
+	status = camb_interface_set_params(block, params, CAMB_MODE_TRANSFER)
+	if (status .ne. 0) then
+		write(*,*) "Failed to get parameters in CAMB"
+		status=3
+		return
+	endif
+	
+	status = status + camb_interface_setup_zrange(params)
+	if (status .ne. 0) then
+		write(*,*) "Failed to set redshift ranges in CAMB"
+		status=4
+		return
+	endif
+	
+	if (status .ne. 0) then
+		write(*,*) "Failed to get parameters in CAMB. Error", status
+		status=3
+		return
+	endif
+	
+	params%WantCls = .false.
+	params%WantScalars = .true.
+	params%WantTensors = .false.
+	params%WantVectors = .false.
+	call CAMBParams_Set(params, status, DoReion=.false.)
+	
+	if (status .ne. 0) then
+		write(*,*) "Failed to set camb params in camb_transfer. Error", status
+		write(*,*) trim(global_error_message)
+		return
+	endif
+
+	!Run CAMB to compute P(k).
+	call CAMB_GetResults(params, status)
+	if (status .ne. 0) then
+		write(*,*) "Failed to run camb_getresults.  Error", status
+		write(*,*) "Message:", trim(global_error_message)
+		return
+	endif
+
+	status = camb_interface_save_transfer(block)
+	if (status .ne. 0) then
+		write(*,*) "Failed to write transfer section. Error", status
+		return
+	endif
+	
+	status = camb_interface_save_sigmas(block)
+	if (status .ne. 0) then
+		write(*,*) "Failed to save sigma8 parameter. Error", status
+		return
+	endif
+	
+	
+	status = camb_interface_save_da(params, block)
+	if (status .ne. 0) then
+		write(*,*) "Failed to write angular diameter distance data. Error", status
+		return
+	endif
+	
+	return
+end function execute_transfer
 
 function execute_cmb(block, config) result(status)
 	use cosmosis_modules
@@ -278,6 +357,13 @@ function execute(block,config) result(status)
 			integer(c_size_t), value :: config
 		end function execute_thermal
 
+		function execute_transfer(block,config) result(status)
+			use cosmosis_modules
+			integer(cosmosis_status) :: status
+			integer(cosmosis_block), value :: block
+			integer(c_size_t), value :: config
+		end function execute_transfer
+
 		function execute_all(block,config) result(status)
 			use cosmosis_modules
 			integer(cosmosis_status) :: status
@@ -301,12 +387,15 @@ function execute(block,config) result(status)
 		status = execute_all(block,config)
 	else if (mode==CAMB_MODE_THERMAL) then
 		status = execute_thermal(block,config)
+	else if (mode==CAMB_MODE_TRANSFER) then
+		status = execute_transfer(block,config)
 	else
 		write(*,*) "Unknown camb mode.  Was expecting one of:"
 		write(*,*) CAMB_MODE_BG,  " -- background_only"
 		write(*,*) CAMB_MODE_CMB, " -- cmb"
 		write(*,*) CAMB_MODE_ALL, " -- all"
 		write(*,*) CAMB_MODE_THERMAL, " -- thermal (background w/ thermal history)"
+		write(*,*) CAMB_MODE_TRANSFER, " -- transfer (all w/o Cl)"
 		write(*,*) "This should be set in the pipeline ini file."
 		status = 1
 	endif

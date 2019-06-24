@@ -118,7 +118,12 @@ def load_power_growth_chi(block, chi_of_z, section, k_name, z_name, p_name, k_gr
 def growth_from_power(chi, k, p, k_growth):
     "Get D(chi) from power spectrum"
     growth_ind=np.where(k>k_growth)[0][0]
-    growth_array = np.sqrt(np.divide(p[:,growth_ind], p[0,growth_ind], 
+    p_0 = p[0,growth_ind]
+    # The power spectrum might not be defined at z=0. Set growth to 1 in that 
+    # case, since it gets only used in get_reduced_kernel.
+    if np.isclose(p_0, 0.0):
+        p_0 = 1.0
+    growth_array = np.sqrt(np.divide(p[:,growth_ind], p_0, 
                     out=np.zeros_like(p[:,growth_ind]), where=p[:,growth_ind]!=0.))
     return GSLSpline(chi, growth_array)
 
