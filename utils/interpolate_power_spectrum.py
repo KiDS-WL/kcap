@@ -75,17 +75,19 @@ def execute(block, config):
         bias = p_k_gm/p_k_mm
 
         bounds = np.argwhere(np.diff(np.isclose(p_k_mm,0))).squeeze()
-        print("Support of bias:", bounds)
-        print("Values at bounds:")
-        #Lower
+        # print("Support of bias:", bounds)
+        # print("Values at bounds:")
         for i in range(len(z_gm)):
-            print("Lower:", bias[i,bounds[2*i][1]-1], bias[i,bounds[2*i][1]], bias[i,bounds[2*i][1]+1])
-            print("Upper:", bias[i,bounds[2*i+1][1]-1], bias[i,bounds[2*i+1][1]], bias[i,bounds[2*i+1][1]+1])
-            bias[i,:bounds[2*i][1]+1] = 0#bias[i,bounds[2*i][1]+1]
+            # print("Lower:", bias[i,bounds[2*i][1]-1], bias[i,bounds[2*i][1]], bias[i,bounds[2*i][1]+1])
+            # print("Upper:", bias[i,bounds[2*i+1][1]-1], bias[i,bounds[2*i+1][1]], bias[i,bounds[2*i+1][1]+1])
             if config["k_interpolation"] == "none":
+                #Lower 
+                bias[i,:bounds[2*i][1]+1] = 0.0
                 #Upper
                 bias[i,bounds[2*i+1][1]+1:] = 0.0
             elif config["k_interpolation"] == "const":
+                #Lower 
+                bias[i,:bounds[2*i][1]+1] = bias[i,bounds[2*i][1]+1]
                 #Upper
                 bias[i,bounds[2*i+1][1]+1:] = bias[i,bounds[2*i+1][1]]
 
