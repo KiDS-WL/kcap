@@ -125,13 +125,13 @@ class TwoPoint:
                                                 **module_configs.get("boss", {}))), before="projection")
             
             if "matter" in self.fields_3D:
-                self.add_module(("interpolate_power_spectrum", 
+                self.add_module(("galaxy_bias", 
                                  InterpolatePowerSpectrumModule(output_section="matter_galaxy_power", 
                                                                 Pk_gm_section="galaxy_matter_power_spectrum_pt",
                                                                 Pk_mm_section="matter_matter_power_spectrum_pt",
                                                                 Pk_mm_nonlin_section="matter_power_nl",
                                                                 Pk_mm_lin_section="matter_power_lin",
-                                                                **module_configs.get("interpolate_power_spectrum", {}))), before="projection")
+                                                                **module_configs.get("galaxy_bias", {}))), before="projection")
 
         # Add BOSS for galaxies, HMx for pressure
         # translate galaxy->positon for limber module

@@ -206,8 +206,8 @@ class BOSSModule(CosmoSISModule):
         self.config.update({k : str(v) for k,v in kwargs.items()})
 
 class InterpolatePowerSpectrumModule(CosmoSISModule):
-    module_name = "interpolate_power_spectrum"
-    def __init__(self, module_file=r"utils/interpolate_power_spectrum.py", base_path=r"%(KCAP_PATH)s",
+    module_name = "galaxy_bias"
+    def __init__(self, module_file=r"utils/galaxy_bias.py", base_path=r"%(KCAP_PATH)s",
                        **kwargs):
         super().__init__(module_file, base_path)
         self.config.update({k : str(v) for k,v in kwargs.items()})
