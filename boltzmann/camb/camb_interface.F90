@@ -61,6 +61,7 @@ module camb_interface_tools
 	logical :: high_acc_default = .false.
 
 	logical :: reject_non_accelerating
+	logical :: save_growth
 
 
 	contains
@@ -224,6 +225,7 @@ module camb_interface_tools
 	    HighAccuracyDefault = high_acc_default
 
 	    status = status + datablock_get_logical_default(block, option_section, "reject_non_accelerating", .false., reject_non_accelerating)
+	    status = status + datablock_get_logical_default(block, option_section, "save_growth", .false., save_growth)
 
 		!If noisy, report relevant params
 		if (FeedbackLevel .gt. 0) then
@@ -321,16 +323,30 @@ module camb_interface_tools
 			status = status + datablock_get_double_array_1d(block, de_equation_of_state_section, "w", w_array, nw_ppf)
 			status = status + datablock_get_double_array_1d(block, de_equation_of_state_section, "a", a_array, nw_ppf)
 			if (status .ne. 0) then
+				write(*,*) ""
+				write(*,*) "CAMB TABULATED W(A) ERROR:"
 				write(*,*) "Failed to read w(a) from de_equation_of_state"
+				write(*,*) ""
 				return
 			endif
 			if (nw_ppf .gt. nwmax) then
+				write(*,*) ""
+				write(*,*) "CAMB TABULATED W(A) ERROR:"
 				write(*,*) "The size of the w(a) table was too large ", nw_ppf, nwmax
+				write(*,*) ""
 				status=nw_ppf
 				return
 			endif
 			w_ppf(1:nw_ppf) = w_array(1:nw_ppf)
 			a_ppf(1:nw_ppf) = dlog(a_array(1:nw_ppf))  !a is stored as log(a)
+			if (a_array(1) > a_array(2)) then
+				write(*,*) ""
+				write(*,*) "CAMB TABULATED W(A) ERROR:"
+				write(*,*) "The tabulated w(a) in camb should have the scale factor a in increasing order"
+				write(*,*) ""
+				status = 1
+				return
+			endif
 			deallocate(w_array, a_array)
 			call setddwa()
 			call interpolrde()
@@ -843,8 +859,56 @@ module camb_interface_tools
 		!if (density) deallocate(rho)
 		
 	end function
+
+	function camb_interface_save_growth_rate(block) result(status)
+		integer (cosmosis_block) :: block
+		integer (cosmosis_status) :: status
+		real(8), allocatable, dimension(:) :: z, sigma8_z, sigma2_vdelta_8_z, fsigma8_z, f_z, d_z
+		integer nz, iz
+		real(8), parameter :: radius8 = 8.0_8
+
+		status = 0
+
+		if (.not. save_growth) return
+
+		!Ask camb for sigmas
+		call Transfer_Get_sigmas(MT,radius8)
+
+		! collect info into arrays we're going to save
+		nz = CP%Transfer%num_redshifts
+		allocate(z(nz))
+		allocate(sigma8_z(nz))
+		allocate(sigma2_vdelta_8_z(nz))
+		allocate(fsigma8_z(nz))
+		allocate(f_z(nz))
+		allocate(d_z(nz)) 
+
+		do iz=1,nz
+			z(iz) = CP%Transfer%Redshifts(nz-iz+1)
+			sigma8_z(iz) = MT%sigma_8(nz-iz+1,1)
+			sigma2_vdelta_8_z(iz) = MT%sigma2_vdelta_8(nz-iz+1,1)
+			fsigma8_z(iz) = sigma2_vdelta_8_z(iz)/sigma8_z(iz)             
+			f_z(iz) = fsigma8_z(iz)/sigma8_z(iz)
+			d_z(iz) = sigma8_z(iz)/sigma8_z(1)
+		enddo
+
+		! f*sigma8(z) is defined in terms of power spectra as (sigma_vd_8(z))^2/sigma8(z),
+		!   where sigma_vd_8(z) measures the smoothed density-velocity correlations defined
+		!   anologously to sigma8, but using the velocity-density power spectrum P_vd, where v is
+		!   the Newtonian-gauge peculier velocity of baryons and DM, while d is the total matter
+		!   density fluctuation (following Planck cosmology papers)
+
+		!Save to datablock
+		!to do set up name for growth secction
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "SIGMA_8_Z", sigma8_z)
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "SIGMA2_VDELTA_8_Z", sigma2_vdelta_8_z)
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "FSIGMA8_Z", fsigma8_z)
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "F_Z", f_z)
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "D_Z", d_z) 
+		status = status + datablock_put_double_array_1d(block, growth_parameters_section, "Z", z)
+
+		return
+	end function camb_interface_save_growth_rate
+
 	
 end module camb_interface_tools
-
-
-

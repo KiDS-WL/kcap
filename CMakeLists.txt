@@ -42,16 +42,17 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.8)
     add_subdirectory(boltzmann/halofit_takahashi)
 
     add_subdirectory(shear/cl_to_xi_nicaea)
-
+    
+    add_subdirectory(structure/meadcb)
     add_subdirectory(structure/projection)
 
     add_subdirectory(likelihood/planck2015)
 
     add_subdirectory(supernovae/jla_v3)
 
-    add_dependencies(csl camb halofit cl_to_xi_nicaea projection jla planck2015)
+    add_dependencies(csl camb halofit_takahashi halofit meadcb cl_to_xi_nicaea projection jla planck2015)
 
     add_custom_target(csl-clean)
-    add_dependencies(csl-clean camb-clean halofit-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2015-clean)
+    add_dependencies(csl-clean camb-clean halofit_takahashi-clean halofit-clean meadcb-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2015-clean)
 
     
