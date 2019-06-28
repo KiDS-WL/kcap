@@ -5,7 +5,7 @@ import io
 
 import numpy as np
 from .cosmosis_utils import CosmoSISPipeline, ConsistencyModule, CAMBModule, \
-                            HalofitModule, HMxModule, ProjectionModule, LoadNofzModule, \
+                            HalofitModule, HMxModule, HMCodeModule, ProjectionModule, LoadNofzModule, \
                             Cl2xiModule, COSEBISModule, BOSSModule, InterpolatePowerSpectrumModule, \
                             config_to_string
 
@@ -90,10 +90,12 @@ class TwoPoint:
                 self.add_module(("HMx", HMxModule(hm_mode="hmx", fields=self.fields_3D, 
                                                   transfer_function=transfer_function,
                                                   **module_configs.get("HMx", {}))))
-            elif nonlinear_Pk.lower() == "hmcode":
+            elif nonlinear_Pk.lower() == "hmx-hmcode":
                 self.add_module(("HMx", HMxModule(hm_mode="hmcode", 
                                                   transfer_function=transfer_function,
                                                   **module_configs.get("HMx", {}))))
+            elif nonlinear_Pk.lower() == "hmcode":
+                self.add_module(("HMCode", HMCodeModule(**module_configs.get("HMCode", {}))))
             elif nonlinear_Pk.lower() == "halofit":
                 self.add_module(("halofit", HalofitModule(**module_configs.get("halofit", {}))))
             elif nonlinear_Pk.lower() == "none":

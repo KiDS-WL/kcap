@@ -76,7 +76,12 @@ class HalofitModule(CosmoSISModule):
         super().__init__(module_file, base_path)
         self.config.update({k : str(v) for k,v in kwargs.items()})
 
-        
+class HMCodeModule(CosmoSISModule):
+    module_name = "HMCode"
+    def __init__(self, module_file=r"structure/meadcb/mead_interface.so", base_path=r"%(CSL_PATH)s",
+                       **kwargs):
+        super().__init__(module_file, base_path)
+        self.config.update({k : str(v) for k,v in kwargs.items()})     
 
 class HMxModule(CosmoSISModule):
     module_name = "HMx"
@@ -110,6 +115,7 @@ class HMxModule(CosmoSISModule):
 
         self.default_parameters = {"halo_model_parameters" : {"log10_Theat" : "7.8"}}
         
+
 class LoadNofzModule(CosmoSISModule):
     module_name = "load_nofz"
     
