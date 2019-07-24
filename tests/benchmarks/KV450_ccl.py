@@ -1,5 +1,7 @@
 import os
 import glob
+import re
+import sys
 
 import numpy as np
 pi = np.pi
@@ -7,8 +9,24 @@ pi = np.pi
 import pyccl as ccl
 
 def load_cosmosis_params(output_path, section="cosmological_parameters"):
+    params = {}
     with open(os.path.join(output_path, section, "values.txt"), "r") as f:
-        params = {line.split("=")[0].strip() : float(line.split("=")[1].strip()) for line in f.readlines()}
+        for l in f.readlines():
+            m = re.match("^([0-9A-Za-z_]+) = (.+)\w?$", l)
+            if m is None:
+                print(f"Ill formed entry: {l[:-1]}.")
+                continue
+            key, value = m.groups()
+            if re.match("^[0-9\-]+$", value) is not None:
+                value = int(value)
+            elif re.match("^[0-9eE\-\.]+$", value) is not None:
+                value = float(value)
+            elif value.lower() == "true":
+                value = True
+            elif value.lower() == "false":
+                value = False
+            params[key] = value
+            
     return params
 
 def load_cosmosis_2pt(output_path, x_name="ell", y_name="shear", suffix="cl"):
@@ -47,19 +65,29 @@ def load_cosmosis_2pt(output_path, x_name="ell", y_name="shear", suffix="cl"):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    cosmo_params = load_cosmosis_params("../../examples/output_kv450_no_sys/kv450_no_sys_output/")
+    cosmo_params = load_cosmosis_params("../../runs/output/KV450/output_no_sys/")
+    
+    cosmosis_pk = {"matter_power_lin": {"p_k" : np.loadtxt("../../runs/output/KV450/output_no_sys/matter_power_lin/p_k.txt"),
+                                        "k_h" : np.loadtxt("../../runs/output/KV450/output_no_sys/matter_power_lin/k_h.txt"),
+                                        },
+                   "matter_power_nl":  {"p_k" : np.loadtxt("../../runs/output/KV450/output_no_sys/matter_power_nl/p_k.txt"),
+                                        "k_h" : np.loadtxt("../../runs/output/KV450/output_no_sys/matter_power_nl/k_h.txt"),
+                                        },
+                  }
+    k_lin_cosmosis = cosmosis_pk["matter_power_lin"]["k_h"]
+    k_nl_cosmosis = cosmosis_pk["matter_power_nl"]["k_h"]
 
-    cosmosis_cl = load_cosmosis_2pt("../../examples/output_kv450_no_sys/kv450_no_sys_output/",
+    cosmosis_cl = load_cosmosis_2pt("../../runs/output/KV450/output_no_sys/",
                                     suffix="cl")
     ell_cosmosis = cosmosis_cl["shear_cl"]["ell"]
 
-    cosmosis_xi = load_cosmosis_2pt("../../examples/output_kv450_no_sys/kv450_no_sys_output/",
-                                    suffix="xi", x_name="theta")
-    theta_cosmosis = cosmosis_xi["shear_xi"]["theta"]
-
-    ccl_cosmo = ccl.Cosmology(Omega_c=cosmo_params["omega_c"], Omega_b=cosmo_params["omega_b"],
-                              h=cosmo_params["h0"], n_s=cosmo_params["n_s"], sigma8=cosmo_params["sigma_8"],
-                              Neff=2.046, m_nu=0.06, mnu_type="sum")
+    cosmosis_xi = load_cosmosis_2pt("../../runs/output/KV450/output_no_sys/",
+                                    suffix="xi_plus", x_name="theta")
+    theta_xi_plus_cosmosis = cosmosis_xi["shear_xi_plus"]["theta"]
+    
+    cosmosis_xi.update(load_cosmosis_2pt("../../runs/output/KV450/output_no_sys/",
+                                    suffix="xi_minus", x_name="theta"))
+    theta_xi_minus_cosmosis = cosmosis_xi["shear_xi_minus"]["theta"]
 
     n_tomo_bin = int(cosmosis_cl["shear_cl"]["nbin_a"])
 
@@ -72,25 +100,58 @@ if __name__ == "__main__":
     print()
     print(f'n_bin:      {n_tomo_bin}')
 
-    nofz_files = ["../../examples/kv450_data/nofz/KiDS_2018-07-26_deepspecz_photoz_10th_BLIND_specweight_1000_4_ZB01t03_blindA_Nz.asc",
-                  "../../examples/kv450_data/nofz/KiDS_2018-07-26_deepspecz_photoz_10th_BLIND_specweight_1000_4_ZB03t05_blindA_Nz.asc",
-                  "../../examples/kv450_data/nofz/KiDS_2018-07-26_deepspecz_photoz_10th_BLIND_specweight_1000_4_ZB05t07_blindA_Nz.asc",
-                  "../../examples/kv450_data/nofz/KiDS_2018-07-26_deepspecz_photoz_10th_BLIND_specweight_1000_4_ZB07t09_blindA_Nz.asc",
-                  "../../examples/kv450_data/nofz/KiDS_2018-07-26_deepspecz_photoz_10th_BLIND_specweight_1000_4_ZB09t12_blindA_Nz.asc"]
+    ccl_cosmo = ccl.Cosmology(Omega_c=cosmo_params["omega_c"], Omega_b=cosmo_params["omega_b"],
+                              h=cosmo_params["h0"], n_s=cosmo_params["n_s"], A_s=cosmo_params["a_s"],
+                              Neff=cosmo_params["nnu"], m_nu=cosmo_params["mnu"],
+                                )
+    
+    k_lin = k_lin_cosmosis
+    k_nl = k_nl_cosmosis
+    pk_lin = ccl.linear_matter_power(ccl_cosmo, k_lin*cosmo_params["h0"], 1.0)*cosmo_params["h0"]**3
+    pk_nl = ccl.nonlin_matter_power(ccl_cosmo, k_nl*cosmo_params["h0"], 1.0)*cosmo_params["h0"]**3
+
+    print("Plotting P(k)")
+
+    fig, ax = plt.subplots(2, 1, sharex=True, sharey=False,
+                           figsize=(5, 5))
+    fig.subplots_adjust(hspace=0, wspace=0)
+
+    ax[0].loglog(k_lin, pk_lin, ls="--", label=f"CCL linear P(k)")
+    ax[0].loglog(k_lin, cosmosis_pk["matter_power_lin"]["p_k"][0], ls="--", label=f"CosmoSIS linear P(k)")
+    ax[0].loglog(k_nl, pk_nl, label=f"CCL non-linear P(k)")
+    ax[0].loglog(k_nl, cosmosis_pk["matter_power_nl"]["p_k"][0], label=f"CosmoSIS non-linear P(k)")
+
+    ax[1].semilogx(k_lin, cosmosis_pk["matter_power_lin"]["p_k"][0]/pk_lin-1, ls="--")
+    ax[1].semilogx(k_nl, cosmosis_pk["matter_power_nl"]["p_k"][0]/pk_nl-1)
+
+    ax[0].legend(frameon=False)
+    ax[0].set_ylabel("$P(k)$ [$h^{-3}$ Mpc$^{3}$]")
+    ax[1].set_ylim(-0.05, 0.05)
+    ax[1].set_xlabel("$k$ [$h$ Mpc$^{-1}$]")
+    ax[1].set_ylabel("$\Delta P(k)/P(k)$ [$h$ Mpc$^{-1}$]")
+    
+    fig.suptitle("KCAP vs CCL, P(k)")
+    fig.savefig("KV450_pofk_kcap_vs_ccl.pdf") 
+
+    nofz_files = ["../../data/KV450/nofz/Nz_DIR_z0.1t0.3.asc",
+                  "../../data/KV450/nofz/Nz_DIR_z0.3t0.5.asc",
+                  "../../data/KV450/nofz/Nz_DIR_z0.5t0.7.asc",
+                  "../../data/KV450/nofz/Nz_DIR_z0.7t0.9.asc",
+                  "../../data/KV450/nofz/Nz_DIR_z0.9t1.2.asc",]
 
     print("Loading n(z) and creating CCL tracers.")
     tracers = []
     for nofz_file in nofz_files:
         z, nofz = np.loadtxt(nofz_file, unpack=True)
         z += (z[1]-z[0])/2
-        tracers.append(ccl.ClTracerLensing(cosmo=ccl_cosmo, z=z, n=nofz, has_intrinsic_alignment=False))
+        tracers.append(ccl.WeakLensingTracer(cosmo=ccl_cosmo, dndz=(z, nofz)))
 
     # ell_min = 10
     # ell_max = 1e4
     # n_ell = 100
     # ell = np.logspace(np.log10(ell_min), np.log10(ell_max), n_ell, endpoint=True)
     ell = ell_cosmosis
-    theta =  theta_cosmosis*180/pi
+    theta =  theta_xi_plus_cosmosis*180/pi
     print("Running CCL for Cls and xis.")
     ccl_cl = {}
     ccl_xi = {}
@@ -168,8 +229,8 @@ if __name__ == "__main__":
             if j > i:
                 ax[i][j].axis("off")
             else:
-                ax[i][j].semilogx(theta, cosmosis_xi["shear_xi"][f"xiplus_{i+1}_{j+1}"]/ccl_xi[i][j][0]-1, label=f"xip bin {i+1}-{j+1}")
-                ax[i][j].semilogx(theta, cosmosis_xi["shear_xi"][f"ximinus_{i+1}_{j+1}"]/ccl_xi[i][j][1]-1, label=f"xim bin {i+1}-{j+1}")
+                ax[i][j].semilogx(theta, cosmosis_xi["shear_xi_plus"][f"bin_{i+1}_{j+1}"]/ccl_xi[i][j][0]-1, label=f"xip bin {i+1}-{j+1}")
+                ax[i][j].semilogx(theta, cosmosis_xi["shear_xi_minus"][f"bin_{i+1}_{j+1}"]/ccl_xi[i][j][1]-1, label=f"xim bin {i+1}-{j+1}")
                 ax[i][j].legend(fontsize="small", frameon=False)
     
             ax[i][j].set_xlim(*theta_plot_lim)
