@@ -161,9 +161,12 @@ if __name__ == "__main__":
         for j in range(i+1):
             print(f"Bin {i+1}-{j+1}")
             ccl_cl[i][j] = ccl.angular_cl(cosmo=ccl_cosmo, cltracer1=tracers[i], cltracer2=tracers[j], ell=ell)
-
-            xip = ccl.correlation(cosmo=ccl_cosmo, ell=ell, C_ell=ccl_cl[i][j], theta=theta, corr_type="L+")
-            xim = ccl.correlation(cosmo=ccl_cosmo, ell=ell, C_ell=ccl_cl[i][j], theta=theta, corr_type="L-")
+            
+            ell_for_xi = np.concatenate((np.arange(2,100, dtype=float), np.logspace(2,np.log10(ell[-1]), 300)))
+            cl_for_xi = ccl.angular_cl(cosmo=ccl_cosmo, cltracer1=tracers[i], cltracer2=tracers[j], ell=ell_for_xi)
+            cl_for_xi /= ((ell_for_xi-1)*ell_for_xi*(ell_for_xi+1)*(ell_for_xi+2)/(ell_for_xi+1/2)**4)
+            xip = ccl.correlation(cosmo=ccl_cosmo, ell=ell_for_xi, C_ell=cl_for_xi, theta=theta, corr_type="L+")
+            xim = ccl.correlation(cosmo=ccl_cosmo, ell=ell_for_xi, C_ell=cl_for_xi, theta=theta, corr_type="L-")
             ccl_xi[i][j] = xip, xim
 
     print("Plotting Cls")

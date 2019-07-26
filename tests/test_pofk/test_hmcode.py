@@ -12,32 +12,29 @@ def pofk_interpolator(pofk, k, z=None):
 def test_hmcode(plot=False):
     import camb
     cosmological_parameters = {"ombh2" : 0.2228089E-01,
-                            "omch2" : 0.1181838E+00,
-                            "h0"    : 0.679565,
-                            "A_s"   : 2.170229e-9,
-                            "n_s"   : 0.9679701,
-                            "tau"    : 0.0739,
-                            "omnuh2" : 0.00065,
-                            "omega_nu" : 0.00139699,
-                            "massive_nu" : 1,
-                            "massless_nu" : 2.046,
+                               "omch2" : 0.1181838E+00,
+                               "h0"    : 0.679565,
+                               "A_s"   : 2.170229e-9,
+                               "n_s"   : 0.9679701,
+                               "tau"    : 0.0739,
+                            "mnu" : 0.06,
+                            "num_massive_neutrinos" : 1,
                             }
 
-    pars = camb.set_params(H0=cosmological_parameters["h0"]*100, 
-                        ombh2=cosmological_parameters["ombh2"], 
-                        omch2=cosmological_parameters["omch2"],
-                        omnuh2=cosmological_parameters["omnuh2"],
-                        num_nu_massive=cosmological_parameters["massive_nu"],
-                        num_nu_massless=cosmological_parameters["massless_nu"],
-                        As=cosmological_parameters["A_s"], 
-                        ns=cosmological_parameters["n_s"],
-                        r=0,
-                        max_eta_k=1000,
-                        lmax=2500,
+    pars = camb.CAMBparams()
+    pars.set_cosmology(H0=cosmological_parameters["h0"]*100, 
+                       ombh2=cosmological_parameters["ombh2"], 
+                       omch2=cosmological_parameters["omch2"],
+                       mnu=cosmological_parameters["mnu"],
+                       num_massive_neutrinos=cosmological_parameters["num_massive_neutrinos"],
+                        # max_eta_k=1000,
+                        # lmax=2500,
                         )
-
-    pars.set_matter_power(redshifts=np.linspace(0, 4, 100), kmax=100.0)
-    pars.NonLinearModel.set_params(halofit_version='mead')
+    pars.InitPower.set_params(As=cosmological_parameters["A_s"], 
+                                         ns=cosmological_parameters["n_s"],
+                                         r=0,)
+    pars.set_matter_power(redshifts=np.linspace(0, 4, 100), kmax=20.0)
+    pars.NonLinearModel.set_params(halofit_version='mead', HMCode_A_baryon=2.0, HMCode_eta_baryon=0.603)
 
     results = camb.get_results(pars)
 
@@ -54,6 +51,8 @@ def test_hmcode(plot=False):
         z = np.loadtxt("cosmosis_output/matter_power_nl/z.txt")
         k = np.loadtxt("cosmosis_output/matter_power_nl/k_h.txt")
         p_k_nonlin = np.loadtxt("cosmosis_output/matter_power_nl/p_k.txt")
+
+        p_k_nonlin_camb = np.loadtxt("cosmosis_camb_output/matter_power_nl/p_k.txt")
 
         z_lin = np.loadtxt("cosmosis_output/matter_power_lin/z.txt")
         k_lin = np.loadtxt("cosmosis_output/matter_power_lin/k_h.txt")
@@ -76,7 +75,9 @@ def test_hmcode(plot=False):
         ax[0].set_xlabel("k [h/Mpc]")
         ax[0].set_ylabel("CosmoSIS/CAMB-1")
 
-        _ = [ax[1].semilogx(k, p_k_nonlin[i]/p_k_camb(k ,z[i]) - 1, c=cmap(i/len(z))) for i in range(len(z))]
+        _ = [ax[1].semilogx(k, p_k_nonlin_camb[i]/p_k_camb(k ,z[i]) - 1, c=cmap(i/len(z))) for i in range(len(z))]
+        _ = [ax[1].semilogx(k, p_k_nonlin[i]/p_k_camb(k ,z[i]) - 1, ls="--", c=cmap(i/len(z))) for i in range(len(z))]
+
         ax[1].set_title("Non-linear power spectrum")
         ax[1].set_xlabel("k [h/Mpc]")
         ax[1].set_ylabel("CosmoSIS/CAMB-1")
@@ -106,5 +107,5 @@ def test_hmcode_no_camb(plot=False):
 
 
 if __name__ == "__main__":
-    #test_hmcode(plot=True)
-    test_hmcode_no_camb()
+    test_hmcode(plot=True)
+    # test_hmcode_no_camb()
