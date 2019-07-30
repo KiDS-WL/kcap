@@ -9,6 +9,15 @@ import numpy as np
 
 import cosmosis.runtime.config
 import cosmosis.runtime.pipeline
+import cosmosis.datablock
+
+def dict_to_datablock(d={}):
+    b = cosmosis.datablock.DataBlock()
+    for section in d.keys():
+        for name, value in d[section].items():
+            b[section, name] = value
+
+    return b
 
 def config_to_cosmosis_ini(config):
     ini = cosmosis.runtime.config.Inifile(None, )
