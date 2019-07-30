@@ -6,6 +6,17 @@ The pipeline is built on CosmoSIS, albeit a modified version that doesn't rely o
 
 The different modules (CosmoSIS standard library, HMx, etc) are included as git subtree. Users don't have to worry about this detail but if you make changes to any of the modules it helps to structure your commits such that they only touch on one module at a time, such that these changes can be easily backported to the individual repositories.
 
+**Note: the CSL has not been updated in a while because it's been in active development, especially the new CAMB interface**
+To use the new CAMB interface:
+```
+git clone --recursive git@github.com:cmbant/CAMB.git
+cd CAMB
+python setup.py build_cluster
+python setup.py install
+```
+
+For a fiducial KV450 setup, have a look at `runs/config/KV450_fiducial.ini`.
+
 ## Installation
 
 Clone the repository:
