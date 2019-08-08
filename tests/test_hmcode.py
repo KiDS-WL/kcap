@@ -86,8 +86,8 @@ def test_meadcb(plot=False):
     z = block_camb["matter_power_nl", "z"]
 
     assert np.allclose(block_camb["matter_power_nl", "p_k"][z < 2.0], block_meadcb["matter_power_nl", "p_k"][z < 2.0], rtol=3e-3)
-    assert np.allclose(block_camb["matter_power_nl", "p_k"][z >= 2.0], block_meadcb["matter_power_nl", "p_k"][z >= 2.0], rtol=1e-2)
-    print("WARNING: Non-linear powerspectrum tolerance is set to 3e-3 for z < 2 and 1e-2 for z > 2.")
+    assert np.allclose(block_camb["matter_power_nl", "p_k"][z >= 2.0], block_meadcb["matter_power_nl", "p_k"][z >= 2.0], rtol=1.5e-2)
+    print("WARNING: Non-linear powerspectrum tolerance is set to 3e-3 for z < 2 and 1.5e-2 for z > 2.")
 
     if plot:
         import matplotlib.pyplot as plt
@@ -185,13 +185,15 @@ def test_camb(plot=False):
     assert(np.allclose(p_k_lin, p_k_lin_camb(k_lin, z_lin)))
     assert(np.allclose(p_k_nonlin, p_k_nonlin_camb(k, z)))
 
+    frac_diff_p_k_nonlin = p_k_nonlin/p_k_nonlin_camb(k, z) - 1
+
     if plot:
         import matplotlib
         import matplotlib.pyplot as plt
 
         cmap = plt.get_cmap("magma_r")
 
-        fig, ax = plt.subplots(2, 1, figsize=(5,6))
+        fig, ax = plt.subplots(3, 1, figsize=(5,9))
         fig.subplots_adjust(hspace=0.5, left=0.2, right=0.95)
 
         cb_ax = matplotlib.colorbar.make_axes(ax)
@@ -206,15 +208,22 @@ def test_camb(plot=False):
         ax[0].set_ylabel("CosmoSIS/CAMB-1")
 
         _ = [ax[1].semilogx(k, p_k_nonlin[i]/p_k_nonlin_camb(k ,z[i]) - 1, c=cmap(i/len(z))) for i in range(len(z))]
-        _ = [ax[1].semilogx(k, p_k_nonlin[i]/p_k_nonlin_camb(k ,z[i]) - 1, ls="--", c=cmap(i/len(z))) for i in range(len(z))]
 
         ax[1].set_title("Non-linear power spectrum")
         ax[1].set_xlabel("k [h/Mpc]")
         ax[1].set_ylabel("CosmoSIS/CAMB-1")
 
+        _ = [ax[2].semilogx(k, p_k_nonlin[i]/p_k_lin[i] - 1, c=cmap(i/len(z))) for i in range(len(z))]
+        _ = [ax[2].semilogx(k, p_k_nonlin[i]/p_k_lin_camb(k, z[i]) - 1, ls="--", c=cmap(i/len(z))) for i in range(len(z))]
+
+        ax[2].set_ylim(-0.015, 0.015)
+        ax[2].set_title("Non-linear vs linear power spectrum")
+        ax[2].set_xlabel("k [h/Mpc]")
+        ax[2].set_ylabel("P_nonlin/P_lin-1")
+
         plt.show()
 
 
 if __name__ == "__main__":
-    test_meadcb(plot=False)
-    test_camb(plot=False)
+    # test_meadcb(plot=True)
+    test_camb(plot=True)
