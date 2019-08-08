@@ -94,10 +94,6 @@ class TwoPoint:
                 self.add_module(("HMx", HMxModule(hm_mode="hmcode", 
                                                   transfer_function=transfer_function,
                                                   **module_configs.get("HMx", {}))))
-            elif nonlinear_Pk.lower() == "hmcode":
-                self.add_module(("HMCode", HMCodeModule(**module_configs.get("HMCode", {}))))
-            elif nonlinear_Pk.lower() == "halofit":
-                self.add_module(("halofit", HalofitModule(**module_configs.get("halofit", {}))))
             elif nonlinear_Pk.lower() == "none":
                 pass
             else:

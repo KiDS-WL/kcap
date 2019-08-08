@@ -55,7 +55,7 @@ class ConsistencyModule(CosmoSISModule):
 
 class CAMBModule(CosmoSISModule):
     module_name = "camb"
-    def __init__(self, module_file="boltzmann/camb/camb.so", base_path=r"%(CSL_PATH)s",
+    def __init__(self, module_file="boltzmann/pycamb/camb_interface.py", base_path=r"%(CSL_PATH)s",
                        transfer_function=True, **kwargs):
         super().__init__(module_file, base_path)
 
