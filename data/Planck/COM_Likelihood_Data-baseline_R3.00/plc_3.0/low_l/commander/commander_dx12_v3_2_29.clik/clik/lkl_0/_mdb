@@ -1,0 +1,9 @@
+free_calib str A_planck
+external_dir str .
+delta_l int 1000
+lmin int 2
+lmax int 29
+version int 3
+lkl_type str gibbs_gauss
+pipeid str b13c8fda-1837-41b5-ae2d-78d6b723fcf1
+unit int 1
