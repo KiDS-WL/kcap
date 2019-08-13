@@ -5,10 +5,10 @@ import sys
 import warnings
 import argparse
 
-minimum_cosmosis_version = pkg_resources.parse_version("0.0.8")
+minimum_cosmosis_version = pkg_resources.parse_version("0.0.10")
 
-minimum_cc_version = pkg_resources.parse_version("5.0.0")
-minimum_cxx_version = pkg_resources.parse_version("5.0.0")
+#minimum_cc_version = pkg_resources.parse_version("5.0.0")
+#minimum_cxx_version = pkg_resources.parse_version("5.0.0")
 
 def check_cosmosis(mpi=False):
     try:
@@ -37,7 +37,7 @@ def check_compilers(mpi=False):
     default_cc    = "gcc"
     default_cxx   = "g++"
     default_fc    = "gfortran"
-    default_mpifc = "mpif90" if mpi else ""
+    default_mpifc = "mpifort" if mpi else ""
 
     env = {"PATH"  : os.environ["PATH"] if "PATH" in os.environ else "/usr/bin/",
            "CC"    : os.environ["CC"] if "CC" in os.environ else default_cc,
@@ -45,17 +45,17 @@ def check_compilers(mpi=False):
            "FC"    : os.environ["FC"] if "FC" in os.environ else default_fc,
            "MPIFC" : os.environ["MPIFC"] if "MPIFC" in os.environ else default_mpifc,}
 
-    cc_version = subprocess.check_output("${CC} -dumpversion", shell=True, env=env).decode("utf-8")
-    cxx_version = subprocess.check_output("${CXX} -dumpversion", shell=True, env=env).decode("utf-8")
-    fc_version = subprocess.check_output("${FC} -dumpversion", shell=True, env=env).decode("utf-8")
+    #cc_version = subprocess.check_output("${CC} -dumpversion", shell=True, env=env).decode("utf-8")
+    #cxx_version = subprocess.check_output("${CXX} -dumpversion", shell=True, env=env).decode("utf-8")
+    #fc_version = subprocess.check_output("${FC} -dumpversion", shell=True, env=env).decode("utf-8")
 
-    cc_version = pkg_resources.parse_version(cc_version)
-    cxx_version = pkg_resources.parse_version(cxx_version)
+    #cc_version = pkg_resources.parse_version(cc_version)
+    #cxx_version = pkg_resources.parse_version(cxx_version)
 
-    if cc_version < minimum_cc_version:
-        raise RuntimeError(f"GCC compiler version ({cc_version}) does not meet requirements ({minimum_cc_version}).")
-    if cxx_version < minimum_cxx_version:
-        raise RuntimeError(f"G++ compiler version ({cxx_version}) does not meet requirements ({minimum_cxx_version}).")
+    #if cc_version < minimum_cc_version:
+    #    raise RuntimeError(f"GCC compiler version ({cc_version}) does not meet requirements ({minimum_cc_version}).")
+    #if cxx_version < minimum_cxx_version:
+    #    raise RuntimeError(f"G++ compiler version ({cxx_version}) does not meet requirements ({minimum_cxx_version}).")
     
     if env["MPIFC"] == "":
         print("Compiling CosmoSIS without MPI support. If MPI support is required, set MPIFC.")
