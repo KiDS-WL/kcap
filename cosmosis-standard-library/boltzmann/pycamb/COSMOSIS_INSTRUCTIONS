@@ -1,0 +1,9 @@
+Temporary Install Instructions
+------------------------------
+
+- Setup cosmosis
+- cd here
+- git clone --recursive https://github.com/cmbant/CAMB
+- cd to the CAMB subir
+- MATCHING YOUR PYTHON VERSION NUMBER:   export PYTHONPATH=$PWD/install/python3.7/lib/site-packages:$PYTHONPATH  
+- pip install -e . --prefix=$PWD/install
