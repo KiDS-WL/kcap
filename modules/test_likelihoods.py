@@ -34,7 +34,7 @@ def execute(block, config):
     block[names.data_vector, likelihood_name+"_CHI2"] = chi2
     block[names.likelihoods, likelihood_name+"_LIKE"] = like
     counter[0] += 1
-    print(counter[0])
+    #print(counter[0])
     return 0
 
 def clean(config):
