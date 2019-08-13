@@ -1,0 +1,8 @@
+module_options:
+  mode: all
+  halofit_version: mead
+  kmax: 1.0
+  kmax_calculdate: 50.0
+  transfer_zmax: 1.0
+  nz: 50
+  k_per_logint: 5
