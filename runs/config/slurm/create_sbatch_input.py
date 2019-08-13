@@ -17,6 +17,8 @@ if __name__ == "__main__":
         outputdir = "KV450"
     elif "BOSS" in args.config:
         outputdir = "BOSS"
+    elif "Planck" in args.config:
+        outputdir= "Planck"
     else:
         raise ValueError("This doesn't seem to be either KV450 nor BOSS. Aborting.")
 
