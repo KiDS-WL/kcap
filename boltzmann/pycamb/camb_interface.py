@@ -354,8 +354,8 @@ def execute(block, config):
         block[names.growth_parameters, "fsigma_8"] = fsigma_8
         block[names.growth_parameters, "rs_DV"] = rs_DV
         block[names.growth_parameters, "H"] = H
-        block[names.growth_parameters, "DA"] = rs_DV
-        block[names.growth_parameters, "F_AP"] = DA
+        block[names.growth_parameters, "DA"] = DA
+        block[names.growth_parameters, "F_AP"] = F_AP
         
         block[names.cosmological_parameters, "sigma_8"] = sigma_8[0]
 
