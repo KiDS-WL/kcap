@@ -6,7 +6,7 @@ dependencies:
   - numpy
   - scipy
   - astropy
-  - conda-forge::pycamb
   - pip:
     - emcee
     - mpi4py
+    - camb
