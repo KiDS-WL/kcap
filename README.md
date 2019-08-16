@@ -4,16 +4,7 @@ Pipeline for the cosmology analysis of KiDS 1000.
 
 The pipeline is built on CosmoSIS, albeit a modified version that doesn't rely on environmental variables.
 
-The different modules (CosmoSIS standard library, HMx, etc) are included as git subtree. Users don't have to worry about this detail but if you make changes to any of the modules it helps to structure your commits such that they only touch on one module at a time, such that these changes can be easily backported to the individual repositories.
-
-**Note: the CSL has not been updated in a while because it's been in active development, especially the new CAMB interface**
-To use the new CAMB interface:
-```
-git clone --recursive git@github.com:cmbant/CAMB.git
-cd CAMB
-python setup.py build_cluster
-python setup.py install
-```
+The different modules (CosmoSIS standard library, etc) are included as git subtree. Users don't have to worry about this detail but if you make changes to any of the modules it helps to structure your commits such that they only touch on one module at a time, such that these changes can be easily backported to the individual repositories.
 
 For a fiducial KV450 setup, have a look at `runs/config/KV450_fiducial.ini`.
 
@@ -39,6 +30,14 @@ Now set up the conda environment using the provided `conda_env.yaml` file:
 conda env create -f conda_env.yaml
 ```
 This creates a `kcap_env` environment that should have all the necessary dependencies. Activate the environment with `source activate kcap_env`.
+
+We need to install CAMB because we use the new python interface for it. If `kcap` is to be used on a local machine, `pip install camb` is all there is to do. On a heterogenous cluster like `cuillin`, we need to build CAMB ourselves, however. To do so, run
+```
+git clone --recursive git@github.com:cmbant/CAMB.git
+cd CAMB
+python setup.py build_cluster
+python setup.py install
+```
 
 We can now build kcap (which installs a standalone version of CosmoSIS):
 ```
