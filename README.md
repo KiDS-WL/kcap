@@ -54,6 +54,12 @@ If no MPI support is required, run `python build.py --no-mpi`.
 
 ### Install conda
 
+NOTE: If using your own conda env then don't use
+```
+module load anaconda
+```
+in the second step. It will cause conflict.
+
 Get [miniconda](https://conda.io/en/master/miniconda.html). For example on a Linux machine: 
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
