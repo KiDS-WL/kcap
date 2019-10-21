@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(CSL LANGUAGES C CXX Fortran VERSION 0.0.8)
-    if(DEFINED ENV{FC} AND $ENV{FC} MATCHES "^.*ifort$")
+project(CSL LANGUAGES C CXX Fortran VERSION 0.0.10)
+    if(DEFINED ENV{FC} AND "$ENV{FC}" MATCHES "^.*ifort$")
         set(FC $ENV{FC} CACHE STRING "Fortran compiler")
         message("FC set to ${FC}")
     else()
@@ -59,7 +59,7 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.8)
 
     add_subdirectory(supernovae/jla_v3)
 
-    add_dependencies(csl  meadcb cl_to_xi_nicaea projection jla planck2018)
+    add_dependencies(csl camb meadcb cl_to_xi_nicaea projection jla planck2018)
 
     add_custom_target(csl-clean)
     add_dependencies(csl-clean camb-clean halofit_takahashi-clean halofit-clean meadcb-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2018-clean)

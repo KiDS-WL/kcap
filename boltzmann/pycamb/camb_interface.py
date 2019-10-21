@@ -256,17 +256,12 @@ def extract_camb_params(block, config, more_config):
         NonLinearModel=nonlinear,
         **config,
     )
-    try:
-        # Setting up neutrinos by hand is hard. We let CAMB deal with it instead.
-        p.set_cosmology(ombh2 = block[cosmo, 'ombh2'],
-                        omch2 = block[cosmo, 'omch2'],
-                        omk = block[cosmo, 'omega_k'],
-                        **more_config["cosmology_params"],
-                        **cosmology_params)
-    except camb.baseconfig.CAMBParamRangeError as e:
-        # Set likelihood to zero if there is no solution for H0 for a specified
-        # cosmomc_theta
-        raise errors.ZeroLikelihood(e)
+    # Setting up neutrinos by hand is hard. We let CAMB deal with it instead.
+    p.set_cosmology(ombh2 = block[cosmo, 'ombh2'],
+                    omch2 = block[cosmo, 'omch2'],
+                    omk = block[cosmo, 'omega_k'],
+                    **more_config["cosmology_params"],
+                    **cosmology_params)
 
     # Setting reionization before setting the cosmology can give problems when
     # sampling in cosmomc_theta
@@ -293,7 +288,11 @@ def extract_camb_params(block, config, more_config):
 
 def execute(block, config):
     config, more_config = config
-    p = extract_camb_params(block, config, more_config)
+    try:
+        p = extract_camb_params(block, config, more_config)
+    except camb.baseconfig.CAMBParamRangeError as e:
+        print("CAMBParamRangeError:", e)
+        return 1
     
     if not p.WantCls and not p.WantTransfer:
         # Background only mode
@@ -334,6 +333,10 @@ def execute(block, config):
 
     block[names.distances, "H"] = r.h_of_z(z_background)
 
+    rs_DV, H, DA, F_AP = r.get_BAO(z_background, p).T
+    block[names.distances, "rs_DV"] = rs_DV
+    block[names.distances, "F_AP"] = F_AP
+
     if p.WantTransfer:
         # Get 3D power spectra
         k, z, p_k = r.get_linear_matter_power_spectrum()
@@ -347,15 +350,10 @@ def execute(block, config):
         # Get growth rates and sigma_8
         sigma_8 = r.get_sigma8()[::-1]
         fsigma_8 = r.get_fsigma8()[::-1]
-        rs_DV, H, DA, F_AP = r.get_BAO(z, p).T
 
         block[names.growth_parameters, "z"] = z
         block[names.growth_parameters, "sigma_8"] = sigma_8
         block[names.growth_parameters, "fsigma_8"] = fsigma_8
-        block[names.growth_parameters, "rs_DV"] = rs_DV
-        block[names.growth_parameters, "H"] = H
-        block[names.growth_parameters, "DA"] = rs_DV
-        block[names.growth_parameters, "F_AP"] = DA
         
         block[names.cosmological_parameters, "sigma_8"] = sigma_8[0]
 
