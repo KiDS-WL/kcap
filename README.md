@@ -32,7 +32,7 @@ On machines with `module` support (e.g., cuillin), load the anaconda and openmpi
 module load anaconda
 module load openmpi
 ```
-If there's no automated way to load these modules, make sure `conda` and MPI executables (`mpif90`) are on your `PATH`. For instructions on how to set up your own conda installation, see [Install conda](#install-conda).
+If there's no automated way to load these modules, make sure `conda` and MPI executables (`mpif90`) are on your `PATH`. For instructions on how to set up your own conda installation, see [Install conda](#install-conda). If you're using your own anaconda installation, don't load the module as well, as this just causes conflicts.
 
 Now set up the conda environment using the provided `conda_env.yaml` file:
 ```
@@ -49,7 +49,7 @@ To uninstall CosmoSIS (for example if you need to get the newest version), run `
 
 ### Installation on macOS and other details
 
-On macOS the current standard compiler suite is too old for building CosmoSIS. To alleviate this, install an up-to-date version of gcc (e.g., with `homebrew` by running `brew install gcc`) and set the environmental variables `CC`, `CXX`, (and `FC` and `MPIFC`, in case Fortran compilers other than `gfortran` and `mpif90` are needed). For example, assuming you have gcc 8 installed, set `CC=gcc-8` and `CXX=g++-8`
+The default macOS compilers are supported now but `gfortran` still needs to be installed. This can be done with `homebrew` by running `brew install gcc`. Note that `gcc 9.2` seems to be incompatible with the `PolyChord` samplers included in cosmosis, so use a different version (e.g., 9.1).
 
 If no MPI support is required, run `python build.py --no-mpi`.
 
@@ -66,15 +66,15 @@ The installation will ask whether you want to add this conda installation to you
 
 ## Usage
 
-Make sure `conda` and MPI are accesible (e.g., by running `module load anaconda` and `module load openmpi`) and that `kcap_env` is activated (`source activate kcap_env`).
-To test that everything is working, run the tests (todo...) examples in `examples/`:
+Make sure `conda` and MPI are accessible (e.g., by running `module load anaconda` and `module load openmpi`) and that `kcap_env` is activated (`source activate kcap_env`).
+To test that everything is working, run the tests (todo...) and some of the configs in `runs/config`:
 ```
-mkdir examples/output
-cosmosis examples/example_b.ini
+mkdir runs/output
+cosmosis runs/config/KV450_no_sys.ini
 ```
 For MPI:
 ```
-mpirun -n 4 cosmosis --mpi examples/example_b.ini
+mpirun -n 4 cosmosis --mpi runs/config/KV450_no_sys.ini
 ```
 
 ## Development
