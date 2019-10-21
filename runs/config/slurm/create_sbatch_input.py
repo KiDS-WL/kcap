@@ -12,13 +12,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if "KV450" in args.config and "BOSS" in args.config:
-        outputdir = "KV450_BOSS"
+        outputdir = "BOSS_KV450"
     elif "KV450" in args.config:
         outputdir = "KV450"
     elif "BOSS" in args.config:
         outputdir = "BOSS"
     elif "Planck" in args.config:
         outputdir= "Planck"
+    elif "Flinc" in args.config:
+        outputdir= "Flinc"
     else:
         raise ValueError("This doesn't seem to be either KV450 nor BOSS. Aborting.")
 
@@ -35,7 +37,7 @@ if __name__ == "__main__":
 #SBATCH --partition={args.partition}
 module load intel
 module load openmpi
-source ${{HOME}}/Codes/miniconda/bin/activate kcap_test
+source ${{HOME}}/Codes/miniconda/bin/activate kcap_env
 
 mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib --oversubscribe cosmosis --mpi {args.config}
     """
