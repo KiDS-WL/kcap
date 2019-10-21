@@ -1,4 +1,15 @@
 import numpy as np
+import scipy.interpolate
+
+# interpolate 3D power spectra onto different (k,z) grid
+def pofk_interpolator(pofk, k, z=None):
+    if z is None:
+        intp = scipy.interpolate.InterpolatedUnivariateSpline(np.log(k), np.log(pofk))
+        return lambda k: np.exp(intp(np.log(k))).squeeze()
+    else:
+        intp = scipy.interpolate.RectBivariateSpline(z, np.log(k), np.log(pofk))
+        return lambda k, z: np.exp(intp(z, np.log(k), grid=True)).squeeze()
+
 
 # evaluate a 2nd-order polynomial in 2 dimensions
 def polyval_2d_order2(x, y, coeff):
