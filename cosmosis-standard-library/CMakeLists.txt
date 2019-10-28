@@ -59,7 +59,7 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.10)
 
     add_subdirectory(supernovae/jla_v3)
 
-    add_dependencies(csl camb meadcb cl_to_xi_nicaea projection jla planck2018)
+    add_dependencies(csl camb halofit_takahashi halofit meadcb cl_to_xi_nicaea projection jla planck2018)
 
     add_custom_target(csl-clean)
     add_dependencies(csl-clean camb-clean halofit_takahashi-clean halofit-clean meadcb-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2018-clean)
