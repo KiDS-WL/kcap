@@ -1,0 +1,16 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+WnLog/
+BandPower/
+!modules/
+!TLogsRootsAndNorms/
+
+*.so
+*.so.dSYM
+*.a
+*.o
+
+modules/*.o
+build/
+
+*.*~
+.DS_Store
