@@ -70,7 +70,9 @@ def execute(block, config):
 
     block[output_section, "z"] = z
     block[output_section, "k_h"] = k
-    
+
+    block.put_grid(output_section, "z", z, "k_h", k, "p_k", P_gm)
+
     return 0
 
 def cleanup(config):
