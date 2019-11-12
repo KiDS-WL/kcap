@@ -250,17 +250,22 @@ def extract_camb_params(block, config, more_config):
                                                           ("hubble", "H0"),
                                                           "mnu", 
                                                           ("n_eff", "nnu"),
-                                                          ("massless_nu", "nnu"),
                                                           "standard_neutrino_neff",
                                                           ("massive_nu", "num_massive_neutrinos"),
                                                           "num_massive_neutrinos",
                                                           ("a_lens", "Alens")])
 
+    if block.has_value(cosmo, "massless_nu"):
+        warnings.warn("Parameter massless_nu is being ignored. Set n_eff instead of the effective number of relativistic species in the early Universe.")
+    if block.has_value(cosmo, "omega_nu") or block.has_value(cosmo, "omnuh2"):
+        warnings.warn("Parameter omega_nu and omnuh2 are being ignored. Set mnu and num_massive_neutrinos instead.")
+
     # Set h if provided, otherwise look for theta_mc
-    if not "H0" in cosmology_params and block.has_value(cosmo, "h0"):
-        cosmology_params["H0"] = block[cosmo, "h0"]*100
-    else:
-        cosmology_params["cosmomc_theta"] = block[cosmo, "cosmomc_theta"]/100
+    if not "H0" in cosmology_params:
+        if block.has_value(cosmo, "h0"):
+            cosmology_params["H0"] = block[cosmo, "h0"]*100
+        else:
+            cosmology_params["cosmomc_theta"] = block[cosmo, "cosmomc_theta"]/100
     
     p = camb.CAMBparams(
         InitPower = init_power,
@@ -342,7 +347,7 @@ def execute(block, config):
         if block.has_value(names.cosmological_parameters, cosmosis_name):
             input_value = block[names.cosmological_parameters, cosmosis_name]
             if not np.isclose(input_value, CAMB_value):
-                print(f"Parameter {cosmosis_name} inconsistent: input was {input_value} but value is now {CAMB_value}.")
+                warnings.warn(f"Parameter {cosmosis_name} inconsistent: input was {input_value} but value is now {CAMB_value}.")
                 #raise
         else:
             block[names.cosmological_parameters, cosmosis_name] = CAMB_value
