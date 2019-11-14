@@ -28,6 +28,42 @@ def test_camb_massless_neutrinos():
     # Fails with CAMB 1.0.9 but works >1.0.10
     assert np.isclose(Neff, p.N_eff)
 
+def test_setup():
+    config = {        "camb"     : {"file"               : CAMB_INTERFACE,
+                                    "mode"               : "background",
+                                    "zmin"               : 0.0,
+                                    "zmid"               : 1.0,
+                                    "zmax"               : 1.0,}}
+
+    camb_module = cosmosis.runtime.module.Module(module_name="camb", 
+                                                 file_path=config["camb"]["file"])
+    np.testing.assert_raises(ValueError, camb_module.setup, dict_to_datablock(config))
+
+def test_parameters():
+    config = {        "camb"     : {"file"               : CAMB_INTERFACE,
+                                    "do_reionization"    : False,
+                                    "mode"               : "background",}}
+
+    camb_module = cosmosis.runtime.module.Module(module_name="camb", 
+                                                 file_path=config["camb"]["file"])
+    param_dict = {"cosmological_parameters" : {"omch2"   : 0.1,
+                                               "ombh2"   : 0.022,
+                                               "h0"      : 0.7,
+                                               "n_s"     : 0.96,
+                                               "A_s"     : 2.1e-9,
+                                               "w"       : -1.0,
+                                               "mnu"     : 0.0,
+                                               "num_massive_neutrinos" : 0,
+                                               "n_eff"   : 3.046}}
+
+    camb_module = cosmosis.runtime.module.Module(module_name="camb", 
+                                                 file_path=config["camb"]["file"])
+    camb_module.setup(dict_to_datablock(config))
+
+    block_camb = dict_to_datablock(param_dict)
+    camb_module.execute(block_camb)
+
+
 def test_neutrinos():
     config_camb = {   "camb"     : {"file"               : CAMB_INTERFACE,
                                     "do_reionization"    : False,
@@ -42,7 +78,6 @@ def test_neutrinos():
                                                "h0"      : 0.7,
                                                "n_s"     : 0.96,
                                                "A_s"     : 2.1e-9,
-                                               "omega_k" : 0.0,
                                                "w"       : -1.0,
                                                "mnu"     : 0.0,
                                                "num_massive_neutrinos" : 0,
@@ -68,7 +103,6 @@ def test_neutrinos():
                                                "h0"      : 0.7,
                                                "n_s"     : 0.96,
                                                "A_s"     : 2.1e-9,
-                                               "omega_k" : 0.0,
                                                "w"       : -1.0,
                                                "mnu"     : 0.06,
                                                "massive_nu" : 2,
@@ -104,9 +138,9 @@ def test_consistency():
                                                "h0"      : 0.7,
                                                "n_s"     : 0.96,
                                                "A_s"     : 2.1e-9,
-                                               "omega_k" : 0.0,
                                                "w"       : -1.0,
                                                "mnu"     : 0.0,
+                                               "omega_k" : 0.1,
                                                "massless_nu" : 2,
                                                "num_massive_neutrinos" : 0,
                                                "n_eff"   : 3.046}}
@@ -123,10 +157,15 @@ def test_consistency():
     consistency_module.execute(block)
     camb_module.execute(block)
 
-    for k in block.keys('cosmological_parameters'):
-        print(k[1], block[k[0], k[1]])
+    block_no_consistency = dict_to_datablock(param_dict)
+    camb_module.execute(block_no_consistency)
+
+    for k in block_no_consistency.keys('cosmological_parameters'):
+        print(k[1], block_no_consistency[k[0], k[1]])
 
 if __name__ == "__main__":
+    test_setup()
+    test_parameters()
     test_neutrinos()
     test_camb_massless_neutrinos()
     test_consistency()

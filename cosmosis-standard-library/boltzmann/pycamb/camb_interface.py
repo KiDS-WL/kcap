@@ -107,6 +107,10 @@ def setup(options):
     more_config['nz'] = options.get_int(opt, 'nz', default=150)
     more_config.update(get_optional_params(options, opt, ["zmid", "nz_mid"]))
 
+    if "zmid" in more_config:
+        if not more_config["zmin"] < more_config["zmid"] or not more_config["zmid"] < more_config["zmax"]:
+            raise ValueError("zmid needs to be larger than zmin and smaller than zmax!")
+
     more_config['zmin_background'] = options.get_double(opt, 'zmin_background', default=more_config['zmin'])
     more_config['zmax_background'] = options.get_double(opt, 'zmax_background', default=more_config['zmax'])
     more_config['nz_background'] = options.get_int(opt, 'nz_background', default=more_config['nz'])
@@ -247,6 +251,7 @@ def extract_camb_params(block, config, more_config):
     # Get optional parameters from datablock.
     cosmology_params = get_optional_params(block, cosmo, [("t_cmb" ,"TCMB"), 
                                                           ("yhe",   "YHe"),
+                                                          ("omega_k", "omk"),
                                                           ("hubble", "H0"),
                                                           "mnu", 
                                                           ("n_eff", "nnu"),
@@ -280,7 +285,6 @@ def extract_camb_params(block, config, more_config):
     # Setting up neutrinos by hand is hard. We let CAMB deal with it instead.
     p.set_cosmology(ombh2 = block[cosmo, 'ombh2'],
                     omch2 = block[cosmo, 'omch2'],
-                    omk = block[cosmo, 'omega_k'],
                     **more_config["cosmology_params"],
                     **cosmology_params)
 
@@ -326,11 +330,13 @@ def execute(block, config):
     else:
         r = camb.get_results(p)
 
-    # Write derived parameters to distance section
+    # Write derived parameters to cosmological_parameters section
     derived = r.get_derived_params()
     for k, v in derived.items():
-        block[names.distances, k] = v
+        block[names.cosmological_parameters, k] = v
     
+    # Calculate Omega_Lambda. Doesn't include radiation!
+    p.omegal = 1 - p.omegam - p.omk
     for cosmosis_name, CAMB_name, scaling in [("h0"               , "h",               1),
                                               ("hubble"           , "h",             100),
                                               ("omnuh2"           , "omnuh2",          1),
@@ -342,7 +348,8 @@ def execute(block, config):
                                               ("omega_b"          , "omegab",          1),
                                               ("omega_c"          , "omegac",          1),
                                               ("omega_nu"         , "omeganu",         1),
-                                              ("omega_m"          , "omegam",          1)]:
+                                              ("omega_m"          , "omegam",          1),
+                                              ("omega_lambda"     , "omegal",          1)]:
         CAMB_value = getattr(p, CAMB_name)*scaling
         if block.has_value(names.cosmological_parameters, cosmosis_name):
             input_value = block[names.cosmological_parameters, cosmosis_name]
