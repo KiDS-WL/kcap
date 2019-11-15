@@ -6,24 +6,25 @@ include ${COSMOSIS_SRC_DIR}/config/compilers.mk
 MODULE = ./modules
 
 USER_CXXFLAGS += -I${GSL_INC}
-USER_LDFLAGS += -lcosmosis -L${GSL_LIB} -lgslcblas -lgsl -lm -L$(MODULE) -lpslib -lstdc++ -lz -Wno-deprecated -I$(MODULE)
-#fgas
-#USER_CXXFLAGS += -I${GSL_INC}
-#USER_LDFLAGS += -lcosmosis -L${GSL_LIB}  -lgsl -lgslcblas
-# RUN "make all" to make all binaries or "make [name]" to make [name]
+USER_LDFLAGS += -lcosmosis -L${GSL_LIB}  -lgsl -lgslcblas -lm -L$(MODULE) -lcolib -lstdc++ -lz -Wno-deprecated -I$(MODULE)
 
 #-----------------------------------
 #--- linker
 #-----------------------------------
 
-PSLIB     = libpslib.a
+COLIB     = libcolib.a
 
 #-----------------------------------
 #--- rules
 #-----------------------------------
-all: $(MODULE)/$(PSLIB) libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so lib2pcfs_likelihood.so
+all: $(MODULE)/$(COLIB) libcosebis_cl.so libcosebis_2pcfs.so libcosebis_likelihood.so \
+ lib2pcfs_likelihood.so libbandpower_likelihood.so
+	# lib2pcfs_cl.so
+# libbandpower_theory.so libbandpower_real_theory.so
 
-$(MODULE)/$(PSLIB)::
+# tells how to make my library (another makefile)
+
+$(MODULE)/$(COLIB)::
 	cd $(MODULE) && $(MAKE)
 
 libcosebis_cl.so: COSEBIs_Cl_cosmosis_interface.cc
@@ -38,11 +39,19 @@ libcosebis_likelihood.so: COSEBIs_likelihood_cosmosis_interface.cc
 lib2pcfs_likelihood.so: 2pcfs_likelihood_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) 2pcfs_likelihood_cosmosis_interface.cc -shared -o lib2pcfs_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
 
-#fgas.so: fgas_cosmosis.cpp src/libclusters.a
-#	$(CXX) $(CXXFLAGS) fgas_cosmosis.cpp -shared -o fgas.so $(LDFLAGS) src/libclusters.a
+lib2pcfs_cl.so: 2PCFs_Cl_cosmosis_interface.cc
+	$(CXX) $(CXXFLAGS) 2PCFs_Cl_cosmosis_interface.cc -shared -o lib2pcfs_cl.so $(LDFLAGS) $(USER_LDFLAGS)
 
-#src/libclusters.a:
-#	$(MAKE) -C src
+libbandpower_theory.so: BandPower_interface.cc
+	$(CXX) $(CXXFLAGS) BandPower_interface.cc -shared -o libbandpower_theory.so $(LDFLAGS) $(USER_LDFLAGS)
+
+libbandpower_real_theory.so: BandPower_interface_real.cc
+	$(CXX) $(CXXFLAGS) BandPower_interface_real.cc -shared -o libbandpower_real_theory.so $(LDFLAGS) $(USER_LDFLAGS)
+
+
+libbandpower_likelihood.so: BandPower_likelihood_interface.cc
+	$(CXX) $(CXXFLAGS) BandPower_likelihood_interface.cc -shared -o libbandpower_likelihood.so $(LDFLAGS) $(USER_LDFLAGS)
+
 
 # Clean up
 .PHONY: clean
@@ -52,7 +61,14 @@ clean:
 	rm -f libcosebis_2pcfs.so
 	rm -f libcosebis_likelihood.so
 	rm -f lib2pcfs_likelihood.so
+	rm -f libbandpower_theory.so
+	rm -f libbandpower_real_theory.so
+	rm -f libbandpower_likelihood.so
 	test -n "./" && rm -rf ./libcosebis_cl.so.dSYM/
 	test -n "./" && rm -rf ./libcosebis_2pcfs.so.dSYM/
 	test -n "./" && rm -rf ./libcosebis_likelihood.so.dSYM/
 	test -n "./" && rm -rf ./lib2pcfs_likelihood.so.dSYM/
+	test -n "./" && rm -rf ./libbandpower_theory.so.dSYM/
+	test -n "./" && rm -rf ./libbandpower_real_theory.so.dSYM/
+	test -n "./" && rm -rf ./libbandpower_likelihood.so.dSYM/
+	

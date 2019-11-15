@@ -417,6 +417,8 @@ void matrix::clear()
    memcpy(elements,newElements,sizeof(number)*columns*rows);
  }
 
+
+
  void matrix::load(int x,int y,number value)
  {
     // if (x>=columns)
@@ -573,6 +575,14 @@ void matrix::add(number n)
     elements[n]/= f;
  }
 
+// void matrix::sqrt()
+//  {
+//   int n;
+
+//   for(n=0;n<columns*rows;n++) 
+//     elements[n]=sqrt(elements[n]);
+//  }
+
  void matrix::div(int x,int y,number n)
  {
    elements[x+y*columns]/=n;
@@ -621,6 +631,15 @@ void matrix::add(number n)
   for(n=0;n<rows*columns;n++) 
     elements[n] = fill;
  }
+
+number matrix::sum()
+{
+  number result=0.;
+  for(int n=0;n<rows*columns;n++) 
+    result+=elements[n];
+  return result;
+}
+
 
  void matrix::neutral()
  {
@@ -675,6 +694,8 @@ void matrix::add(number n)
 
   return _sqrt(result);
  }
+
+
 /*
  matrix matrix::norm()
  {
@@ -1547,6 +1568,37 @@ matrix subMatrix(matrix input,vector<int> elements)
 	return subM;
 }
 
+
+matrix subMatrix_removeRows_and_Columns(matrix input,vector<int> rows_to_remove, vector<int> columns_to_remove)
+{
+  int subMRows=input.rows-rows_to_remove.size();
+  int subMColumns=input.columns-columns_to_remove.size();
+  clog<<"rows="<<input.rows<<"  rows_to_remove.size()="<<rows_to_remove.size()<<"  subMRows="<<subMRows<<endl;
+  matrix subM(subMColumns,subMRows);
+
+  int m=0;
+//  for(int i=0;i<elements.size();i++)
+//    clog<<"elements["<<i<<"]="<<elements[i]<<endl;
+  for(int i=0; i<input.columns;i++)
+  {
+    int n=0;
+    if(notEqual(i,columns_to_remove))
+    {
+      for(int j=0;j<input.rows;j++)
+      {
+        if(notEqual(j,rows_to_remove))
+        {
+          subM.load(m,n,input.get(i,j));
+//          clog<<"m="<<m<<"  n="<<n<<" i="<<i<<" j="<<j<<endl;
+          n++;
+        }
+      }
+    m++;
+    }
+  }
+  return subM;
+}
+
 bool notEqual(int i,vector<int> elements)
 {
 	bool result=true;
@@ -1600,6 +1652,7 @@ matrix& matrix::readFromASCII(const char* filename, int cols, int rows)
   return *this;
 }
 
+//reads in ascii files. Doesn't need to know how many lines there are.
 matrix& matrix::readFromASCII_marika(const char* filename)
 {
   ifstream fhandler(filename);
@@ -1674,6 +1727,14 @@ matrix& matrix::readFromASCII_marika(const char* filename)
 
   return *this;
 }
+
+
+// int matrix::find_closest_index(number findme)
+// {
+//   ///for now only works for 
+//   for(int y=0; y<rows;y++)
+
+// }
 
 
 matrix euler(number a,number b,number c)

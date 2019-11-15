@@ -24,18 +24,28 @@
 //const number MaxPowerCOSEBIs=1e6;
 //const int PowerTableNumberCOSEBIs=200;
 
-//
+/*
+CAUTION: The covariance calculation with the number of pairs depends 
+on the definition of the number of pairs. For example in Athena_1.7 for the autocorrelations
+when both gal_cats are given a factor of 0.5 is needed to correct the number of pairs. 
+This is in the COSEBIs code now but this convention might be different if using different codes.
+*/
+
 class COSEBIs : public function_cosebis
 {
 public:
+	//Constructors
 	COSEBIs();
+	COSEBIs(int nMax,number thetamin, number thetamax, int nPairs,
+		string WnFolderName,string TnFolderName,string OutputTnFolderName);
+	//destructor
 	~COSEBIs();
-	COSEBIs(int nMax,number thetamin, number thetamax, int nPairs,string WnFolderName,string TnFolderName,string OutputTnFolderName);
-	//void initialize(int nMax,number thetamin, number thetamax, int nPairs);
+	//Constructor calls initialize
 	void initialize(int nMaximum,number thetamin, number thetamax, int nPairs
-		,string WnFolderName1="cosmosis-standard-library/cosebis/WnLog/"
-		,string TnFolderName1="cosmosis-standard-library/cosebis/TLogsRootsAndNorms/"
-		,string OutputTnFolderName="cosmosis-standard-library/cosebis/TpnLog");
+		,string WnFolderName1="./cosebis/WnLog/"
+		,string TnFolderName1="./cosebis/TLogsRootsAndNorms/"
+		,string OutputTnFolderName="./cosebis/TpnLog/");
+	//sets the number of redshift bins
 	void setZbins(int nPairs1);
 	///sets the COSEBIs parameters
 	void setEparam(int nMax1,number thetamin1, number thetamax1);
@@ -44,9 +54,13 @@ public:
 	///initializes Tp_n_vec and Tm_n_vec
 	void setTs(int nMaximum);
 	///sets the noise parameters for calculating the covariance 
-	void setNoise(number A1,number sigmaE1,number nBar1);
+	void setNoise(number A1,vector<number> sigma_e_vec,vector<number> nBar_vec);
+	///sets neff_vec
+	void set_neff(vector<number> neff_vec);
 	///sets noise value for each bin separately 
 	void setNoise_vec(vector<number> noise_vec1);
+	///sets the already exsiting noise_vec to zero.
+	void setNoiseToZero();
 	///calculates power for a given redshift bin combination 
 	void setPower(vector<number> log_ell_vec,vector<vector<number> > InputPower);
 	///Return power
@@ -77,8 +91,20 @@ public:
 	matrix calEn();
 	//calculates the covariance for En Em, n=n1 m=m1
 	number valueCov(int n1,int m1);
+	//checks if input power soectrum is set. Returns false if not.
+	bool checkPower();
 	///calculates Covariance matrix and returns it
 	matrix calCov();
+	//takes in the value of sigma_m and returns a covariance that is the equal to
+	// 4*sigma_m^2* E^{ij}_m * E^{kl}_n= C^{ij kl}_mn
+	matrix calCovForSigma_m(number sigma_m);
+	///reads Npairs from an input ksi file from Athena
+	void readNpairs(vector<string> FileName, int nColumns=8);
+	///this calculates the Noise covariance assuming noise is Gaussian, it returns
+	///\sigma_e^4/ 4* (d \theta)^2 \sum_i \theta_i^2/ N(\theta_i) [T_+m(\theta_i) T_+n(\theta_i)+ T_-m(\theta_i) T_-n(\theta_i)]
+	number valueNoiseCov_fromInputNpair(int n1,int m1, int np,int bin1,int bin2);
+	///From input napir
+	matrix calNoiseCov_fromInputNpair();
 	///this calculates the B-mode covariance assuming that there is no P_B(l) and noise is Gaussian, it returns
 	///1/(2piA)*\int dl l W_n W_m
 	number valueBCov(int n1,int m1);
@@ -109,69 +135,23 @@ public:
 	matrix calEn2PCFsFromInputKsi(vector<string> FileName, vector<number> Corr_vec,int nColumns=8);
 	///sets the value of the index from the bin
 	int calP(int nBins,int fbin,int sbin);
-	///reads En from a file
-	matrix readInputEn(string InputEnfileName);
-	///reads covariance of COSEBIs from a file
-	matrix readInputCovariance(string InputCovfileName);
-	///returns Chi^2 from En_data, covarinace and Encal
-	number CalChiS(matrix En_th,matrix En_data,matrix Cov_mat);
 
-	///takes En as input and returns its numerical derivative, h is the step of integration
-	/// size is the lenght of the En matrix (rows) and the derivative mathod depends on the 
-	/// variable derivative= 2,4,6 ==> 3,5,7 point stencil methods
-	//matrix Derivative(matrix& EnM,number h,int size);
-	
-	//void setParamValueDEn(int i,int par,number h);
-	///calculates derivatives of En
-	//matrix calDEn();
-	/// takes DEn_max as input to find M
-	//matrix calM(int i, int j, int n);
-	/// takes DEn_max as input to find M, changes the order of variables. W0 comes last. only for flat cosmology with max 6 params
-	//matrix calMW0Last(int i, int j, int nMax);
-	///returns the parameters to their fiducial value depending on their order
-	//void initializeParam();
-	///sets the value of parameters of the second order derivative
-	//void setParamValueDDEn(int i, int par1,int par2,number h,number k);
-	///sets the value of parameters of the simple second order derivative
-	//void setParamValueDDEnSimple(int i, int par1,int par2,number h,number k);
-	///another way of getting the secnd order derivative of En
-	//matrix SecondDerivative(matrix & En_mat,number h, number k);
-	///calculates the fourpoint second order partial derivative of the input matrix
-	//matrix fourPointSecondDerivative(matrix& En_mat,number h,number k);
-	///calculates H a 3 index quantity which contains the second order partial derivatives of En
-	//vector<vector< matrix> > calDDE();
-	///calculates H a 3 index quantity which contains 
-	///the simple second order partial derivatives of En
-	//vector<vector< matrix> > calDDESimple();
-	///calculates Q= H_{n \mu \nu} \Phi_\nu   
-	//matrix calQ(matrix deltaPhi,int nMax);
 
-	///sets parameter order to the default order
-	//void setParamsOrderToDefault();
-	///sets the order of parameters for derivatives
-	//void setParamsOrder(vector<string> paramsOrder1);
-
-	
-private:
+private: //private variables
   string WnFolderName,TnFolderName,OutputTnFolderName;
   vector<WnLog> Wn_vec;
   vector<TpnLog> Tpn_vec; 
   vector<function_cosebis> powerspectrum_vec;
   vector<function_cosebis> Ksi_p_vec;
   vector<function_cosebis> Ksi_m_vec;
-  //RandomGaussian random;  
 
   vector <number> integ_limits,integ_limitsTp,integ_limitsTm;
   vector <vector<number> > integ_limits_vec;
-  vector <number> noise_vec;
+  vector <number> noise_vec,sigma_e_vec;
   vector <matrix> Ksi_mat_vec;
   vector <matrix> Tpm_mat_vec,pofz_mat_vec;
-  //vector <string> paramsOrder;
-  //vector <vector<matrix> > DDEn_vecvec;
-  //matrix DEn_mat;
-  //matrix pofz_mat;
-  //matrix random_matP;
-  //matrix random_matM;
+  vector <matrix> Npair_mat_vec;
+  vector <number> neff_vec;
   
   number delta1noise,delta2noise,delta3noise,delta4noise;  
   number A,sigmaE,begin,end,nBar;

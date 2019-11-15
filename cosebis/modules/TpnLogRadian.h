@@ -3,8 +3,6 @@
 
 #include "function_cosebis.h"
 #include "Integrate.h"
-//#include "numericalrecipes.h"
-//#include "hankel.h"
 
 const int nThetaBins=10000;
 
@@ -40,11 +38,9 @@ public:
 
 private:
 	/// determines integration limits (based on max/min of J0(x))
-	//void set_integration_limits();
 	vector< vector<number> > root;
 	vector< vector<number> > rootTheta;
 	vector <number> norm;
-	//vector <number> StepN;
 	int      n;
 	number   thetamin;
 	number   thetamax;
@@ -53,8 +49,7 @@ private:
 	function_cosebis Tn_table;
 	bool lookupTableDone,writeInteg;
 	string foldername;
-	//number   B;
-	//function Tp;
+
 };
 
 #endif

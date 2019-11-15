@@ -10,6 +10,7 @@ sys.path.append("../kcap")
 from cosmosis_utils import dict_to_datablock
 
 KCAP_MODULE_PATH = "../utils"
+CSL_PATH = os.environ["CSL_PATH"] if "CSL_PATH" in os.environ else "../cosmosis-standard-library"
 
 def create_pipeline(config, verbose=True):
     modules = []
@@ -38,7 +39,7 @@ def pofk_interpolator(pofk, k, z=None):
         return lambda k, z: np.exp(intp(z, np.log(k), grid=True)).squeeze()
 
 def test_meadcb(plot=False):
-    config_camb = {     "camb"     : {"file" : os.path.join(os.path.join(os.environ["CSL_PATH"], 
+    config_camb = {     "camb"     : {"file" : os.path.join(os.path.join(CSL_PATH, 
                                                                     "boltzmann/pycamb/camb_interface.py")),
                                     "do_reionization"    : False,
                                     "mode"               : "transfer",
@@ -46,15 +47,15 @@ def test_meadcb(plot=False):
                                     "nonlinear"          : "pk",
                                     "kmax"               : 20.0,}}
 
-    config_meadcb = {   "camb"        : {"file" : os.path.join(os.path.join(os.environ["CSL_PATH"], 
+    config_meadcb = {   "camb"        : {"file" : os.path.join(os.path.join(CSL_PATH, 
                                                                       "boltzmann/pycamb/camb_interface.py")),
                                          "do_reionization" : False,
                                          "mode"            : "transfer",
                                          "nonlinear"       : "none",
                                          "kmax"               : 20.0,},
-                        "consistency" : {"file" : os.path.join(os.path.join(os.environ["CSL_PATH"], 
+                        "consistency" : {"file" : os.path.join(os.path.join(CSL_PATH, 
                                                                       "utility/consistency/consistency_interface.py"))},
-                        "meadcb"      : {"file" : os.path.join(os.path.join(os.environ["CSL_PATH"], 
+                        "meadcb"      : {"file" : os.path.join(os.path.join(CSL_PATH, 
                                                                       "structure/meadcb/mead_interface.so")),
                                          "one_baryon_parameter" : False,
                                          "feedback"             : False}}
@@ -117,7 +118,7 @@ def test_camb(plot=False):
     config_camb = {   "hmcode_parameters" : {"file" : os.path.join(KCAP_MODULE_PATH, "one_parameter_hmcode.py"),
                                              "a_0"  : 1.0,
                                              "a_1"  : -0.5}, 
-                      "camb"     : {"file" : os.path.join(os.path.join(os.environ["CSL_PATH"], 
+                      "camb"     : {"file" : os.path.join(os.path.join(CSL_PATH, 
                                                                     "boltzmann/pycamb/camb_interface.py")),
                                     "do_reionization"    : False,
                                     "mode"               : "transfer",

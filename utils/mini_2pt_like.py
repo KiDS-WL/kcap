@@ -145,13 +145,13 @@ def setup(options):
                 
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
-    return inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, \
+    return cov, inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, \
            cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, \
            order_cov, \
            constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector
 
 def execute(block, config):
-    inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
+    cov, inv_cov, data_vectors, theta_xi_plus, theta_xi_minus, cut_xi_plus_idx, cut_xi_minus_idx, angular_binning_mode, angular_bin_edges, order_cov, constant_c_offset, xi_p_c, xi_m_c, like_name, keep_theory_vector = config
     
     n_bin = block["shear_xi_plus", "nbin_a"]
 
@@ -247,6 +247,8 @@ def execute(block, config):
     if keep_theory_vector:
         block[names.data_vector, like_name + "_theory"] = mu
         block[names.data_vector, like_name + "_data"] = x
+        block[names.data_vector, like_name + "_inverse_covariance"] = inv_cov
+        block[names.data_vector, like_name + "_simulation"] = np.random.multivariate_normal(mu, cov)
         block[names.data_vector, like_name + "_theta_xi_plus"] = theta_xi_plus
         block[names.data_vector, like_name + "_theta_xi_minus"] = theta_xi_minus
 

@@ -9,4 +9,6 @@ emu.so: emu.c emu_interface.c params.h
 	${CC}  ${CFLAGS} emu.c emu_interface.c -shared  -o  interface.so $(LDFLAGS)
 
 clean:
-	rm -f *.o
+	rm *.o
+	rm *.so
+	rm -r *.so.dSYM

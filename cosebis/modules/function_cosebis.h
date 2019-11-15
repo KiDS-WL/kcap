@@ -24,16 +24,16 @@ const string extension=".table";
 
 /** General handler for function_cosebiss, implements also data tables (can be stored on disk) and extra/inter-polation
 
- Allows an easy, relatively easy, way to implement function_cosebiss. This class includes methods to
+ Allows an easy, relatively easy, way to implement functions. This class includes methods to
  calculate data tables from an arbitrary function_cosebis that can be stored on disk or restore from
- disk, provided there is a defined interface for a single-argument function_cosebis.
- The function_cosebis can then be told to extra/-interpolate (or just one of these) from this data table,
+ disk, provided there is a defined interface for a single-argument function.
+ The functions can then be told to extra/-interpolate (or just one of these) from this data table,
  saving in some situations computation time.
 
- Moreover, integrals of this function_cosebis can be calculated, if it, again, can be boiled down to
- a single-argument function_cosebis.
+ Moreover, integrals of this function can be calculated, if it, again, can be boiled down to
+ a single-argument function.
 
- Implementations of concrete function_cosebiss have to be derived from this parent class.
+ Implementations of concrete functions have to be derived from this parent class.
 
  CAUTION: since 14-01-2005 logarithmic tables are just half-log (only x-axis)
 */
@@ -47,9 +47,7 @@ class function_cosebis
 
     function_cosebis() 
     {
-    	//clog<<"in function_cosebis()"<<endl;
 		init();
-		//clog<<"*******************init"<<endl;
 		setName("abstract",WITHNAMECOUNTER);
     }
     function_cosebis(const char*);
