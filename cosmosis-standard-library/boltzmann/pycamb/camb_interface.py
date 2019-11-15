@@ -1,3 +1,4 @@
+import warnings
 import camb
 from cosmosis.datablock import names, option_section as opt
 from cosmosis.datablock.cosmosis_py import errors
@@ -14,6 +15,11 @@ MODES = [MODE_BG, MODE_THERM, MODE_CMB, MODE_TRANSFER, MODE_ALL]
 
 
 def get_optional_params(block, section, names):
+    """Get values from a datablock from a list of names.
+    
+    If the entries of names are tuples or lists of length 2, they are assumed
+    to correspond to (cosmosis_name, output_name), where cosmosis_name is the 
+    datablock key and output_name the params dict key."""
     params = {}    
     for name in names:
         cosmosis_name = name
@@ -34,6 +40,10 @@ def get_choice(options, name, valid, default=None, prefix=''):
     return prefix + choice
 
 def setup(options):
+    M, m, v = camb.__version__.split(".")
+    if not int(M) > 1 and not int(m) > 0 and not int(v) > 9:
+        warnings.warn(f"CAMB version < 1.0.10 (found: {camb.__version__}). Massless neutrino handling not accounted for properly.")
+
     mode = options.get_string(opt, 'mode', default="all")
     if not mode in MODES:
         raise ValueError("Unknown mode {}.  Must be one of: {}".format(mode, MODES))
@@ -235,17 +245,27 @@ def extract_camb_params(block, config, more_config):
     #transfer = extract_transfer_params(block, config, more_config)
 
     # Get optional parameters from datablock.
-    cosmology_params = get_optional_params(block, cosmo, ["TCMB", "YHe", "mnu", "nnu", "standard_neutrino_neff",
+    cosmology_params = get_optional_params(block, cosmo, [("t_cmb" ,"TCMB"), 
+                                                          ("yhe",   "YHe"),
+                                                          ("hubble", "H0"),
+                                                          "mnu", 
+                                                          ("n_eff", "nnu"),
+                                                          "standard_neutrino_neff",
+                                                          ("massive_nu", "num_massive_neutrinos"),
                                                           "num_massive_neutrinos",
-                                                          ("A_lens", "Alens")])
+                                                          ("a_lens", "Alens")])
+
+    if block.has_value(cosmo, "massless_nu"):
+        warnings.warn("Parameter massless_nu is being ignored. Set n_eff instead of the effective number of relativistic species in the early Universe.")
+    if block.has_value(cosmo, "omega_nu") or block.has_value(cosmo, "omnuh2"):
+        warnings.warn("Parameter omega_nu and omnuh2 are being ignored. Set mnu and num_massive_neutrinos instead.")
 
     # Set h if provided, otherwise look for theta_mc
-    if block.has_value(cosmo, "hubble"):
-        cosmology_params["H0"] = block[cosmo, "hubble"]
-    elif block.has_value(cosmo, "h0"):
-        cosmology_params["H0"] = block[cosmo, "h0"]*100
-    else:
-        cosmology_params["cosmomc_theta"] = block[cosmo, "cosmomc_theta"]/100
+    if not "H0" in cosmology_params:
+        if block.has_value(cosmo, "h0"):
+            cosmology_params["H0"] = block[cosmo, "h0"]*100
+        else:
+            cosmology_params["cosmomc_theta"] = block[cosmo, "cosmomc_theta"]/100
     
     p = camb.CAMBparams(
         InitPower = init_power,
@@ -256,12 +276,18 @@ def extract_camb_params(block, config, more_config):
         NonLinearModel=nonlinear,
         **config,
     )
+
     # Setting up neutrinos by hand is hard. We let CAMB deal with it instead.
     p.set_cosmology(ombh2 = block[cosmo, 'ombh2'],
                     omch2 = block[cosmo, 'omch2'],
                     omk = block[cosmo, 'omega_k'],
                     **more_config["cosmology_params"],
                     **cosmology_params)
+
+    # Fix for CAMB version < 1.0.10
+    if np.isclose(p.omnuh2, 0) and "nnu" in cosmology_params and not np.isclose(cosmology_params["nnu"], p.num_nu_massless): 
+        p.num_nu_massless = cosmology_params["nnu"]
+
 
     # Setting reionization before setting the cosmology can give problems when
     # sampling in cosmomc_theta
@@ -305,19 +331,29 @@ def execute(block, config):
     for k, v in derived.items():
         block[names.distances, k] = v
     
+    for cosmosis_name, CAMB_name, scaling in [("h0"               , "h",               1),
+                                              ("hubble"           , "h",             100),
+                                              ("omnuh2"           , "omnuh2",          1),
+                                              ("n_eff"            , "N_eff",           1),
+                                              ("num_nu_massless"  , "num_nu_massless", 1),
+                                              ("num_nu_massive"   , "num_nu_massive",  1),
+                                              ("massive_nu"       , "num_nu_massive",  1),
+                                              ("massless_nu"      , "num_nu_massless", 1),
+                                              ("omega_b"          , "omegab",          1),
+                                              ("omega_c"          , "omegac",          1),
+                                              ("omega_nu"         , "omeganu",         1),
+                                              ("omega_m"          , "omegam",          1)]:
+        CAMB_value = getattr(p, CAMB_name)*scaling
+        if block.has_value(names.cosmological_parameters, cosmosis_name):
+            input_value = block[names.cosmological_parameters, cosmosis_name]
+            if not np.isclose(input_value, CAMB_value):
+                warnings.warn(f"Parameter {cosmosis_name} inconsistent: input was {input_value} but value is now {CAMB_value}.")
+                #raise
+        else:
+            block[names.cosmological_parameters, cosmosis_name] = CAMB_value
+
     if not block.has_value(names.cosmological_parameters, "cosmomc_theta"):
         block[names.cosmological_parameters, "cosmomc_theta"] = r.cosmomc_theta()*100
-    if not block.has_value(names.cosmological_parameters, "h0"):
-        block[names.cosmological_parameters, "h0"] = p.h
-
-    if not block.has_value(names.cosmological_parameters, "omnuh2"):
-        block[names.cosmological_parameters, "omnuh2"] = p.omnuh2
-    if not block.has_value(names.cosmological_parameters, "nnu"):
-        block[names.cosmological_parameters, "nnu"] = p.num_nu_massless
-    if not block.has_value(names.cosmological_parameters, "num_nu_massless"):
-        block[names.cosmological_parameters, "num_nu_massless"] = p.num_nu_massless
-    if not block.has_value(names.cosmological_parameters, "num_nu_massive"):
-        block[names.cosmological_parameters, "num_nu_massive"] = p.num_nu_massive
 
     z_background = np.linspace(more_config["zmin_background"], more_config["zmax_background"], more_config["nz_background"])
 

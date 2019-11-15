@@ -35,6 +35,21 @@ bool CheckFolderExist(const string& folderName)
   }
 }
 
+//assumes that the vector is sorted
+int find_closest_index(vector<number> input_vec,number findme)
+{
+  if (findme<input_vec[0])
+    return 0;
+  if (findme>input_vec[input_vec.size()-1])
+    return input_vec.size()-1;
+
+  int index;
+  for(index=0; ((index<input_vec.size()) && (input_vec[index]<findme)); index++);///finds the position of the galaxy in the sorted vector with z>=z_min
+  if((findme-input_vec[index-1])<(input_vec[index]-findme))
+    return index-1;
+  else
+    return index;
+}
 
 void writeValue(number value,FILE* handler)
 {

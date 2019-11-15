@@ -70,6 +70,7 @@ void   writeValue(number,FILE*);
 bool CheckFilesExist(const string& filename);
 bool CheckFilesExist(const vector<string> filename_vec);
 bool CheckFolderExist(const string& folderName);
+int find_closest_index(vector<number> input_vec,number findme);
 
 /// read number from binary data file
 double read(FILE*);

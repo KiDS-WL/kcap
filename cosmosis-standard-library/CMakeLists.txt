@@ -52,6 +52,7 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.10)
 
     add_subdirectory(shear/cl_to_xi_nicaea)
     
+    add_subdirectory(structure/cosmic_emu)
     add_subdirectory(structure/meadcb)
     add_subdirectory(structure/projection)
 
@@ -59,9 +60,9 @@ project(CSL LANGUAGES C CXX Fortran VERSION 0.0.10)
 
     add_subdirectory(supernovae/jla_v3)
 
-    add_dependencies(csl  meadcb cl_to_xi_nicaea projection jla planck2018)
+    add_dependencies(csl camb halofit_takahashi halofit cosmic_emu meadcb cl_to_xi_nicaea projection jla planck2018)
 
     add_custom_target(csl-clean)
-    add_dependencies(csl-clean camb-clean halofit_takahashi-clean halofit-clean meadcb-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2018-clean)
+    add_dependencies(csl-clean camb-clean halofit_takahashi-clean halofit-clean cosmic_emu-clean meadcb-clean cl_to_xi_nicaea-clean projection-clean jla-clean planck2018-clean)
 
     

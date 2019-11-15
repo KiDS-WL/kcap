@@ -5,13 +5,15 @@ WnLog::WnLog(): Wn_table()
 	l=thetamin=thetamax=1.;
 	n=0;
 	lthresh=0.;
-	TnFolderName="cosmosis-standard-library/cosebis/Tn";
-	WnFolderName="cosmosis-standard-library/cosebis/WnLog/";
+	TnFolderName="./cosebis/TLogsRootsAndNorms";
+	WnFolderName="./cosebis/WnLog/";
 	WnFileName="WnLog";
 }
+
 WnLog::WnLog(number thetamin1,number thetamax1,int nMax,string TnFolderName,string WnFolderName
 		,string WnFileName)
 {
+
   setWnLogName(TnFolderName,WnFolderName,WnFileName);
   setTheta(thetamin1,thetamax1,nMax);
 }
@@ -21,7 +23,6 @@ WnLog::~WnLog(){}
 number WnLog::integrant(number x)
 {
 	number integ=x*TnLog(x/l)*gsl_sf_bessel_J0(x);
-	//cout<<x<<"\t"<<integ<<endl;
 	return integ;
 }
 
@@ -30,15 +31,6 @@ void WnLog::setWnLogName(string TnFolderName1,string WnFolderName1,string WnFile
 	TnFolderName=TnFolderName1;
 	WnFolderName=WnFolderName1;
 	WnFileName=WnFileName1;
-	// Set folder names to "." if empty so that files are written to the cwd
-	if(TnFolderName.empty()) 
-	{
-		TnFolderName = ".";
-	}
-	if(WnFolderName.empty()) 
-	{
-		WnFolderName = ".";
-	}
 }
 
 void WnLog::setTheta(number thetamin1,number thetamax1,int nMax)

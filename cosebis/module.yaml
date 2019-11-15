@@ -2,9 +2,9 @@
 name: "cosebis"
 version: "1"
 purpose: "measuring cosebis from an input 2PCFs, predicting En and COSEBIs likelihood"
-url: "http://supernovae.in2p3.fr/sdss_snls_jla/ReadMe.html"
+url: " "
 interface: COSEBIs_likelihood_cosmosis_interface.so
-attribution: [Marika Asgari]
+attribution: 
 rules:
     ""
 cite:

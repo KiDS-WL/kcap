@@ -220,6 +220,9 @@ class matrix
    void    restore(const char*);
    void    restore(string str) {restore(str.c_str());}
 
+   ///returns sum of all ellements
+   number sum();
+
 
    /// add a column to matrix from ASCII file
    void    addColumnFromFile(const char*,int,int);
@@ -289,6 +292,7 @@ class matrix
    void    div(number);
    void    div(int,int,number);
    void    div(int,number);
+   // void    sqrt();
    
    void  operator=(const matrix&);      
    void  operator+=(const matrix&);
@@ -401,6 +405,10 @@ void polarCoords(number,number,number,number&,number&,number&);
 
 ///marika's sub Matix routine, takes the elements which rows and columns should be substracted and return the reduced matrix, the input matrix should be square
 matrix subMatrix(matrix input,vector<int> elements);
+
+///marika's sub Matix routine, takes the rows_to_remove and columns_to_remove and removes the rows and columns
+//that should be substracted and return the reduced matrix, the input matrix can be any shape
+matrix subMatrix_removeRows_and_Columns(matrix input,vector<int> rows_to_remove, vector<int> columns_to_remove);
 
 ///marika's routine finds out if i is not equal to any of the elements
 bool notEqual(int i,vector<int> elements);

@@ -25,8 +25,8 @@ public:
 
 	WnLog();
 	WnLog(number thetamin1,number thetamax1,int nMax
-		,string TnFolderName="cosmosis-standard-library/cosebis/Tn"
-		,string WnFolderName="cosmosis-standard-library/cosebis/WnLog/"
+		,string TnFolderName="./cosebis/TLogsRootsAndNorms/"
+		,string WnFolderName="./cosebis/WnLog/"
 		,string WnFileName="WnLog");
 	~WnLog();
 
@@ -48,7 +48,7 @@ public:
 	number valueStep(number l);
 	void StepFinder();
 	void writeStep(int n1);
-	//number LHIGH;
+
 
 
 private:

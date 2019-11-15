@@ -10,6 +10,8 @@ from cosmosis_utils import dict_to_datablock
 
 KCAP_MODULE_PATH = "../utils"
 
+CSL_PATH = os.environ["CSL_PATH"] if "CSL_PATH" in os.environ else "../cosmosis-standard-library"
+
 def test_camb_background_module():
     config_background = {"camb_background" : {"w_name" : "w_prime",
                                               "feedback" : 4,
@@ -43,17 +45,17 @@ def test_camb_background_module():
     camb_background_module.setup(dict_to_datablock(config_background))
 
     camb_module = cosmosis.runtime.module.Module(module_name="camb", 
-                                                 file_path=os.path.join(os.environ["CSL_PATH"], 
+                                                 file_path=os.path.join(CSL_PATH, 
                                                                         "boltzmann/pycamb/camb_interface.py"))
     camb_module.setup(dict_to_datablock(config_camb))
     
     camb_old_module = cosmosis.runtime.module.Module(module_name="camb_old", 
-                                                     file_path=os.path.join(os.environ["CSL_PATH"], 
+                                                     file_path=os.path.join(CSL_PATH, 
                                                                             "boltzmann/camb/camb.so"))
     camb_old_module.setup(dict_to_datablock(config_camb_old))
 
     consistency_module = cosmosis.runtime.module.Module(module_name="consistency", 
-                                                        file_path=os.path.join(os.environ["CSL_PATH"], 
+                                                        file_path=os.path.join(CSL_PATH, 
                                                                                "utility/consistency/consistency_interface.py"))
     consistency_module.setup(dict_to_datablock({}))
 
