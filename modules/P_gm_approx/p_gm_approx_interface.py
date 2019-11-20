@@ -34,10 +34,11 @@ def execute(block, config):
     z = block[pofk_nonlin_section, "z"]
     k = block[pofk_nonlin_section, "k_h"]
     z_lin = block[pofk_lin_section, "z"]
+    k_lin = block[pofk_lin_section, "k_h"]
     pofk_lin = block[pofk_lin_section, "p_k"]
     pofk_nonlin = block[pofk_nonlin_section, "p_k"]
-    if (pofk_lin.shape != pofk_nonlin.shape):  # should only happen when using PT non-lin. power spectrum
-        pofk_lin = p_gm_fit.pofk_interpolator(pofk_lin,k,z_lin)(k,z)  # put lin. PS on same grid as nonlin. PS
+    if (pofk_lin.shape != pofk_nonlin.shape):
+        pofk_lin = p_gm_fit.pofk_interpolator(pofk_lin,k_lin,z_lin)(k,z)  # put lin. PS on same grid as nonlin. PS
 
     omch2 = block[names.cosmological_parameters, "omch2"]
     h = block[names.cosmological_parameters, "h0"]
@@ -70,7 +71,9 @@ def execute(block, config):
 
     block[output_section, "z"] = z
     block[output_section, "k_h"] = k
-    
+
+    block.put_grid(output_section, "z", z, "k_h", k, "p_k", P_gm)
+
     return 0
 
 def cleanup(config):
