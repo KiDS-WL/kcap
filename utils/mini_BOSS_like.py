@@ -51,10 +51,10 @@ def setup(options):
     
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)
-    return inv_cov, data_vector, cut_points_idx, like_name, keep_theory_vector
+    return cov, inv_cov, data_vector, cut_points_idx, like_name, keep_theory_vector
 
 def execute(block, config):
-    inv_cov, data_vector, cut_points_idx, like_name, keep_theory_vector = config
+    cov, inv_cov, data_vector, cut_points_idx, like_name, keep_theory_vector = config
     
     # n_wedge = block["xi_wedges", "n_wedge"]
     # mu = block["xi_wedges", "vtheo_convolved"]
@@ -66,16 +66,19 @@ def execute(block, config):
         d = x - mu
 
         chi2 += float(np.einsum('i,ij,j', d, inv_cov[b], d))
+
+        if keep_theory_vector:
+            x_sim = np.random.multivariate_normal(mu, cov[b])
+            block[names.data_vector, like_name + f"_theory_bin_{b}"] = mu
+            block[names.data_vector, like_name + f"_data_bin_{b}"] = x
+            block[names.data_vector, like_name + f"_cov_bin_{b}"] = cov[b]
+            block[names.data_vector, like_name + f"_inv_cov_bin_{b}"] = inv_cov[b]
+            block[names.data_vector, like_name + f"_simulation_bin_{b}"] = x_sim
     
     like = -0.5*chi2
 
     block[names.data_vector, like_name+"_CHI2"] = chi2
     block[names.likelihoods, like_name+"_LIKE"] = like
-
-    if keep_theory_vector:
-        block[names.data_vector, like_name + "_theory"] = mu
-        block[names.data_vector, like_name + "_data"] = x
-        block[names.data_vector, like_name + "_inv_cov"] = inv_cov
 
     return 0
 
