@@ -63,9 +63,20 @@ def setup(options):
     ## Read scale cuts
     try:
         config['scale_cuts_filename'] = options.get_string(option_section, 'scale_cuts_filename')
+        ## Load scale cuts file
+        try:
+            scDictDict = loadScaleCutsFile(config['scale_cuts_filename'])
+        except:
+            raise OSError('\"%s\" not found' % config['scale_cuts_filename'])
+        config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_fiducial')
+        ## Make scale cuts arguments
+        try:
+            scDict = scDictDict[config['scale_cuts_option']]
+        except:
+            raise KeyError('Bad scale cuts option: \"%s\"' % config['scale_cuts_option'])
     except errors.BlockNameNotFound:
-        raise NameError('scale_cuts_filename cannot be empty')
-    config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_fiducial')
+        scDict = {k : str(options[option_section, k]) for _, k in options.keys(option_section)}
+
     
     ## Load data & cov file
     try:
@@ -73,17 +84,6 @@ def setup(options):
     except:
         raise OSError('\"%s\" not found' % config['data_and_covariance_fits_filename'])
     
-    ## Load scale cuts file
-    try:
-        scDictDict = loadScaleCutsFile(config['scale_cuts_filename'])
-    except:
-        raise OSError('\"%s\" not found' % config['scale_cuts_filename'])
-    
-    ## Make scale cuts arguments
-    try:
-        scDict = scDictDict[config['scale_cuts_option']]
-    except:
-        raise KeyError('Bad scale cuts option: \"%s\"' % config['scale_cuts_option'])
     labConv = wtp.LabelConvention(xi_p=config['xi_plus_extension_name'],
                                   xi_m=config['xi_minus_extension_name'],
                                   P_ne_E=config['bandpower_ggl_extension_name'],
@@ -113,6 +113,8 @@ def setup(options):
     
     config['simulate'] = options.get_bool(option_section, 'simulate', default=False)
     config['mock_filename'] = options.get_string(option_section, 'mock_filename', default="")
+    if config['simulate']:
+        config["TP_data"] = TP_data
     ## Test
     #wtp.printTwoPoint_fromObj(TP_data)
     return config
@@ -222,9 +224,9 @@ def execute(block, config):
         mu = block[output_section_name, 'theory']
         cov = block[output_section_name, 'covariance']
         s = np.random.multivariate_normal(mu, cov)
-        TP_theory.replaceMeanVector(s)
+        config["TP_data"].replaceMeanVector(s)
         if config["mock_filename"] != "":
-            TP_theory.to_fits(config["mock_filename"])
+            config["TP_data"].to_fits(config["mock_filename"], overwrite=True)
     
     ## Some print functions for debug
     #print()
