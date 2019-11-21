@@ -12,12 +12,9 @@ def setup(options):
               "g2" : g2_coeffs,
               "g3" : g3_coeffs}
 
-    #pofk_lin_section = options.get_string("linear_matter_power_section", names.matter_power_lin)
-    pofk_lin_section = options.get_string(option_section,"linear_matter_power_section")
-    #pofk_nonlin_section = options.get_string("nonlinear_matter_power_section", names.matter_power_nl)
-    pofk_nonlin_section = options.get_string(option_section,"nonlinear_matter_power_section")
-    #output_section = options.get_string("output_section", names.matter_galaxy_power)
-    output_section = options.get_string(option_section,"output_section")
+    pofk_lin_section = options.get_string(option_section, "linear_matter_power_section", default=names.matter_power_lin)
+    pofk_nonlin_section = options.get_string(option_section, "nonlinear_matter_power_section", default=names.matter_power_nl)
+    output_section = options.get_string(option_section,"output_section", default=names.matter_galaxy_power)
     
     # read flag for Lagrangian bias approx.
     flag_lag_g2 = options.get_bool(option_section, "local_lag_g2", True)
