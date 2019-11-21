@@ -1,3 +1,6 @@
+import os
+import warnings
+
 import numpy as np
 
 import cosmosis.runtime.config
@@ -36,7 +39,7 @@ def test_no_sys_pipeline(plot=True):
                               h=data["cosmological_parameters", "h0"], 
                               n_s=data["cosmological_parameters", "n_s"], 
                               A_s=data["cosmological_parameters", "a_s"],
-                              Neff=data["cosmological_parameters", "nnu"], 
+                              Neff=data["cosmological_parameters", "n_eff"], 
                               m_nu=data["cosmological_parameters", "mnu"],
                               w0=data["cosmological_parameters", "w"],
                              )
@@ -205,4 +208,6 @@ def test_no_sys_pipeline(plot=True):
     
 
 if __name__ == "__main__":
+    if not os.path.isdir("cosmosis-standard-library"):
+        warnings.warn("cosmosis-standard-library not in cwd. Are you running this test from the kcap root directory?")
     test_no_sys_pipeline()

@@ -12,12 +12,9 @@ def setup(options):
               "g2" : g2_coeffs,
               "g3" : g3_coeffs}
 
-    #pofk_lin_section = options.get_string("linear_matter_power_section", names.matter_power_lin)
-    pofk_lin_section = options.get_string(option_section,"linear_matter_power_section")
-    #pofk_nonlin_section = options.get_string("nonlinear_matter_power_section", names.matter_power_nl)
-    pofk_nonlin_section = options.get_string(option_section,"nonlinear_matter_power_section")
-    #output_section = options.get_string("output_section", names.matter_galaxy_power)
-    output_section = options.get_string(option_section,"output_section")
+    pofk_lin_section = options.get_string(option_section, "linear_matter_power_section", default=names.matter_power_lin)
+    pofk_nonlin_section = options.get_string(option_section, "nonlinear_matter_power_section", default=names.matter_power_nl)
+    output_section = options.get_string(option_section,"output_section", default=names.matter_galaxy_power)
     
     # read flag for Lagrangian bias approx.
     flag_lag_g2 = options.get_bool(option_section, "local_lag_g2", True)
@@ -34,10 +31,11 @@ def execute(block, config):
     z = block[pofk_nonlin_section, "z"]
     k = block[pofk_nonlin_section, "k_h"]
     z_lin = block[pofk_lin_section, "z"]
+    k_lin = block[pofk_lin_section, "k_h"]
     pofk_lin = block[pofk_lin_section, "p_k"]
     pofk_nonlin = block[pofk_nonlin_section, "p_k"]
-    if (pofk_lin.shape != pofk_nonlin.shape):  # should only happen when using PT non-lin. power spectrum
-        pofk_lin = p_gm_fit.pofk_interpolator(pofk_lin,k,z_lin)(k,z)  # put lin. PS on same grid as nonlin. PS
+    if (pofk_lin.shape != pofk_nonlin.shape):
+        pofk_lin = p_gm_fit.pofk_interpolator(pofk_lin,k_lin,z_lin)(k,z)  # put lin. PS on same grid as nonlin. PS
 
     omch2 = block[names.cosmological_parameters, "omch2"]
     h = block[names.cosmological_parameters, "h0"]
@@ -70,7 +68,9 @@ def execute(block, config):
 
     block[output_section, "z"] = z
     block[output_section, "k_h"] = k
-    
+
+    block.put_grid(output_section, "z", z, "k_h", k, "p_k", P_gm)
+
     return 0
 
 def cleanup(config):
