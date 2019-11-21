@@ -110,6 +110,7 @@ def setup(options):
     ## Extract the vector & matrix & put in config dict
     config['data']       = TP_data.makeMeanVector()
     config['covariance'] = TP_data.covmat
+    config['inv_covariance'] = np.linalg.inv(TP_data.covmat)
     
     config['simulate'] = options.get_bool(option_section, 'simulate', default=False)
     config['mock_filename'] = options.get_string(option_section, 'mock_filename', default="")
@@ -126,6 +127,7 @@ def execute(block, config):
     output_section_name = config['output_section_name']
     block[output_section_name, 'data']       = config['data']
     block[output_section_name, 'covariance'] = config['covariance']
+    block[output_section_name, 'inv_covariance'] = config['inv_covariance']
     
     ## Define some things first
     labConv    = config['label_convention']
