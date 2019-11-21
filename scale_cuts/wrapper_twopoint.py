@@ -202,6 +202,20 @@ class TwoPointWrapper(twopoint.TwoPointFile):
         theory = np.concatenate(theory)
         return theory
       
+    def replaceMeanVector(self, data):
+        idx = []
+        for spectrum in self.spectra:
+            idx.append(len(spectrum.value))
+        
+        if sum(idx) != len(data):
+            raise ValueError(f"Size of provided data vector incompatible with spectra: {len(data)} vs {sum(idx)}.")
+
+        idx.insert(0, 0)
+        idx = np.cumsum(idx)
+
+        for i, spectrum in enumerate(self.spectra):
+            spectrum.value = data[idx[i]:idx[i+1]]
+        
     def cutScales(self, cutCross=False, statsTag_tomoInd_tomoInd_list=[], statsTag_binIndList_dict={}):
         if cutCross:
             self.mask_cross() ## Cut cross pair bins, but not cross-corr between auto pair bins; e.g. C_12_12 masked, C_11_22 preserved

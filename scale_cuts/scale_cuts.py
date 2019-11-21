@@ -111,6 +111,8 @@ def setup(options):
     config['data']       = TP_data.makeMeanVector()
     config['covariance'] = TP_data.covmat
     
+    config['simulate'] = options.get_bool(option_section, 'simulate', default=False)
+    config['mock_filename'] = options.get_string(option_section, 'mock_filename', default="")
     ## Test
     #wtp.printTwoPoint_fromObj(TP_data)
     return config
@@ -215,6 +217,14 @@ def execute(block, config):
     
     ## Extract the vector & put in block as output_section_name
     block[output_section_name, 'theory'] = TP_theory.makeMeanVector()
+
+    if config["simulate"]:
+        mu = block[output_section_name, 'theory']
+        cov = block[output_section_name, 'covariance']
+        s = np.random.multivariate_normal(mu, cov)
+        TP_theory.replaceMeanVector(s)
+        if config["mock_filename"] != "":
+            TP_theory.to_fits(config["mock_filename"])
     
     ## Some print functions for debug
     #print()
