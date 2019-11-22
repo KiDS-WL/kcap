@@ -1,40 +1,11 @@
 from cosmosis.datablock import names as section_names
 from cosmosis.datablock import option_section
 from cosmosis.datablock.cosmosis_py import errors
+import configparser as cfp
 import numpy as np
 #import twopoint
 import wrapper_twopoint as wtp
 
-
-def deleteComment(line):
-    ind = line.find(';')
-    if ind < 0:
-        return line
-    return line[:ind]
-
-def loadScaleCutsFile(name):
-    f = open(name, 'r')
-    stock = [line for line in f]
-    f.close()
-    
-    indList = [i for i, line in enumerate(stock) if line[0] == '[']
-    indList.append(len(stock))
-    indList1 = indList[:-1]
-    indList2 = indList[1:]
-    scDictDict = {}
-    
-    for ind1, ind2 in zip(indList1, indList2):
-        key   = stock[ind1].strip(' []\n')
-        block = stock[ind1+1:ind2]
-        block = [deleteComment(line) for line in block] ## Delete comments
-        block = [line.split('=') for line in block]
-        block = [[word.strip(' \n') for word in line] for line in block]
-        block = [line for line in block if len(line) > 1]
-        scDict = {}
-        for line in block:
-            scDict[line[0]] = line[1]
-        scDictDict[key] = scDict
-    return scDictDict
 
 def setup(options):
     config = {}
@@ -62,21 +33,26 @@ def setup(options):
     
     ## Read scale cuts
     try:
+        ## Try to load scale cuts file if specified
         config['scale_cuts_filename'] = options.get_string(option_section, 'scale_cuts_filename')
-        ## Load scale cuts file
         try:
-            scDictDict = loadScaleCutsFile(config['scale_cuts_filename'])
+            parser = cfp.ConfigParser()
+            parser.read(config['scale_cuts_filename'])
         except:
             raise OSError('\"%s\" not found' % config['scale_cuts_filename'])
-        config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_fiducial')
-        ## Make scale cuts arguments
+        
+        config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_none')
         try:
-            scDict = scDictDict[config['scale_cuts_option']]
+            ## Make scale cuts arguments
+            scDict = parser[config['scale_cuts_option']]
         except:
             raise KeyError('Bad scale cuts option: \"%s\"' % config['scale_cuts_option'])
+    
     except errors.BlockNameNotFound:
-        scDict = {k : str(options[option_section, k]) for _, k in options.keys(option_section)}
-
+        ## Otherwise read inline options
+        key_list   = [k for _, k in options.keys(option_section) if k.split('_')[0] in ['use', 'cut', 'keep']]
+        value_list = [str(options[option_section, k]).strip(' []') for k in key_list]
+        scDict = {k : v for k, v in zip(key_list, value_list)}
     
     ## Load data & cov file
     try:
@@ -145,10 +121,7 @@ def execute(block, config):
     ]
     
     for line in sectionNameList:
-        section_name   = line[0]
-        extension_name = line[1]
-        angle_name     = line[2]
-        isGGL          = line[3]
+        section_name, extension_name, angle_name, isGGL = line
       
         if extension_name not in config['use_stats']:
             print('  Skipped %s' % extension_name)
