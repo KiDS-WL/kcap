@@ -1,6 +1,7 @@
 from cosmosis.datablock import names as section_names
 from cosmosis.datablock import option_section
 from cosmosis.datablock.cosmosis_py import errors
+import configparser as cfp
 import numpy as np
 #import twopoint
 import wrapper_twopoint as wtp
@@ -62,21 +63,27 @@ def setup(options):
     
     ## Read scale cuts
     try:
+        ## Try to load scale cuts file if specified
         config['scale_cuts_filename'] = options.get_string(option_section, 'scale_cuts_filename')
-        ## Load scale cuts file
         try:
-            scDictDict = loadScaleCutsFile(config['scale_cuts_filename'])
+            parser = cfp.ConfigParser()
+            parser.read(config['scale_cuts_filename'])
         except:
             raise OSError('\"%s\" not found' % config['scale_cuts_filename'])
-        config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_fiducial')
-        ## Make scale cuts arguments
+        
+        config['scale_cuts_option'] = options.get_string(option_section, 'scale_cuts_option', default='scale_cuts_none')
         try:
-            scDict = scDictDict[config['scale_cuts_option']]
+            ## Make scale cuts arguments
+            scDict = parser[config['scale_cuts_option']]
         except:
             raise KeyError('Bad scale cuts option: \"%s\"' % config['scale_cuts_option'])
+    
     except errors.BlockNameNotFound:
-        scDict = {k : str(options[option_section, k]) for _, k in options.keys(option_section)}
-
+        ## Otherwise read inline options
+        key_list   = [k for _, k in options.keys(option_section) if k.split('_')[0] in ['use', 'cut', 'keep']]
+        value_list = [str(options[option_section, k]).strip(' []') for k in key_list]
+        scDict = {k : v for k, v in zip(key_list, value_list)}
+        print(list(scDict.items()))
     
     ## Load data & cov file
     try:
@@ -145,10 +152,7 @@ def execute(block, config):
     ]
     
     for line in sectionNameList:
-        section_name   = line[0]
-        extension_name = line[1]
-        angle_name     = line[2]
-        isGGL          = line[3]
+        section_name, extension_name, angle_name, isGGL = line
       
         if extension_name not in config['use_stats']:
             print('  Skipped %s' % extension_name)
