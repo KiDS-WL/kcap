@@ -89,6 +89,7 @@ def setup(options):
     config['inv_covariance'] = np.linalg.inv(TP_data.covmat)
     
     config['simulate'] = options.get_bool(option_section, 'simulate', default=False)
+    config['simulate_with_noise'] = options.get_bool(option_section, 'simulate_with_noise', default=True)
     config['mock_filename'] = options.get_string(option_section, 'mock_filename', default="")
     if config['simulate']:
         config["TP_data"] = TP_data
@@ -198,7 +199,10 @@ def execute(block, config):
     if config["simulate"]:
         mu = block[output_section_name, 'theory']
         cov = block[output_section_name, 'covariance']
-        s = np.random.multivariate_normal(mu, cov)
+        if config["simulate_with_noise"]:
+            s = np.random.multivariate_normal(mu, cov)
+        else:
+            s = mu
         config["TP_data"].replaceMeanVector(s)
         if config["mock_filename"] != "":
             config["TP_data"].to_fits(config["mock_filename"], overwrite=True)
