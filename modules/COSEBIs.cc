@@ -21,6 +21,8 @@ void COSEBIs::initialize(int nMaximum,number thetamin, number thetamax, int nPai
 	TnSet=false;
     EnInteglimitSet=false;
 	TpmNotDone=true;
+	Cov_Input=false;
+	Inner_integ=false;
 	WnFolderName=WnFolderName1;
 	TnFolderName=TnFolderName1;
 	OutputTnFolderName=OutputTnFolderName1;
@@ -62,6 +64,7 @@ void COSEBIs::setWns(int nMaximum)
 		clog<<"Wn not set setting now:"<<endl;
 		WnLog WnL(thetamin,thetamax,nMaximum,TnFolderName,WnFolderName);
 		Wn_vec.clear();
+		//these have to be separate otherwise it doesn't work
 		for(int n=0; n<nMaximum; n++)
 			Wn_vec.push_back(WnL);
 		for(int n=0; n<nMaximum; n++)
@@ -76,6 +79,7 @@ void COSEBIs::setTs(int nMaximum)
 	{
 		clog<<"setting Tpm in COSEBIs"<<endl;
 		TpnLog Tpn(thetamin,thetamax,nMaximum,TnFolderName,OutputTnFolderName);
+		//these have to be separate otherwsie it doesn't work
 		for(int n=0; n<nMaximum; n++)
 			Tpn_vec.push_back(Tpn);
 		for(int n=0; n<nMaximum; n++)
@@ -137,6 +141,7 @@ void COSEBIs::setKsi(vector<number> theta,vector<vector<number> > InputKsiP,vect
 		clog<<"Panic! number of redshift bin pairs DOES NOT match the InputKsi vectors, exiting now ..."<<endl;
 		exit(1);
 	}
+	//these have to be separate otherwise it doesn't work
 	for(int r=0;r<nPairs;r++)
 	{
 		Ksi_p_vec.push_back(function_cosebis());
@@ -165,6 +170,7 @@ void COSEBIs::setPower(vector<number> log_ell,vector<vector<number> > InputPower
 	
 	powerspectrum_vec.clear();
 	
+	//these have to be separate otherwise does not work
 	for(int r=0; r<InputPower.size(); r++)
 		powerspectrum_vec.push_back(function_cosebis());
 	for(int r=0; r<InputPower.size(); r++)
@@ -175,14 +181,45 @@ void COSEBIs::setPower(vector<number> log_ell,vector<vector<number> > InputPower
 }
 
 
+void COSEBIs::setPower_single(vector<number> log_x, vector<number> Input)
+{
+	//clog<<"in set input, nPairs=";
+	//nPairs=Input.size();
+	//clog<<nPairs<<endl;
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	nPairs=1;
+	powerspectrum_vec.clear();
+	powerspectrum_vec.push_back(function_cosebis());
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	powerspectrum_vec[0].loadWithValues(log_x,Input,true);
+	powerspectrum_vec[0].extrapolationOff();
+}
+
+
+
+
 number COSEBIs::integrant(number l)
 {
-	if(BCov_on) //integrant for Covariance of Bn
+	if(BCov_on)
 	{
 		number integ=l*Wn_vec[nW].value(l)*Wn_vec[mW].value(l);
 		return integ;
 	}
-	else if(Cov_on) //integrant for En covarince
+	else if(Cov_Input)
+	{
+		//calculate covariance for COSEBIs from input Cl cov
+		if(Inner_integ)
+		{
+			number integ=l*Wn_vec[nW].value(l)*CovIn_table_vecvecvec[rp1][rp2][ell]->value(l);
+			return integ;
+		}
+		else
+		{
+			number integ=l*Wn_vec[mW].value(l)*IntegInner_table.value(l);
+			return integ;
+		}
+	}
+	else if(Cov_on)
 	{
 		counter++;
 		number integ;
@@ -194,31 +231,38 @@ number COSEBIs::integrant(number l)
 		integ=l*Wn_vec[nW].value(l)*Wn_vec[mW].value(l)*powers;
 		return integ;
 	}
-	else if(Real) // real space integrant for COSEBIs
+	else if(Real)
 	{
-		if (realPlus) //T_plus integrant
+		if (realPlus)
 		{
 			number theta=l;
 			number Tp=Tpn_vec[nT].TpValue(theta);
 			number Ksip=Ksi_p_vec[redshiftPair].value(theta);
 			number integ=theta*Tp*Ksip;
+// 			clog<<"theta="<<l<<"  Ksip="<<Ksip<<endl;
 			return integ;
 		}
-		else // T_minus integrant
+		else
 		{
 			number theta=l;
 			number Tm=Tpn_vec[nT].TnValue(theta);
  			number integ=theta*Tm*Ksi_m_vec[redshiftPair].value(theta);
+// 			clog<<"theta="<<l<<"  Ksim="<<Ksi_m_vec[redshiftPair].value(theta)<<endl;
 			return integ;
 		}
 	}
-	else // Fourier space integrant for COSEBIs
+	else
 	{
 		number power=powerspectrum_vec[redshiftPair].value(l);
+// 		clog<<"power="<<power<<endl;
 		number Wn=Wn_vec[nW].value(l);
+// 		clog<<"Wn="<<Wn<<endl;
 		number integ=power*Wn*l;
+// 		clog<<"integ="<<integ<<endl;
+// 		cout<<l<<"    "<<power<<"   "<<Wn<<endl;
 		return integ;
 	}
+
 }
 
 
@@ -319,6 +363,22 @@ matrix COSEBIs::calEn()
 				En.load(n1,valueEn(m));
 		}
 	}
+	return En;
+}
+
+matrix COSEBIs::calEn(vector<int> index)
+{
+	matrix En(index.size());
+	setWns(nMaximum);
+    if(!EnInteglimitSet)
+        determine_integration_limits_En();
+
+	redshiftPair=0;
+	for(int b=0; b<index.size(); b++)
+	{
+		En.load(b,valueEn(index[b]));
+	}
+
 	return En;
 }
 
@@ -456,7 +516,7 @@ matrix COSEBIs::valueEn2PCFsKsiInput(matrix& Ksi_mat,int m,number h)
 	return E3;
 }
 
-vector<vector<number> > COSEBIs::readKsi(string FileName,int nColumns)
+vector<vector<number> > COSEBIs::readKsi(string FileName)
 {
 	int nRow=0;
 	string str;
@@ -504,35 +564,133 @@ vector<vector<number> > COSEBIs::readKsi(string FileName,int nColumns)
 	return Ksi_vecvec;
 }
 
-vector<int> COSEBIs::FindMinMaxTheta(vector<vector<number> > Ksi_vec)
+
+
+string COSEBIs::check_binning(vector<number> theta_vec)
+{
+
+	linear_binning=true;
+	log_binning=true;
+	//tolorance for the difference between the theta bins
+	number tolorance=0.001;
+
+	clog<<"checking binning, theta_vec.size()="<<theta_vec.size()<<endl;
+
+	number deltaTheta=theta_vec[1]-theta_vec[0];
+	number deltaLogTheta=log(theta_vec[1])-log(theta_vec[0]);
+	clog<<"deltaTheta="<<deltaTheta<<endl;
+	clog<<"deltaLogTheta="<<deltaLogTheta<<endl;
+
+	for(int i=0;i<theta_vec.size()-1; i++)
+	{
+		number deltaTheta_temp=theta_vec[i+1]-theta_vec[i];
+		//clog<<"deltaTheta_temp="<<deltaTheta_temp<<endl;
+		if(abs(deltaTheta-deltaTheta_temp)>tolorance)
+		{
+			linear_binning=false;
+		}
+	}
+
+	for(int i=0;i<theta_vec.size()-1; i++)
+	{
+		number deltaLogTheta_temp=log(theta_vec[i+1])-log(theta_vec[i]);
+		//clog<<"deltaLogTheta_temp="<<deltaLogTheta_temp<<endl;
+		if(abs(deltaLogTheta-deltaLogTheta_temp)>tolorance)
+		{
+			log_binning=false;
+			//clog<<"log binning is set to false"<<endl;
+		}
+	}
+
+	if(linear_binning)
+	{
+		clog<<"linear binning for Npair"<<endl;
+		return "linear";
+	}
+	else if(log_binning)
+	{
+		clog<<"log binning for Npair"<<endl;
+		return "log";
+	}
+	else
+	{
+		clog<<"binning is neither log or linear"<<endl;
+		return "unknown";
+	}
+
+}
+
+vector<int> COSEBIs::FindMinMaxTheta(vector<vector<number> > Ksi_vec,int nCol_theta)
 {
 	int row=0;
 	vector<int> index(2);
 	clog.precision(10);
-	number h=Ksi_vec[1][0]-Ksi_vec[0][0];
-
-	number tmin=thetamin/arcmin;
-	number tmax=thetamax/arcmin;
-	if(Ksi_vec[0][0]-h>tmin || Ksi_vec[Ksi_vec.size()-1][0]+h<tmax)
+	vector<number> theta_vec;
+	clog<<"Ksi_vec.size="<<Ksi_vec.size()<<endl;
+	for(int i=0;i<Ksi_vec.size();i++)
 	{
-		clog<<"the theta range is not sufficient:"
-			<<Ksi_vec[0][0]-h<<"   "<<Ksi_vec[Ksi_vec.size()-1][0]+h<<endl;
+		theta_vec.push_back(Ksi_vec[i][nCol_theta]);
+	}
+	string binning=check_binning(theta_vec);
+	if(binning=="linear")
+	{
+		number h=Ksi_vec[1][nCol_theta]-Ksi_vec[0][nCol_theta];
+
+		number tmin=thetamin/arcmin;
+		number tmax=thetamax/arcmin;
+		if(Ksi_vec[0][nCol_theta]-h>tmin || Ksi_vec[Ksi_vec.size()-1][nCol_theta]+h<tmax)
+		{
+			clog<<"the theta range is not sufficient:"
+				<<Ksi_vec[0][nCol_theta]-h<<"   "<<Ksi_vec[Ksi_vec.size()-1][nCol_theta]+h<<endl;
+			exit(1);
+		}
+
+		int ntmin=ceil((tmin-Ksi_vec[0][nCol_theta])/h);
+		int ntmax=Ksi_vec.size()-1;
+
+		while(tmin>Ksi_vec[ntmin][nCol_theta])
+			ntmin++;
+
+		while(tmax<Ksi_vec[ntmax][nCol_theta])
+			ntmax--;
+
+		index[0]=ntmin;
+		index[1]=ntmax;
+		return index;
+	}
+	else if(binning=="log")
+	{
+		number h=log(Ksi_vec[1][nCol_theta])-log(Ksi_vec[0][nCol_theta]);
+
+		number tmin=thetamin/arcmin;
+		number tmax=thetamax/arcmin;
+		if(log(Ksi_vec[0][nCol_theta])-h>log(tmin) || log(Ksi_vec[Ksi_vec.size()-1][nCol_theta])+h<log(tmax))
+		{
+			clog<<"the theta range is not sufficient:"
+				<<Ksi_vec[0][nCol_theta]-exp(h)<<"   "<<Ksi_vec[Ksi_vec.size()-1][nCol_theta]+exp(h)<<endl;
+			exit(1);
+		}
+
+		int ntmin=ceil((log(tmin)-log(Ksi_vec[0][nCol_theta]))/h);
+		int ntmax=Ksi_vec.size()-1;
+
+		while(tmin>Ksi_vec[ntmin][nCol_theta])
+			ntmin++;
+
+		while(tmax<Ksi_vec[ntmax][nCol_theta])
+			ntmax--;
+
+		index[0]=ntmin;
+		index[1]=ntmax;
+		return index;
+	}
+	else
+	{
+		clog<<"unknown binning"<<endl;
 		exit(1);
 	}
-
-	int ntmin=ceil((tmin-Ksi_vec[0][0])/h);
-	int ntmax=Ksi_vec.size()-1;
-
-	while(tmin>Ksi_vec[ntmin][0])
-		ntmin++;
-
-	while(tmax<Ksi_vec[ntmax][0])
-		ntmax--;
-
-	index[0]=ntmin;
-	index[1]=ntmax;
-	return index;
 }
+
 
 void COSEBIs::FindTnKsiInput(matrix theta_mat)
 {
@@ -575,7 +733,7 @@ matrix COSEBIs::calEn2PCFsFromInputKsi(vector<string> FileName,int nColumns)
 	setTs(nMaximum);
 	for(int r=0;r<nPairs;r++)
 	{
-		vector<vector<number> > Ksi_vec=readKsi(FileName[r],nColumns);
+		vector<vector<number> > Ksi_vec=readKsi(FileName[r]);
 		
 		vector<int> index=FindMinMaxTheta(Ksi_vec);
 		matrix theta_mat(index[1]-index[0]+1);
@@ -619,8 +777,8 @@ matrix COSEBIs::calEn2PCFsFromInputKsi(vector<string> FileName,vector<string> co
 	for(int r=0;r<nPairs;r++)
 	{
 		clog<<"r="<<r<<endl;
-		vector<vector<number> > Ksi_vec=readKsi(FileName[r],nColumns);
-		vector<vector<number> > Corr_vec=readKsi(corrFile[r],nColumns);
+		vector<vector<number> > Ksi_vec=readKsi(FileName[r]);
+		vector<vector<number> > Corr_vec=readKsi(corrFile[r]);
 		
 		vector<int> index=FindMinMaxTheta(Ksi_vec);
 		matrix theta_mat(index[1]-index[0]+1);
@@ -662,7 +820,7 @@ matrix COSEBIs::calEn2PCFsFromInputKsi(vector<string> FileName,vector<number> Co
 	for(int r=0;r<nPairs;r++)
 	{
 		clog<<"r="<<r<<endl;
-		vector<vector<number> > Ksi_vec=readKsi(FileName[r],nColumns);
+		vector<vector<number> > Ksi_vec=readKsi(FileName[r]);
 		
 		vector<int> index=FindMinMaxTheta(Ksi_vec);
 		matrix theta_mat(index[1]-index[0]+1);
@@ -753,25 +911,71 @@ number COSEBIs::valueBCov(int n1,int m1)
 	return result/A/2./pi;
 }
 
-
-void COSEBIs::readNpairs(vector<string> FileName_vec,int nColumns)
+//check here if the input is linear or log binned
+void COSEBIs::readNpairs(vector<string> FileName_vec,int nCol_theta,int nCol_nPair,bool Athena1)
 {
 	clog<<"in readNpairs in COSEBIs"<<endl;
 	clog<<"FileName_vec.size is:"<<FileName_vec.size()<<endl;
+	clog<<"nCol_theta="<<nCol_theta<<", nCol_nPair="<<nCol_nPair<<endl;
 	nPairs=FileName_vec.size();
 	Npair_mat_vec.clear();
+
+	linear_binning= true;
+	log_binning=true;
+	Athena=Athena1;
+	//tolorance for the difference between the theta bins
+	number tolorance=0.001;
 	for(int r=0; r<nPairs; r++)
 	{
-		vector<vector<number> > Ksi_vec=readKsi(FileName_vec[r],nColumns);
-		vector<int> index=FindMinMaxTheta(Ksi_vec);
+		vector<vector<number> > Ksi_vec=readKsi(FileName_vec[r]);
+		vector<int> index=FindMinMaxTheta(Ksi_vec,nCol_theta);
 		matrix Npair_mat(2,index[1]-index[0]+1);
+		number deltaTheta=Ksi_vec[1][nCol_theta]*arcmin-Ksi_vec[0][nCol_theta]*arcmin;
+		number deltaLogTheta=log(Ksi_vec[1][nCol_theta]*arcmin)-log(Ksi_vec[0][nCol_theta]*arcmin);
+		//clog<<"deltaTheta="<<deltaTheta<<endl;
+		//clog<<"deltaLogTheta="<<deltaLogTheta<<endl;
 		for(int i=index[0];i<=index[1]; i++)
 		{
-			Npair_mat.load(0,i-index[0],Ksi_vec[i][0]*arcmin);
-			Npair_mat.load(1,i-index[0],Ksi_vec[i][7]);
+
+			Npair_mat.load(0,i-index[0],Ksi_vec[i][nCol_theta]*arcmin);
+			Npair_mat.load(1,i-index[0],Ksi_vec[i][nCol_nPair]);
 		}
+
+		for(int i=index[0];i<index[1]; i++)
+		{
+			number deltaTheta_temp=Ksi_vec[i+1][nCol_theta]*arcmin-Ksi_vec[i][nCol_theta]*arcmin;
+			if(abs(deltaTheta-deltaTheta_temp)>tolorance)
+			{
+				linear_binning=false;
+			}
+		}
+
+		for(int i=index[0];i<index[1]; i++)
+		{
+			number deltaLogTheta_temp=log(Ksi_vec[i+1][nCol_theta]*arcmin)-log(Ksi_vec[i][nCol_theta]*arcmin);
+			//clog<<"deltaLogTheta_temp="<<deltaLogTheta_temp<<endl;
+			if(abs(deltaLogTheta-deltaLogTheta_temp)>tolorance)
+			{
+				log_binning=false;
+				//clog<<"log binning is set to false"<<endl;
+			}
+		}
+
 		Npair_mat_vec.push_back(Npair_mat);
-		clog<<"Npair_mat[0]="<<Npair_mat.get(0,0)<<"   Npair_mat[1]="<<Npair_mat.get(1,0)<<endl;
+		clog<<"theta="<<Npair_mat.get(0,0)/arcmin<<"   nPairs="<<Npair_mat.get(1,0)<<endl;
+
+		if(linear_binning)
+		{
+			clog<<"linear binning for Npair"<<endl;
+		}
+		else if(log_binning)
+		{
+			clog<<"log binning for Npair"<<endl;
+		}
+		else
+		{
+			clog<<"binning is neither log or linear"<<endl;
+		}
 	}
 }
 
@@ -781,35 +985,105 @@ number COSEBIs::valueNoiseCov_fromInputNpair(int n1,int m1, int np,int bin1,int 
 	number result=0.;
 	int nT=n1-1;
 	int mT=m1-1;
-	number deltaTheta=(Npair_mat_vec[np].get(0,2)-Npair_mat_vec[np].get(0,1));
 
-	for(int i=0; i<Npair_mat_vec[np].rows; i++)
+	if(linear_binning)
 	{
-		number theta=Npair_mat_vec[np].get(0,i);
-		number Npairs=Npair_mat_vec[np].get(1,i);
-		number Tp_m=Tpn_vec[mT].TpValue(theta);
-		number Tm_m=Tpn_vec[mT].TnValue(theta);
-		number Tp_n=Tpn_vec[nT].TpValue(theta);
-		number Tm_n=Tpn_vec[nT].TnValue(theta);
-		number Npairs_th=2.*deltaTheta*theta*pi*A*neff_vec[bin1]*neff_vec[bin2];
-		
-		number res=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs;
-		
-// 		number res_B=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npair_B;
-		// 		number res_th=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs_th;
-		//    		cout<<theta<<"   "<<Npairs<<"    "<<Npairs_th<<endl;
-		// 		if( (i % 1000)==0. )
-		// 		{
-		// 			clog<<"theta="<<theta<<"  Npairs="<<Npairs<<",  Npairs_th="<<Npairs_th<<endl;
-		// 			clog<<"res="<<res<<endl;
-		// 		}
-		//  		result+=res;
-		result+=res;
-		//  		result+=res_th;
-	}
+		number deltaTheta=(Npair_mat_vec[np].get(0,2)-Npair_mat_vec[np].get(0,1));
 
-	return result*deltaTheta*deltaTheta;
+		for(int i=0; i<Npair_mat_vec[np].rows; i++)
+		{
+			number theta=Npair_mat_vec[np].get(0,i);
+			number Npairs=Npair_mat_vec[np].get(1,i);
+			number Tp_m=Tpn_vec[mT].TpValue(theta);
+			number Tm_m=Tpn_vec[mT].TnValue(theta);
+			number Tp_n=Tpn_vec[nT].TpValue(theta);
+			number Tm_n=Tpn_vec[nT].TnValue(theta);
+			number Npairs_th=2.*deltaTheta*theta*pi*A*neff_vec[bin1]*neff_vec[bin2];
+			
+			number res=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs;
+			
+	// 		number res_B=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npair_B;
+			// 		number res_th=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs_th;
+			//    		cout<<theta<<"   "<<Npairs<<"    "<<Npairs_th<<endl;
+			// 		if( (i % 1000)==0. )
+			// 		{
+			// 			clog<<"theta="<<theta<<"  Npairs="<<Npairs<<",  Npairs_th="<<Npairs_th<<endl;
+			// 			clog<<"res="<<res<<endl;
+			// 		}
+			//  		result+=res;
+			result+=res;
+			//  		result+=res_th;
+		}
+
+		return result*deltaTheta*deltaTheta;
+	}
+	else if(log_binning)
+	{
+		number deltaLogTheta=log(Npair_mat_vec[np].get(0,2))-log(Npair_mat_vec[np].get(0,1));
+		//clog<<"deltaLogTheta="<<endl;
+		deltaLogTheta=log(Npair_mat_vec[np].get(0,10))-log(Npair_mat_vec[np].get(0,9));
+
+		for(int i=0; i<Npair_mat_vec[np].rows; i++)
+		{
+			number theta=Npair_mat_vec[np].get(0,i);
+			number Npairs=Npair_mat_vec[np].get(1,i);
+			number Tp_m=Tpn_vec[mT].TpValue(theta);
+			number Tm_m=Tpn_vec[mT].TnValue(theta);
+			number Tp_n=Tpn_vec[nT].TpValue(theta);
+			number Tm_n=Tpn_vec[nT].TnValue(theta);
+			number Npairs_th=2.*deltaLogTheta*theta*theta*pi*A*neff_vec[bin1]*neff_vec[bin2];
+			
+			number res=theta*theta*theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs;
+			
+	// 		number res_B=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npair_B;
+			// 		number res_th=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs_th;
+			//    		cout<<theta<<"   "<<Npairs<<"    "<<Npairs_th<<endl;
+			// 		if( (i % 1000)==0. )
+			// 		{
+			// 			clog<<"theta="<<theta<<"  Npairs="<<Npairs<<",  Npairs_th="<<Npairs_th<<endl;
+			// 			clog<<"res="<<res<<endl;
+			// 		}
+			//  		result+=res;
+			result+=res;
+			//  		result+=res_th;
+		}
+		return result*deltaLogTheta*deltaLogTheta;
+	}
+	else
+	{
+		clog<<"not a recognised option for binning of Npair, exiting now"<<endl;
+		clog<<endl;
+	// 	for(int i=0; i<Npair_mat_vec[np].rows; i++)
+	// 	{
+	// 		number deltaTheta=(Npair_mat_vec[np].get(0,i+1)-Npair_mat_vec[np].get(0,i));
+
+	// 		number theta=Npair_mat_vec[np].get(0,i);
+	// 		number Npairs=Npair_mat_vec[np].get(1,i);
+	// 		number Tp_m=Tpn_vec[mT].TpValue(theta);
+	// 		number Tm_m=Tpn_vec[mT].TnValue(theta);
+	// 		number Tp_n=Tpn_vec[nT].TpValue(theta);
+	// 		number Tm_n=Tpn_vec[nT].TnValue(theta);
+	// 		number Npairs_th=2.*deltaTheta*theta*pi*A*neff_vec[bin1]*neff_vec[bin2];
+			
+	// 		number res=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs;
+			
+	// // 		number res_B=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npair_B;
+	// 		// 		number res_th=theta*theta*(Tp_m*Tp_n+Tm_m*Tm_n)/Npairs_th;
+	// 		//    		cout<<theta<<"   "<<Npairs<<"    "<<Npairs_th<<endl;
+	// 		// 		if( (i % 1000)==0. )
+	// 		// 		{
+	// 		// 			clog<<"theta="<<theta<<"  Npairs="<<Npairs<<",  Npairs_th="<<Npairs_th<<endl;
+	// 		// 			clog<<"res="<<res<<endl;
+	// 		// 		}
+	// 		//  		result+=res;
+	// 		result+=res*deltaTheta*deltaTheta;
+	// 		//  		result+=res_th;
+	// 	}
+
+	// 	return result;
+	}
 }
+
 
 matrix COSEBIs::calNoiseCov_fromInputNpair()
 {
@@ -851,8 +1125,11 @@ matrix COSEBIs::calNoiseCov_fromInputNpair()
 							int j=nMaximum*p2+m-1;
 							number deltas=delta(bin1,bin3)*delta(bin2,bin4)+delta(bin1,bin4)*delta(bin2,bin3);
 							///Why this? This is because of the way Npair is accounted for in Athena. They are counted twice when i=j
-							if(bin1==bin2)
-								deltas=deltas*0.5;
+							if(Athena)
+							{
+								if(bin1==bin2)
+									deltas=deltas*0.5;
+							}
 							
 							number CovNM=0.;
 							if (deltas>0)
@@ -954,6 +1231,26 @@ matrix COSEBIs::calCovForSigma_m(number sigma_m)
 }
 
 
+///test this
+matrix COSEBIs::calCovForSigma_m_from_m_cov(matrix m_cov)
+{
+	clog<<"calculating the covariance for sigma_m with an input m_cov in COSEBIs"<<endl;
+	matrix CMT(nMaximum*nPairs,nMaximum*nPairs);
+	setWns(nMaximum);
+	matrix En_mat=calEn();
+	for(int i=0;i<nMaximum*(nPairs);i++)
+	{
+		int pair_i=ceil(i/nMaximum);
+		for(int j=0; j<nMaximum*(nPairs); j++)
+		{
+			int pair_j=ceil(j/nMaximum);
+			CMT.load(i,j,En_mat.get(i)*En_mat.get(j)*m_cov.get(pair_i,pair_j));
+		}
+	}
+	return CMT;
+}
+
+
 
 matrix COSEBIs::calBCov()
 {
@@ -1005,6 +1302,181 @@ matrix COSEBIs::calBCov()
 	}
 	return CMT;
 }
+
+
+
+///Need to be tested
+number COSEBIs::valueCovFromInputPowerCov(int n1,int m1)
+{
+	//clog<<"In COSEBIs::valueCovFromInputPowerCov"<<endl;
+	Cov_Input=true;
+	nW=n1-1;
+	mW=m1-1;
+	// number lthresh=pi/thetamax/2.;
+	
+	int n_ell_cov=logell_vec_in.size();
+	//starting inner integrals
+	vector<number> Inner_integ_vec(n_ell_cov);
+	///go through the ells and take integral over ell'
+	for(ell=0; ell<n_ell_cov;ell++)
+	{
+		//Inner integral
+		//clog<<"In inner integral"<<endl;
+		Inner_integ=true;
+		number result_Inner=gaussianIntegrate_gsl(*this,LLOW,integ_limits_vec[nW][0],100);
+        int nInteg=integ_limits_vec[nW].size();
+//         matrix Inner_res(3,nInteg);
+//         Inner_res.load(0,0,LLOW);
+//         Inner_res.load(1,0,result_Inner);
+//         Inner_res.load(2,0,result_Inner);
+		//clog<<LLOW<<"\t"<<integ_limits_vec[nW][0]<<"\t"<<result_Inner<<endl;
+// 		clog<<"nInteg="<<nInteg<<endl;
+		for(unsigned int i=0;(i+1)<nInteg;i++)
+		{
+           
+			number res=gaussianIntegrate_gsl(*this,integ_limits_vec[nW][i],integ_limits_vec[nW][i+1],20);
+			result_Inner+=res;
+//             Inner_res.load(0,i+1,integ_limits_vec[nW][i]);
+//             Inner_res.load(1,i+1,res);
+//             Inner_res.load(2,i+1,result_Inner);
+			// clog<<"integ_limits_vec["<<nW<<"]["<<i<<"]="<<integ_limits_vec[nW][i]
+			// 	<<"  integ_limits_vec["<<nW<<"]["<<i+1<<"]="<<integ_limits_vec[nW][i+1]
+			//  	<<"  inner intergal is: "<<result_Inner<<endl;
+			//exit(1);
+			// cout<<integ_limits_vec[nW][i]<<"\t"<<result_Inner<<"\t"<<res<<endl;
+		}
+// 		Inner_res.printOut((string("Inner_result_")+toString(ell)+string("ascii")).c_str(),10);
+		Inner_integ_vec[ell]=result_Inner;
+ 		//clog<<"ell="<<ell<<" inner="<<Inner_integ_vec[ell]<<endl;
+	}
+	///Make a table of the inner integrals to be interpolated for the outer integral
+	IntegInner_table.loadWithValues(logell_vec_in,Inner_integ_vec,true);
+// 	IntegInner_table.setName((string("IntegTable")).c_str(),function::NONAMECOUNTER);
+// 	IntegInner_table.saveTable();
+	IntegInner_table.extrapolationOff();
+    
+// 	int n_ell=10000;
+// 	number ellmin=1.0;
+// 	number ellmax=1e7;
+// 	matrix testInner(2,n_ell);
+// 	
+// 	for(int i=0; i<n_ell;i++)
+// 	{
+// 		number elltest=exp(log(ellmin)+log(ellmax/ellmin)/(n_ell)*(i+0.5));
+// 		testInner.load(0,i,elltest);
+// 		number Inner=IntegInner_table.value(elltest);
+// 		testInner.load(1,i,Inner);
+// 	}
+// 	testInner.printOut("testInner.ascii",10);
+    
+	//outer integral
+	Inner_integ=false;
+	number result_Outer=gaussianIntegrate_gsl(*this,LLOW,integ_limits_vec[mW][0],100);
+	for(unsigned int i=0;(i+1)<integ_limits_vec[mW].size();i++)
+	{
+		number res=gaussianIntegrate_gsl(*this,integ_limits_vec[mW][i],integ_limits_vec[mW][i+1],20);
+		result_Outer+=res;
+	}
+	//clog<<" outer="<<result_Outer/2./pi/2./pi<<endl;
+	Cov_Input=false;
+	return result_Outer/2./pi/2./pi;
+}
+
+
+void COSEBIs::setTableCovIn(matrix& InputCov)
+{
+	//clog<<"in COSEBIs::setTableCovIn"<<endl;
+
+	int n_ell_cov=logell_vec_in.size();
+    
+	CovIn_table_vecvecvec.clear();
+    for(int np1=0; np1<nPairs; np1++)
+    {
+       	vector<vector<function_cosebis*> > CovIn_table_vecvec;
+        for(int np2=0; np2<nPairs; np2++)
+        {
+            vector<function_cosebis*> CovIn_table_vec;
+        	for(int i=n_ell_cov*np1,iell=0;i<n_ell_cov*(np1+1);i++, iell++)
+        	{
+        		//each row for each Covariance block with n_ell entries
+       			CovIn_table_vec.push_back(new function_cosebis());
+
+                vector<number> InputCov_rows(n_ell_cov);
+                for(int j=n_ell_cov*np2, jell=0; j<n_ell_cov*(np2+1); j++,jell++)
+                {
+                    InputCov_rows[jell]=InputCov.get(i,j);
+                }
+                CovIn_table_vec[iell]->loadWithValues(logell_vec_in,InputCov_rows,true);   
+                CovIn_table_vec[iell]->extrapolationOff();
+                // CovIn_table_vec[iell].setName((string("CovIn_table")+toString(i)).c_str(),function_cosebis::NONAMECOUNTER);
+                // CovIn_table_vec[iell].saveTable(); 
+            }
+            CovIn_table_vecvec.push_back(CovIn_table_vec);
+        }
+        CovIn_table_vecvecvec.push_back(CovIn_table_vecvec);
+    }
+	clog<<"I've set the Input covariance tables for interpolation and integration"<<endl;
+}
+
+matrix COSEBIs::calCovFromInputPowerCov(matrix& InputCov,vector<number> ell_vec_in)
+{
+	logell_vec_in.clear();
+    clog.precision(5);
+	for(int i=0; i<ell_vec_in.size(); i++)
+	{
+		logell_vec_in.push_back(log(ell_vec_in[i]));
+		//clog<<"Logell["<<i<<"]="<<logell_vec_in[i]<<endl;
+	}
+	clog<<"calculating the covariance from input Cl covariance in COSEBIs"<<endl;
+	matrix CMT(nMaximum*nPairs,nMaximum*nPairs);
+
+	setWns(nMaximum);
+	///just for Wn not to get the Inner integral first and then the outer integral
+	///For the Gaussian terms the integration limits is based on Wn(ell)*Wm(ell)
+	determine_integration_limits_En();
+	//This takes the input Cov and devides it into block and rows to prepare for the inner integrals
+	setTableCovIn(InputCov);
+	clog<<"nBins="<<nBins<<endl;
+
+	for(int bin1=0; bin1<nBins; bin1++)
+	{
+		for(int bin2=bin1; bin2<nBins; bin2++)
+		{
+			for(int bin3=bin1; bin3<nBins; bin3++)
+			{
+				for(int bin4=(bin3==bin1) ? bin2:bin3; bin4<nBins;bin4++)
+				{
+					//clog<<"Calculating Covariance now"<<endl;
+					int n,m=0;
+					// rp3=calP(nBins,bin1,bin4);
+					// rp4=calP(nBins,bin2,bin3);
+					//the pair considered for the Eparam_vec
+					int p1=calP(nBins,bin1,bin2);
+					rp1=p1;
+                    redshiftPair=p1;
+					int p2=calP(nBins,bin3,bin4);
+					rp2=p2;
+					for(int i=nMaximum*p1,n=1;i<nMaximum*(p1+1);i++,n++)
+					{
+						for(int j=nMaximum*p2+n-1,m=n; j<nMaximum*(p2+1); j++,m++)
+						{
+							//clog<<bin1+1<<bin2+1<<" "<<bin3+1<<bin4+1<<endl;
+// 								bool writeInteg=false;
+							CMT.load(i,j,valueCovFromInputPowerCov(n,m));
+							//CMT.load(i,j,(bin1+1)*10000+(bin2+1)*1000+(bin3+1)*10+bin4+1);
+							CMT.load(j,i,CMT.get(i,j));
+							CMT.load(i+(m-1)-(n-1),j+(n-1)-(m-1),CMT.get(i,j));
+							CMT.load(j+(n-1)-(m-1),i+(m-1)-(n-1),CMT.get(i,j));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return CMT;
+}
+
 ///////////////////////////covariance functions ended//////////////////////////////////////////
 
 
