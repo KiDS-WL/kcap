@@ -6,10 +6,10 @@ number calChiS(matrix theory,matrix data,matrix Cov)
 	{
 		clog<<"!!!!!!!!!!!!!!!!!!!data and theory size don't match!!!!!!!!!!!!!!!!!"<<endl;
 	}
-	else
-	{
-		clog<<"!!!!!!!!!!!!!!!!!!They match!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-	}
+	// else
+	// {
+	// 	clog<<"!!!!!!!!!!!!!!!!!!They match!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+	// }
 	matrix Delta=data-theory;
 	matrix iCov=Cov.inverse();
 	matrix chiS=Delta.t()*iCov*Delta;

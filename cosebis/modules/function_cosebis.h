@@ -50,6 +50,7 @@ class function_cosebis
 		init();
 		setName("abstract",WITHNAMECOUNTER);
     }
+    
     function_cosebis(const char*);
     function_cosebis(const function_cosebis&);
     void operator=(const function_cosebis&);

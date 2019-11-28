@@ -1,0 +1,39 @@
+#This is a template for module description files
+#This is not done yet
+name: "cosebis"
+version: "1"
+purpose: "calculate cosebis from cls"
+url: " "
+interface: 
+attribution: 
+rules:
+    ""
+cite:
+    - ""
+
+assumptions:
+    - ""
+    - ""
+
+explanation: |
+    "
+    "
+
+# List of parameters that can go in the params.ini file in the section for this module    
+params:
+        theta_min: " minimum angular distance between galaxies"
+        theta_max: " maximum angular distance between galaxies"
+        n_max: "maximum COSEBIs mode to be calculated: n=1,2,.., n_max"
+        input_2pcfs_filename: "Input 2PCFs file, needs to be in Athena format"
+        input_cosebis_filename: "Input COSEBIs file name, for example measured from data, needs to be a binary file"
+        input_covariance_filename: "Input covariance matrix filename, needs to be a binary file"
+        is_it_bmodes: "If 0 calculates E-modes. If not B-modes. "
+
+#Inputs for a given choice of a parameter, from the values.ini or from other modules
+#If no such choices, just do one of these omitting mode=something part:
+inputs:
+
+
+outputs:
+    likelihoods:
+        COSEBIs_LIKE: Gaussian likelihood for this data set and theory

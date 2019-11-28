@@ -228,10 +228,24 @@ number BandPower_W::integrant(number theta)
 void BandPower_W::print_integrant(bool noApodise1,int bessel_order1, number ell1, int bin_index1)
 {
 	noApodise=noApodise1;
+	string ap_str;
+
+	if(noApodise)
+		ap_str="noAp";
+	else
+	{
+		ap_str="Ap";
+		ap_str+=toString(Delta_x,2);
+	}
+
 	ell=ell1;
 	int nInteg=10000;
 	bin_index=bin_index1;
 	matrix integrant_mat(2,nInteg);
+	g.set(bin_index,bessel_order);
+
+	clog<<"thetamin="<<thetamin<<"thetamax="<<thetamax<<endl;
+
 	if(noApodise)
 	{
 		for(int i=0; i<nInteg; i++)
@@ -246,12 +260,12 @@ void BandPower_W::print_integrant(bool noApodise1,int bessel_order1, number ell1
 		for(int i=0; i<nInteg; i++)
 		{
 			number theta=exp(log(thetamin)+log(thetamax/thetamin)/(nInteg-1.)*i);
-			integrant_mat.load(0,i,theta);
+			integrant_mat.load(0,i,theta/arcmin);
 			integrant_mat.load(1,i,integrant(theta));
 		}
 	}
 	
-	integrant_mat.printOut(string("integrant_Ap.ascii").c_str(),5);
+	integrant_mat.printOut((string("integrant_")+ap_str+"_bin"+toString(bin_index)+string("_ell_")+toString(ell,2)+string("_")+toString(bessel_order)+string(".ascii")).c_str(),5);
 }
 
 ///here is where the weights are set either by calculating them or by loading the table from disk
@@ -275,6 +289,14 @@ void BandPower_W::set(int bin_index1,int bessel_order1)
 		{
 			//clog<<"making folder for BandPower_W:"<<FolderName<<endl;
 			mkdir((FolderName).c_str(), 0777);
+		}
+		if(!CheckFolderExist(FolderName))
+		{
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!! Can't make the Folder for Wight functions!!!!"<<endl;
+			clog<<"!!!!!!!!!!! WILL NOT SAVE FILES !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!! YOU'VE BEEN WARNNED !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
 		}
 		//clog<<"writing table:"<<myname<<endl;
 		//lthresh=l_min_vec[bin_index]/1.5;
@@ -303,7 +325,7 @@ number BandPower_W::get(number ell1)
 		//clog<<"apodised values"<<endl;
 		number result=0.;
 		//set integration from thetamin and thetamin+Delta_theta to be different
-		number tmin=thetamin+exp(Delta_x);
+		//number tmin=thetamin+exp(Delta_x);
 		//result=gaussianIntegrate_gsl(*this,thetamin,tmin,100);
 		//clog<<"tmin="<<tmin/arcmin<<" result="<<result<<endl;
 		//exit(1);
@@ -326,7 +348,7 @@ int BandPower_W::show_bin_index()
 
 void BandPower_W::determine_integration_limits()
 {
-	const int Nbins = 1000;
+	const int Nbins = 10000;
 	integ_limits.clear();
 	// make table of integrant values (Wn's only) on a very fine grid
 	matrix table(2,Nbins);
@@ -421,8 +443,8 @@ number BandPower_W::Apodise(number theta)
 		return 1.;
 
 	number x= log(theta);
-	number x_l=log(thetamin)+Delta_x/2.;
-	number x_u=log(thetamax)-Delta_x/2.;
+	number x_l=log(thetamin);
+	number x_u=log(thetamax);
 	number l1_bound=x_l-Delta_x/2.;
 	number l2_bound=x_l+Delta_x/2.;
 	number u1_bound=x_u-Delta_x/2.;
@@ -432,18 +454,15 @@ number BandPower_W::Apodise(number theta)
 	if((l1_bound<=x) && (x<l2_bound))
 	{
 		//clog<<"in apodise: x_l="<<x_l<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*(x-(x_l+Delta_x/2.)/Delta_x)),2);
+		result= pow(cos(pi/2.*((x-(x_l+Delta_x/2.))/Delta_x)),2);
 	}
-
 	else if((l2_bound<=x) && (x<u1_bound))
 		result= 1.;
-
 	else if( (u1_bound<=x ) && (x<u2_bound) )
 	{
 		//clog<<"in apodise: x_u="<<x_u<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*(x-(x_u-Delta_x/2.)/Delta_x)),2);
+		result= pow(cos(pi/2.*((x-(x_u-Delta_x/2.))/Delta_x)),2);
 	}
-
 	else
 		result= 0.;
 

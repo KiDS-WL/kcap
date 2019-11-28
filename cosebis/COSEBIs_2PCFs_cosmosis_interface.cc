@@ -408,10 +408,10 @@ extern "C" {
 				filesExits=false;
 			}
 
-			//if all xipm_c1_c2_1 and xipm_c1_c2_2 files exist then makes the COSEBIs for c2, c2
+			//if all xipm_c1_c2_1 and xipm_c1_c2_2 files exist then makes the COSEBIs for c1, c2
 			if(filesExits)
 			{
-				// Intminus= int dt t T_n(t) xi_m(t) is the thid column of the output
+				// Intminus= int dt t T_n(t) xi_m(t) is the third column of the output
 				// therefore we need to devide it by two to get the contribution 
 				// to COSEBIs correctly
 				matrix En_c1_c2_1_minus=0.5*En_c1_c2_1.getColumn(3);

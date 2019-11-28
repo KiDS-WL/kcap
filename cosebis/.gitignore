@@ -1,8 +1,13 @@
 # Add any directories, files, or patterns you don't want to be tracked by version control
 WnLog/
-BandPower/
+BandPower_outputs/
 !modules/
 !TLogsRootsAndNorms/
+Tplut_minus/
+cmake/Modules
+example_files/inputs/xi*
+example_files/inputs/XI*
+
 
 *.so
 *.so.dSYM

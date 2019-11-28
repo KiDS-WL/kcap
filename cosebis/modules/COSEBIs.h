@@ -63,6 +63,7 @@ public:
 	void setNoiseToZero();
 	///calculates power for a given redshift bin combination 
 	void setPower(vector<number> log_ell_vec,vector<vector<number> > InputPower);
+	void setPower_single(vector<number> log_x, vector<number> Input);
 	///Return power
 	number ReturnPower(number ell,int rPair);
 	///sets 2PCFs from input KsiP and KsiM. Makes tables of them for interpolation. NOTE: the Ksi+- here need to
@@ -89,6 +90,8 @@ public:
 	number valueEn(int n);
 	///calculate En frm P(ell)
 	matrix calEn();
+	//only works for single binning
+	matrix calEn(vector<int> index);
 	//calculates the covariance for En Em, n=n1 m=m1
 	number valueCov(int n1,int m1);
 	//checks if input power soectrum is set. Returns false if not.
@@ -98,8 +101,11 @@ public:
 	//takes in the value of sigma_m and returns a covariance that is the equal to
 	// 4*sigma_m^2* E^{ij}_m * E^{kl}_n= C^{ij kl}_mn
 	matrix calCovForSigma_m(number sigma_m);
+	// given an input matrix with the same number of rows and columns as nPairs, calculates the covariance for m_bias uncertainity
+	matrix calCovForSigma_m_from_m_cov(matrix m_cov);
 	///reads Npairs from an input ksi file from Athena
-	void readNpairs(vector<string> FileName, int nColumns=8);
+	//added a check linear/log binning
+	void readNpairs(vector<string> FileName_vec,int nCol_theta=0,int nCol_nPair=7,bool Athena1=true);
 	///this calculates the Noise covariance assuming noise is Gaussian, it returns
 	///\sigma_e^4/ 4* (d \theta)^2 \sum_i \theta_i^2/ N(\theta_i) [T_+m(\theta_i) T_+n(\theta_i)+ T_-m(\theta_i) T_-n(\theta_i)]
 	number valueNoiseCov_fromInputNpair(int n1,int m1, int np,int bin1,int bin2);
@@ -121,10 +127,12 @@ public:
 	///0:(Int_p+Int_m)/2 1:Int_p 2:Int_m
 	matrix valueEn2PCFsKsiInput(matrix& Ksi_mat,int m,number h);
 	///reads a Ksi file with theta ksi+ and ksi- returns the values in a 2D vector 
-	vector<vector<number> > readKsi(string FileName,int nColumns);
+	vector<vector<number> > readKsi(string FileName);
+	//checks what type of binning is used for theta
+	string check_binning(vector<number> theta_vec);
 	///finds the minTheta and maxTheta which are the closest to thetamin and thetamax
 	///return the index of the MinTheta=index[0] and MaxTheta=index[1]
-	vector<int> FindMinMaxTheta(vector<vector<number> > ksi_vec);
+	vector<int> FindMinMaxTheta(vector<vector<number> > ksi_vec,int nCol_theta=0);
 	///evaluates Tpm for the given theta's in theta_mat and saves them in Tpm_mat_vec, does this only once
 	void FindTnKsiInput(matrix theta_mat);
 	///calculates En from an input Ksi file using trapezoidal integration
@@ -135,6 +143,11 @@ public:
 	matrix calEn2PCFsFromInputKsi(vector<string> FileName, vector<number> Corr_vec,int nColumns=8);
 	///sets the value of the index from the bin
 	int calP(int nBins,int fbin,int sbin);
+	///calculates the covariance matrix for COSEBIs given an input covariance matrix for power spectra
+	///mainly used for the non-Gaussian terms: connected from trispectrum and the super sample covariance (SSC)
+	number valueCovFromInputPowerCov(int n1,int m1);
+	void setTableCovIn(matrix& InputCov);
+	matrix calCovFromInputPowerCov(matrix &InputCov,vector<number> ell_vec_in1);
 
 
 private: //private variables
@@ -145,8 +158,12 @@ private: //private variables
   vector<function_cosebis> Ksi_p_vec;
   vector<function_cosebis> Ksi_m_vec;
 
-  vector <number> integ_limits,integ_limitsTp,integ_limitsTm;
+  function_cosebis IntegInner_table;
+
+
+  vector <number> integ_limits,integ_limitsTp,integ_limitsTm,logell_vec_in;
   vector <vector<number> > integ_limits_vec;
+  vector<vector<vector<function_cosebis*> > > CovIn_table_vecvecvec;
   vector <number> noise_vec,sigma_e_vec;
   vector <matrix> Ksi_mat_vec;
   vector <matrix> Tpm_mat_vec,pofz_mat_vec;
@@ -160,10 +177,15 @@ private: //private variables
   int param,nPairs,powerswitch,nBins,nMaximum,derivative;
   int redshiftPair,rp1,rp2,rp3,rp4;
   int nW,mW,counter,nT,iRand;  
+  int ell; 
+
 
   ///default is false
   bool TpmNotDone,noisyKsi, BCov_on,DEn_calculated,
-		OneParam,Cov_on,Real,realPlus,WnSet,TnSet,EnInteglimitSet;
+		OneParam,Cov_on,Real,realPlus,WnSet,TnSet,EnInteglimitSet,
+		Cov_Input,Inner_integ,
+		linear_binning,log_binning,
+		Athena;
 
   matrix En_data, Cov_mat;
 };
