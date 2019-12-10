@@ -5,7 +5,8 @@ from cosmosis.datablock import option_section
 cosmo = section_names.cosmological_parameters
 cmb = section_names.cmb_cl
 matter_powspec_lin = section_names.matter_power_lin
-# matter_powspec_nl = section_names.matter_power_nl
+
+# Use this if onlu doing transfer (no CMB)
 
 
 def setup(options):
