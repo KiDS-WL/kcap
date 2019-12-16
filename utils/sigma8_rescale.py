@@ -14,9 +14,6 @@ def setup(options):
     print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     return 0
 
-
-
-
 def execute(block, config):
 
     # Get parameters from sampler and CAMB output
