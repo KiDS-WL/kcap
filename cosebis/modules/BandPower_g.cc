@@ -157,6 +157,14 @@ void BandPower_g::set(int bin_index1,int bessel_order1)
 			//clog<<"making the folder for BandPower_g:"<<FolderName<<endl;
 			mkdir((FolderName).c_str(), 0777);
 		}
+		if(!CheckFolderExist(FolderName))
+		{
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!! Can't make the Folder for g functions !!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!! WILL NOT SAVE FILES !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!! YOU'VE BEEN WARNNED !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+		}
 		clog<<"writing table:"<<myname<<endl;
 		determine_integration_limits();
 	}

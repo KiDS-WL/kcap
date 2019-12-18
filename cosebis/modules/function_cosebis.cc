@@ -1,5 +1,6 @@
 #include "function_cosebis.h"
 
+
 function_cosebis::function_cosebis(const function_cosebis& me)
 {
   // this copy constructor DOES NOT call the standard constructor!
@@ -298,7 +299,8 @@ void function_cosebis::interpolationOn()
   interpolation = true;
 }
 
-
+/* 
+//Quadratic extrapolation
 number function_cosebis::extrapolate(number x)
 {
   static number x1,y1;
@@ -332,7 +334,42 @@ number function_cosebis::extrapolate(number x)
   return (x-x1)*(x-x2)/(x3-x1)/(x3-x2)*y3 +
          (x-x1)*(x-x3)/(x2-x1)/(x2-x3)*y2 +
          (x-x2)*(x-x3)/(x1-x2)/(x1-x3)*y1;
+}*/
+
+
+//log-linear extrapolation
+number function_cosebis::extrapolate(number x)
+{
+  static number x1,y1;
+  static number x2,y2;
+  
+  // handles so far only tables greater than two elements
+  
+  if (tableSize<3 || !extrapolation)
+    return 0.0;
+  
+  if (x>referenceX[tableSize])
+  {
+    x1 = referenceX[tableSize];
+    y1 = referenceY[tableSize];
+    x2 = referenceX[tableSize-1];
+    y2 = referenceY[tableSize-1];
+  }
+  else
+  {
+    x2 = referenceX[1];
+    y2 = referenceY[1];
+    x1 = referenceX[2];
+    y1 = referenceY[2];
+  }
+  
+  if(logTable) //x is already log
+    return exp(log(y1)+(x-x1)/(x2-x1)*(log(y2)-log(y1)));
+  else
+    return y1+(x-x1)/(x2-x1)*(y2-y1);
 }
+
+
 
 
 /*

@@ -111,6 +111,15 @@ void WnLog::set(int order)
 			clog<<"making foler for Wn:"<<WnFolderName<<endl;
 			mkdir((WnFolderName).c_str(), 0777);
 		}
+		if(!CheckFolderExist(WnFolderName))
+		{
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!! Can't make the Folder for W functions !!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!! WILL NOT SAVE FILES !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!! YOU'VE BEEN WARNNED !!!!!!!!!!!!!!!!!"<<endl;
+			clog<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+		}
+
 		clog<<"writing table:"<<myname<<endl;
 		StepFinder();
 		// transition point between the different orders for the Gauss-Legendere integration

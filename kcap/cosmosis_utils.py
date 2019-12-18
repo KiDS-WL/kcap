@@ -19,6 +19,24 @@ def dict_to_datablock(d={}):
 
     return b
 
+def create_pipeline(config, verbose=True):
+    modules = []
+    for module_name, c in config.items():
+        filename = c.pop("file")
+        module = cosmosis.runtime.module.Module(module_name=module_name,
+                                                file_path=filename)
+        module.setup(dict_to_datablock({module_name : c}))
+        modules.append(module)
+
+    def pipeline(block):
+        for m in modules:
+            if verbose: print(f"Running {m.name}")
+            status = m.execute(block)
+            if status != 0:
+                raise RuntimeError(f"Module {m.name} failed at execute.")
+    
+    return pipeline
+    
 def config_to_cosmosis_ini(config):
     ini = cosmosis.runtime.config.Inifile(None, )
     with io.StringIO() as s:
