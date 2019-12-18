@@ -9,8 +9,8 @@ growth_params = section_names.growth_parameters
 
 
 def setup(options):
-    print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!WARNIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
-    print(" sigma8_rescale only deals with linear power spectra. Nonlinear power is not changed! ")
+    print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!WARNIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ")
+    print(" !sigma8_rescale only deals with linear power spectra. Nonlinear power is not changed! ")
     print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     return 0
 
@@ -34,8 +34,11 @@ def execute(block, config):
     block[cosmo, 'A_s'] = A_s
     block[cosmo, 'sigma_8'] = sigma8_input
 
+# 
     if(block.has_value(growth_params, "sigma_8")):
-        block[growth_params, "sigma_8"] = sigma8_input
+        sigma_8_vec = block[growth_params, "sigma_8"]
+        sigma_8_vec *= sigma8_input/sigma8_camb
+        block[growth_params, "sigma_8"] = sigma_8_vec
 
     if(block.has_value(growth_params, "fsigma_8")):
         fsigma8 = block[growth_params, "fsigma_8"]
@@ -64,22 +67,22 @@ def execute(block, config):
         TE *= r
         block[cmb, 'TE'] = TE
 
-    if(block.has_value(cmb, 'PP')):
-        PP = block[cmb, 'PP']
-        PP *= r
-        block[cmb, 'PP'] = PP
+    # if(block.has_value(cmb, 'PP')):
+    #     PP = block[cmb, 'PP']
+    #     PP *= r
+    #     block[cmb, 'PP'] = PP
 
-    if(block.has_value(cmb, 'PT')):
-        PT = block[cmb, 'PT']
-        PT *= r
-        block[cmb, 'PT'] = PT
+    # if(block.has_value(cmb, 'PT')):
+    #     PT = block[cmb, 'PT']
+    #     PT *= r
+    #     block[cmb, 'PT'] = PT
 
-    if(block.has_value(cmb, 'PE')):
-        PE = block[cmb, 'PE']
-        PE *= r
-        block[cmb, 'PE'] = PE
+    # if(block.has_value(cmb, 'PE')):
+    #     PE = block[cmb, 'PE']
+    #     PE *= r
+    #     block[cmb, 'PE'] = PE
 
-    if(block.has_value(cmb, 'P_k')):
+    if(block.has_value(matter_powspec_lin, 'P_k')):
         P_k_lin = block[matter_powspec_lin, 'P_k']
         P_k_lin *= r
         block[matter_powspec_lin, 'P_k'] = P_k_lin
