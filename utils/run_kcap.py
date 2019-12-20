@@ -456,18 +456,18 @@ class K1000Pipeline:
         return config
 
     def create_values(self):
-        values = {"cosmological_parameters" :      {"omch2"       : [ 0.051,  0.13,      0.255],
+        values = {"cosmological_parameters" :      {"omch2"       : [ 0.051,  0.13,      0.2],
                                                     "ombh2"       : [ 0.019,  0.0225,    0.026],
                                                     "h0"          : [ 0.64,   0.7,       0.82],
                                                     "n_s"         : [ 0.84,   0.97,      1.1],
-                                                    "ln_1e10_A_s" : [ 2.0,    2.72,      4.0],
+                                                    "ln_1e10_A_s" : [ 1.5,    2.72,      4.0],
                                                     "omega_k"     :           0.0,
                                                     "w"           :          -1.0,
                                                     "mnu"         :           0.06,             #normal hierarchy
                                                     }, 
                 "halo_model_parameters" :          {"A"           : [ 2.0,    2.6,       3.13]},
 
-                "intrinsic_alignment_parameters" : {"A"           : [-1.0,    0.8,       2.0]},
+                "intrinsic_alignment_parameters" : {"A"           : [-6.0,    0.8,       6.0]},
 
                 "nofz_shifts"                    : {"p_1"         : [-5.0,    0.0,       5.0],
                                                     "p_2"         : [-5.0,    0.0,       5.0],
@@ -675,9 +675,9 @@ if __name__ == "__main__":
 
 
         p.set_sampling_config(#likelihoods=["BOSS_like"],
-                            derived_parameters=["cosmological_parameters/S8",
-                                                "cosmological_parameters/sigma8",
-                                                "cosmological_parameters/omegam",
+                            derived_parameters=["cosmological_parameters/S_8",
+                                                "cosmological_parameters/sigma_8",
+                                                "cosmological_parameters/omega_m",
                                                 "nofz_shifts/bias_1",
                                                 "nofz_shifts/bias_2",
                                                 "nofz_shifts/bias_3",
