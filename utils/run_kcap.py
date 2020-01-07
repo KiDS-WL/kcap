@@ -572,6 +572,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--halofit-version", default="mead")
 
+    parser.add_argument("--sampler", default="multinest")
+
     args = parser.parse_args()
 
     pipeline_name = args.run_type
@@ -649,7 +651,7 @@ if __name__ == "__main__":
 
     halofit_version = args.halofit_version
 
-    sampler = "multinest"
+    sampler = args.sampler
 
     p = K1000Pipeline(KiDS_data_cov_file=KiDS_data_cov_file,
                         BOSS_data_files=BOSS_data_files,
@@ -682,6 +684,7 @@ if __name__ == "__main__":
                         noisy_mocks=noisy_mocks)
     
     if create_mocks:
+        os.makedirs(mock_dir)
         p.choose_pipeline(pipeline_name)
         block = p.run_pipeline()
         if "BOSS_like" in p.config:
