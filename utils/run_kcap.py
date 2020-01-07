@@ -29,16 +29,37 @@ class K1000Pipeline:
         self.full_config = self.create_config(**kwargs)
         self.full_values, self.full_priors = self.create_values()
 
-        self.pipelines = {"full_3x2pt_bp" : {"cut_modules" : ["cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
-                                             "cut_keys" : []},
-                         "3x2pt_mocks_bp" :  {"cut_modules" : ["correlated_dz_priors", "source_photoz_bias",
-                                                               "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
-                                           "cut_values"  : ["nofz_shifts"],
-                                           "sample"      : False,},
-                         "cosmic_shear" : {"cut_modules" : ["wedges", "BOSS_like", "approximate_P_gm",
-                                                            "load_lens_nz", "cl2xi_ggl"],
-                                           "cut_keys"    : [("projection", "position-shear")],
-                                           "cut_values"  : ["bias_parameters"]},
+        self.pipelines = {"EE_nE_w" :         {"cut_modules" : ["cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
+                                               "cut_keys"    : [],},
+                          "EE_nE_w_mocks" :   {"cut_modules" : ["correlated_dz_priors", "source_photoz_bias",
+                                                                "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
+                                               "cut_values"  : ["nofz_shifts"],
+                                               "sample"      : False,},
+                          
+                          "EE" :              {"cut_modules" : ["wedges", "BOSS_like", "approximate_P_gm",
+                                                                "load_lens_nz",
+                                                                "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl",
+                                                                "bandpower_ggl"],
+                                               "cut_keys"    : [("projection", "position-shear")],
+                                               "set_keys"    : [("scale_cuts", "use_stats", "PeeE")],
+                                               "cut_values"  : ["bias_parameters"]},
+                          "EE_mocks" :        {"cut_modules" : ["correlated_dz_priors", "source_photoz_bias",
+                                                                "wedges", "BOSS_like", "approximate_P_gm",
+                                                                "load_lens_nz",
+                                                                "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl",
+                                                                "bandpower_ggl"],
+                                               "cut_keys"    : [("projection", "position-shear")],
+                                               "set_keys"    : [("scale_cuts", "use_stats", "PeeE")],
+                                               "cut_values"  : ["nofz_shifts", "bias_parameters"],
+                                               "sample"      : False,},
+
+                          "EE_nE" :           {"cut_modules" : ["approximate_P_gm",
+                                                                "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl",],},
+                          "EE_nE_mocks" :     {"cut_modules" : ["correlated_dz_priors", "source_photoz_bias",
+                                                                "wedges", "BOSS_like",
+                                                                "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl",],
+                                               "cut_values"  : ["nofz_shifts"],
+                                               "sample"      : False,},
                          }
 
     def choose_pipeline(self, name=None, pipeline=None):
@@ -56,6 +77,10 @@ class K1000Pipeline:
         if "cut_keys" in pipeline:
             for mod, key in pipeline["cut_keys"]:
                 del config[mod][key]
+
+        if "set_keys" in pipeline:
+            for mod, key, val in pipeline["set_keys"]:
+                config[mod][key] = val
 
         if "cut_values" in pipeline:
             for val in pipeline["cut_values"]:
@@ -536,14 +561,20 @@ def create_BOSS_data_file(mock_data, filename):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--run-type", required=True)
+
     parser.add_argument("--mock-dir")
     parser.add_argument("--noiseless-mocks", action="store_true")
 
     parser.add_argument("--run-dir")
     parser.add_argument("--run-name")
 
+    parser.add_argument("--halofit-version", default="mead")
+
     args = parser.parse_args()
 
+    pipeline_name = args.run_type
     create_mocks = args.mock_dir is not None
     noisy_mocks = not args.noiseless_mocks
 
@@ -616,7 +647,7 @@ if __name__ == "__main__":
 
     used_stats = ["PeeE", "PneE"]
 
-    halofit_version = "mead"
+    halofit_version = args.halofit_version
 
     sampler = "multinest"
 
@@ -651,17 +682,18 @@ if __name__ == "__main__":
                         noisy_mocks=noisy_mocks)
     
     if create_mocks:
-        p.choose_pipeline("3x2pt_mocks_bp")
+        p.choose_pipeline(pipeline_name)
         block = p.run_pipeline()
-        mock_BOSS = p.create_mock_BOSS(block, BOSS_like_name, num_ell, noisy_mocks)
-        for b, data in mock_BOSS.items():
-            create_BOSS_data_file(data, BOSS_mock_output_files[b])
-        for f in BOSS_cov_files:
-            shutil.copy(f, mock_dir)
+        if "BOSS_like" in p.config:
+            mock_BOSS = p.create_mock_BOSS(block, BOSS_like_name, num_ell, noisy_mocks)
+            for b, data in mock_BOSS.items():
+                create_BOSS_data_file(data, BOSS_mock_output_files[b])
+            for f in BOSS_cov_files:
+                shutil.copy(f, mock_dir)
 
 
     else:
-        p.choose_pipeline("full_3x2pt_bp")
+        p.choose_pipeline(pipeline_name)
 
         config_dir = os.path.join(run_dir, run_name, "config")
         output_dir = os.path.join(run_dir, run_name, "output")
@@ -673,16 +705,16 @@ if __name__ == "__main__":
         values_file = os.path.join(config_dir, f"{run_name}_values.ini")
         priors_file = os.path.join(config_dir, f"{run_name}_priors.ini")
 
+        derived_parameters=["cosmological_parameters/S_8",
+                            "cosmological_parameters/sigma_8",
+                            "cosmological_parameters/omega_m",
+                            "cosmological_parameters/cosmomc_theta",]
+        if "correlated_dz_priors" in p.config:
+            # nofz/bias_* values
+            derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
 
         p.set_sampling_config(#likelihoods=["BOSS_like"],
-                            derived_parameters=["cosmological_parameters/S_8",
-                                                "cosmological_parameters/sigma_8",
-                                                "cosmological_parameters/omega_m",
-                                                "nofz_shifts/bias_1",
-                                                "nofz_shifts/bias_2",
-                                                "nofz_shifts/bias_3",
-                                                "nofz_shifts/bias_4",
-                                                "nofz_shifts/bias_5",],
+                            derived_parameters=derived_parameters,
                             parameter_file=values_file,
                             prior_file=priors_file,
                             verbose=True,
