@@ -143,8 +143,8 @@ parameter_dictionary = {
 
 def parameter_mapping(chain_file,
                       parameters,
-                      statistics=[], chain_format="cosmosis", 
-                      parameter_name_map=[]):
+                      statistics=None, chain_format="cosmosis", 
+                      parameter_name_map=None):
     chain_format = chain_format.lower()
     parameter_names = parameter_dictionary
     
@@ -170,6 +170,7 @@ def parameter_mapping(chain_file,
             raise ValueError(f"Parameter {p} not in chain.")
             
     stats_idx = []
+    statistics = statistics or []
     for s in statistics:
         s = s.lower()
         if s in params:
@@ -177,7 +178,7 @@ def parameter_mapping(chain_file,
         else:
             raise ValueError(f"Statistic {s} not in chain.")
     
-    if parameter_name_map is not []:
+    if parameter_name_map is not None:
         return (param_idx, stats_idx) + tuple(output_parameter_names.values())
     else:
         return param_idx, stats_idx
@@ -186,13 +187,17 @@ def load_nested_sampling_file(filename):
     info = {}
     with open(filename, "r") as f:
         for s in f.readlines()[-3:]:
-                m = re.match("^#([a-z_]+)=([0-9\.\-]+)", s)
-                if m is None:
-                    raise ValueError(f"Can't read property from line {s}")
-                key, value = m.groups()
-                info[key] = value
-            
+            m = re.match("^#([a-z_]+)=([0-9\.\-]+)", s)
+            if m is None:
+                raise ValueError(f"Can't read property from line {s}")
+            key, value = m.groups()
+            info[key] = value
+
     n_sample = int(info["nsample"])
     chain = np.loadtxt(filename)
     print(f"Using {n_sample} samples out of {chain.shape[0]} in the chain.")
     return chain[-n_sample:], float(info["log_z"]), float(info["log_z_error"])
+
+
+def get_parameter_ranges():
+    pass
