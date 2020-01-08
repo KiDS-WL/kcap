@@ -16,11 +16,11 @@ def execute(block, config):
     alpha = config
     # Get parameters from sampler and CAMB output
     S8_input = block[cosmo, "S8_input"]
-    omch2 = block[cosmo, "omch2"]
-    ombh2 = block[cosmo, "ombh2"]
-    h = block[cosmo, "h0"]
-    Omega_m=(omch2+ombh2)/h/h
-    # Omega_m=block[cosmo, "omega_m"]
+    # omch2 = block[cosmo, "omch2"]
+    # ombh2 = block[cosmo, "ombh2"]
+    # h = block[cosmo, "h0"]
+    # Omega_m=(omch2+ombh2)/h/h
+    Omega_m=block[cosmo, "omega_m"]
     sigma8_input  = S8_input/(Omega_m/0.3)**alpha
     # print('Omega_m=',Omega_m)
     # print('S8_input=',S8_input)
