@@ -15,16 +15,16 @@
 ## DATA LOCATION ##
 
 # set the path to the main data-folder:
-K1K_BandPowers.data_directory = '/your/path/to/KiDS-1000_DATA_RELEASE/'
+K1K_BandPowers.data_directory = 'modules/scale_cuts/test_files/'
 
 # set the path to the main folder of KCAP:
 # (this is required for importing the cosebis and scale_cuts modules )
-K1K_BandPowers.kcap_directory = '/your/path/to/KCAP/'
+K1K_BandPowers.kcap_directory = './'
 
 # for loading of files:
 
 # set name of FITS file containing all data (within data_directory):
-K1K_BandPowers.data_file = 'twoPoint_PeeE_mean_theoryNoise1_cov_theoryVultur_nOfZ_milvus.fits'
+K1K_BandPowers.data_file = 'twoPoint_PneE+PeeE.fits'
 
 ## BandPowers PARAMETERS ##
 
@@ -61,11 +61,14 @@ K1K_BandPowers.delta_x = 0.5
 # you might want to increase 'nbins' for a higher resolution
 K1K_BandPowers.write_out_theory = True
 # the file will be saved to:
-K1K_BandPowers.theory_file = 'PeeE_theory.ascii'
+K1K_BandPowers.theory_file = 'BandPowers_theory.ascii'
 # the likelihood will terminate after writing out the vector. Hence, for an
 # MCMC run this flag needs to be set to False!
 
 ## REDSHIFT DISTRIBUTIONS ##
+
+# number of redshift (tomographic) bins:
+K1K_BandPowers.nzbins = 5
 
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 # for fiducial KV450 analysis: 120
@@ -155,7 +158,7 @@ K1K_BandPowers.use_linear_pk_for_IA = False
 # supply name of D_z shift correlation matrix (optional):
 # if it is not supplied or cannot be loaded, we assume no correlations between
 # the D_z shift parameters!
-K1K_BandPowers.filename_corrmat_D_z = 'DIR_cov.asc'
+K1K_BandPowers.filename_corrmat_D_z = ''
 
 ## FULL LIST OF ALL NUISANCES ##
 

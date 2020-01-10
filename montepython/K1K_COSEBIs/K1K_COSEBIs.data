@@ -48,6 +48,9 @@ K1K_COSEBIs.theory_file = 'En_theory_KV450.ascii'
 
 ## REDSHIFT DISTRIBUTIONS ##
 
+# number of redshift (tomographic) bins:
+K1K_COSEBIs.nzbins = 5
+
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 # for fiducial KV450 analysis: 120
 K1K_COSEBIs.nzmax = 500

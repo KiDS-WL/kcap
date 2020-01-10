@@ -67,6 +67,9 @@ K1K_BandPowers.theory_file = 'PeeE_theory.ascii'
 
 ## REDSHIFT DISTRIBUTIONS ##
 
+# number of redshift (tomographic) bins:
+K1K_BandPowers.nzbins = 5
+
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 # for fiducial KV450 analysis: 120
 K1K_BandPowers.nzmax = 500

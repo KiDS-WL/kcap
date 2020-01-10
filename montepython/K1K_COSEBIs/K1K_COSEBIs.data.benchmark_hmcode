@@ -15,16 +15,16 @@
 ## DATA LOCATION ##
 
 # set the path to the main data-folder:
-K1K_COSEBIs.data_directory = '/your/path/to/KV450_COSMIC_SHEAR_DATA_RELEASE/'
+K1K_COSEBIs.data_directory = 'data/KV450/combined/'
 
 # set the path to the main folder of KCAP:
 # (this is required for importing the cosebis and scale_cuts modules )
-K1K_COSEBIs.kcap_directory = '/your/path/to/KCAP/'
+K1K_COSEBIs.kcap_directory = './'
 
 # for loading of files:
 
 # set name of FITS file containing all data (within data_directory):
-K1K_COSEBIs.data_file = 'twoPoint_En_nModes20.fits'
+K1K_COSEBIs.data_file = 'COSEBIs_En_nModes20.fits'
 
 ## COSEBIs PARAMETERS ##
 
@@ -47,6 +47,9 @@ K1K_COSEBIs.theory_file = 'En_theory_KV450.ascii'
 # MCMC run this flag needs to be set to False!
 
 ## REDSHIFT DISTRIBUTIONS ##
+
+# number of redshift (tomographic) bins:
+K1K_COSEBIs.nzbins = 5
 
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 # for fiducial KV450 analysis: 120

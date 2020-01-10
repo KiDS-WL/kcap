@@ -15,16 +15,16 @@
 ## DATA LOCATION ##
 
 # set the path to the main data-folder:
-K1K_COSEBIs.data_directory = '/your/path/to/KV450_COSMIC_SHEAR_DATA_RELEASE/'
+K1K_COSEBIs.data_directory = 'data/KV450/combined/'
 
 # set the path to the main folder of KCAP:
 # (this is required for importing the cosebis and scale_cuts modules )
-K1K_COSEBIs.kcap_directory = '/your/path/to/KCAP/'
+K1K_COSEBIs.kcap_directory = './'
 
 # for loading of files:
 
 # set name of FITS file containing all data (within data_directory):
-K1K_COSEBIs.data_file = 'twoPoint_En_nModes20.fits'
+K1K_COSEBIs.data_file = 'COSEBIs_En_nModes20.fits'
 
 ## COSEBIs PARAMETERS ##
 
@@ -42,14 +42,16 @@ K1K_COSEBIs.nbins = 5
 # you might want to increase 'nbins' for a higher resolution 
 K1K_COSEBIs.write_out_theory = True
 # the file will be saved to:
-K1K_COSEBIs.theory_file = 'En_theory_KV450.ascii'
+K1K_COSEBIs.theory_file = 'COSEBIs_theory.ascii'
 # the likelihood will terminate after writing out the vector. Hence, for an 
 # MCMC run this flag needs to be set to False!
 
 ## REDSHIFT DISTRIBUTIONS ##
 
+# number of redshift (tomographic) bins:
+K1K_COSEBIs.nzbins = 5
+
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
-# for fiducial KV450 analysis: 120
 K1K_COSEBIs.nzmax = 500
 
 # you can choose here any of the scipy.interpolate.interp1d types of interpolation
@@ -136,13 +138,12 @@ K1K_COSEBIs.use_linear_pk_for_IA = False
 # supply name of D_z shift correlation matrix (optional):
 # if it is not supplied or cannot be loaded, we assume no correlations between 
 # the D_z shift parameters!
-K1K_COSEBIs.filename_corrmat_D_z = 'DIR_cov.asc'
+K1K_COSEBIs.filename_corrmat_D_z = ''
 
 ## FULL LIST OF ALL NUISANCES ##
 
 # combine all nuisance parameters in one list for marginalization:
 #K1K_COSEBIs.use_nuisance = ['A_IA', 'D_z1', 'D_z2', 'D_z3', 'D_z4', 'D_z5']
-
 
 ### GAUSSIAN PRIORS (FOR NUISANCES) ###
 

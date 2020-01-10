@@ -367,7 +367,8 @@ class K1K_COSEBIs_2cosmos(Likelihood):
         # by the scale_cuts module:
         
         # read number of NZ_SOURCE bins from HEADER
-        self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
+        # This does not seem to work and was a lucky hit...
+        #self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
         # define also number of unique z-bin correlations:
         self.nzcorrs = self.nzbins * (self.nzbins + 1) // 2
         

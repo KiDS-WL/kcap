@@ -63,6 +63,9 @@ K1K_COSEBIs_2cosmos.theory_file_prefix = 'En_theory_KV450'
 
 ## REDSHIFT DISTRIBUTIONS ##
 
+# number of redshift (tomographic) bins:
+K1K_COSEBIs_2cosmos.nzbins = 5
+
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 K1K_COSEBIs_2cosmos.nzmax = 500
 

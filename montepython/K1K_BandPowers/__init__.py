@@ -123,7 +123,7 @@ class K1K_BandPowers(Likelihood):
 
         # this works now:
         self.data_vec = self.scale_cuts_module.data['data']
-        #print(self.cosebis_obs.shape)
+        #print(self.data_vec.shape)
         covmat = self.scale_cuts_module.data['covariance']
         #print(covmat.shape)
 
@@ -226,7 +226,7 @@ class K1K_BandPowers(Likelihood):
     def loglkl(self, cosmo, data):
 
         theory_vec = self.cosmo_calculations(cosmo, data)
-
+        
         if self.write_out_theory:
             fname = os.path.join(self.data_directory, self.theory_file)
             # for now we just dump the theory vector with no further details,
@@ -281,7 +281,9 @@ class K1K_BandPowers(Likelihood):
         '''
 
         # read number of NZ_SOURCE bins from HEADER
-        self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
+        # This does not seem to work and was a lucky hit...
+        #self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
+        
         # define also number of unique z-bin correlations:
         self.nzcorrs = self.nzbins * (self.nzbins + 1) // 2
 
