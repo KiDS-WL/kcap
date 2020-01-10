@@ -31,14 +31,14 @@ def set_up_MontePython(likelihood):
     likelihood_dir_mp = os.path.join(PATH_TO_MONTEPYTHON, 'montepython/likelihoods/' + likelihood)
     likelihood_dir_kcap = os.path.join('montepython/', likelihood)
     # easy case: folders don't exist yet:
-    #if not os.path.isdir(likelihood_dir_mp):
+    if not os.path.isdir(likelihood_dir_mp):
         # copy likelihood-folder contents from KCAP to MP:
-    os.makedirs(likelihood_dir_mp, exist_ok=True)
-    shutil.copy(os.path.join(likelihood_dir_kcap, '__init__.py'), likelihood_dir_mp)
-    shutil.copy(os.path.join(likelihood_dir_kcap, likelihood  + '.data.benchmark'), os.path.join(likelihood_dir_mp, likelihood + '.data'))
-    #else:
-    #    warnings.warn("Trying to copy likelihood from KCAP to MP but folder does already exist! \n Check and rename manually then try again!")
-    #    exit()
+        os.makedirs(likelihood_dir_mp) #, exist_ok=True)
+        shutil.copy(os.path.join(likelihood_dir_kcap, '__init__.py'), likelihood_dir_mp)
+        shutil.copy(os.path.join(likelihood_dir_kcap, likelihood  + '.data.benchmark'), os.path.join(likelihood_dir_mp, likelihood + '.data'))
+    else:
+        warnings.warn("Trying to copy likelihood from KCAP to MP but folder does already exist! \n Check and rename manually then try again!")
+        exit()
 
     print('Copied {:} likelihood with benchmark-settings to specified MontePython-folder.'.format(likelihood))
     
