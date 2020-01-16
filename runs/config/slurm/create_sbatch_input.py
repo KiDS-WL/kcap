@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import argparse
+import sys
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -10,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("--job-name")
     parser.add_argument("--n-task", default=32)
     parser.add_argument("--partition", default="all")
-    parser.add_argument("--time", default="2-00:00")
+    parser.add_argument("--time", default="4-00:00")
     parser.add_argument("--n-thread", default="1")
     args = parser.parse_args()
 
@@ -36,3 +37,8 @@ export OMP_NUM_THREADS={args.n_thread}
 mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib cosmosis --mpi {args.config}
     """
     print(template)
+
+    with open(os.path.join(outputdir, "logs", "slurm_script_command.sh"), "w") as f:
+        f.write(" ".join(sys.argv))
+    with open(os.path.join(outputdir, "logs", "sbatch_command.sh"), "w") as f:
+        f.write(template)
