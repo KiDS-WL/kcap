@@ -5,7 +5,9 @@ import numpy as np
 
 MODES = ["multiplicative", "additive"]
 
-
+# This module is the same as photoz_bias.py in cosmosis-standard-library 
+# expect that it also calculates the true mean_deltaz shift and puts it in block
+# delta_z = mean_z_shifted-mean_z_input
 def setup(options):
     mode = options[option_section, "mode"]
     sample = options.get_string(option_section, "sample", "")
@@ -13,6 +15,8 @@ def setup(options):
         option_section, "interpolation", "cubic")
     bias_section = options.get_string(option_section, "bias_section", "")
     per_bin = options.get_bool(option_section, "per_bin", True)
+    output_deltaz = options.get_bool(option_section, "output_deltaz", False)
+    output_section_name = options.get_string(option_section,"output_section_name","delta_z_out")
     if sample == "":
         pz = names.wl_number_density
     else:
@@ -23,7 +27,7 @@ def setup(options):
         bias_section = sample + "_errors"
     if mode not in MODES:
         raise ValueError("mode for photoz must be one of: %r" % MODES)
-    return {"mode": mode, "sample": pz, "bias_section": bias_section, "interpolation": interpolation, "per_bin": per_bin}
+    return {"mode": mode, "sample": pz, "bias_section": bias_section, "interpolation": interpolation, "per_bin": per_bin, "output_section_name": output_section_name, "output_deltaz": output_deltaz }
 
 
 def execute(block, config):
@@ -36,6 +40,10 @@ def execute(block, config):
     for i in range(1, nbin + 1):
         bin_name = "bin_%d" % i
         nz = block[pz, bin_name]
+        # Calculate delta z output
+        if config["output_deltaz"]:
+            mean_z_input=np.average(z,weights=nz)
+
         if config["per_bin"]:
             bias = block[biases, "bias_%d" % i]
         else:
@@ -50,6 +58,12 @@ def execute(block, config):
             raise ValueError("Unknown photo-z mode")
         # normalize
         nz_biased /= np.trapz(nz_biased, z)
+        #calculate delta z output
+        if config["output_deltaz"]:
+            mean_z_shifted=np.average(z,weights=nz_biased)
+            delta_z = mean_z_shifted-mean_z_input
+            block[config["output_section_name"],bin_name] = delta_z
+        #
         block[pz, bin_name] = nz_biased
     return 0
 
