@@ -399,7 +399,7 @@ def execute(block, config):
         block[names.growth_parameters, "fsigma_8"] = fsigma_8
         
         block[names.cosmological_parameters, "sigma_8"] = sigma_8[0]
-
+        block[names.cosmological_parameters, "S_8"] = sigma_8[0]*np.sqrt(p.omegam/0.3)
     if p.WantCls:
         # Get total (scalar + tensor) lensed CMB Cls (is that what we want?)
         cl = r.get_total_cls(raw_cl=False, CMB_unit="muK")
