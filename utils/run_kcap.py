@@ -616,6 +616,9 @@ class K1000Pipeline:
                                      multinest_const_efficiency=False,
                                      emcee_walker=80,
                                      emcee_covariance_file=None,
+                                     maxlike_method="Nelder-Mead",
+                                     maxlike_tolerance=1e-3,
+                                     max_posterior=True,
                                      ):
         config = {  "pipeline" :   {"modules"           : " ".join(modules),
                                     "values"            : parameter_file,
@@ -641,12 +644,20 @@ class K1000Pipeline:
                                     "constant_efficiency" : "T" if multinest_const_efficiency else "F"},
 
                     "emcee"      : {"walkers"           : emcee_walker,
-                                    "samples"           :  max_iterations,
+                                    "samples"           : max_iterations,
                                     "covmat"            : emcee_covariance_file,
                                     "nsteps"            : 5},
 
                     "metropolis" : {"samples"           : max_iterations,
                                     "nsteps"            : 1},
+
+                    "test" :       {"save_dir"          : os.path.join(output_dir, "data_block"),
+                                    "fatal_errors"      : "T",},
+
+                    "maxlike" :    {"method"          : maxlike_method,
+                                    "tolerance"       : maxlike_tolerance,
+                                    "maxiter"         : max_iterations,
+                                    "max_posterior"   : "T" if max_posterior else "F"},
                     }
 
         config[sampler_name] = samplers[sampler_name]
@@ -770,6 +781,7 @@ if __name__ == "__main__":
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
 
     parser.add_argument("--sampler", default="multinest")
+    parser.add_argument("--sampler-config", nargs=2, action="append", metavar=("PARAMETER", "VALUE"), help="Set keys in the sampler configuration.")
 
     parser.add_argument("--use-nz-files", action="store_true", help="Use individually specified n(z) files instead those from the twopoint file.")
     parser.add_argument("--source-nz-files", nargs="+", default=[os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.1t0.3.asc"),
@@ -995,16 +1007,20 @@ if __name__ == "__main__":
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
 
-        p.set_sampling_config(#likelihoods=["BOSS_like"],
-                            derived_parameters=derived_parameters,
-                            parameter_file=values_file,
-                            prior_file=priors_file,
-                            verbose=True,
-                            debug=False,
-                            output_dir=chain_dir,
-                            run_name=run_name,
-                            sampler_name=sampler,
-                            max_iterations="1000000",)
+        sampler_config = {"derived_parameters"  : derived_parameters,
+                          "parameter_file"      : values_file,
+                          "prior_file"          : priors_file,
+                          "verbose"             : True,
+                          "debug"               : False,
+                          "output_dir"          : chain_dir,
+                          "run_name"            : run_name,
+                          "sampler_name"        : sampler,
+                          "max_iterations"      : "1000000",}
+
+        if args.sampler_config:
+            sampler_config.update(**dict(args.sampler_config))
+
+        p.set_sampling_config(**sampler_config)
         if sampler == "multinest":
             os.makedirs(os.path.join(chain_dir, "multinest"), exist_ok=args.overwrite)
     
