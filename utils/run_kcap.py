@@ -118,32 +118,13 @@ class K1000Pipeline:
                                                "fix_values"     : IA_values + baryon_values + nofz_values},
                                               
 
-
-                          "EE_nE_w_mocks" :   {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "sample"        : False,},
-
+                          # Old settings, will get removed soon:
                           # 3x2pt w/ magnification
                           "EE_nE_w_magnification_mocks" :   
                                               {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
                                                "cut_values"    : ["nofz_shifts"],
                                                "uncut_modules" : ["magnification_alphas", "add_magnification",],
                                                "uncut_keys"    : [("projection", "magnification-shear")],
-                                               "sample"        : False,},
-                          
-                         
-                          "EE_mocks" :        {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like", "approximate_P_gm",
-                                                                  "load_lens_nz",
-                                                                  "bandpower_ggl"],
-                                               "cut_keys"      : [("projection", "position-shear")],
-                                               "set_keys"      : [("scale_cuts", "use_stats", "PeeE")],
-                                               "cut_values"    : ["nofz_shifts", "bias_parameters"],
-                                               "sample"        : False,},
-
-                          "EE_nE_mocks" :     {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like",],
-                                               "cut_values"    : ["nofz_shifts"],
                                                "sample"        : False,},
 
                           #Fast IA
@@ -571,7 +552,7 @@ class K1000Pipeline:
                                             "xi_minus_section_name" : "shear_xi_minus_binned",
                                             "bandpower_ggl_section_name" : "bandpower_galaxy_shear",
                                             "bandpower_e_cosmic_shear_section_name" : "bandpower_shear_e",
-                                            #cosebis_section_name = cosebis
+                                            "cosebis_section_name" : "cosebis",
 
                                             "simulate"  : create_mocks,
                                             "simulate_with_noise" : noisy_mocks,
@@ -890,12 +871,12 @@ if __name__ == "__main__":
     bandpower_ell_min = 100.0
     bandpower_ell_max = 1500.0
     bandpower_n_bin = 8
-    bandpower_theta_min = 0.25
-    bandpower_theta_max = 397.0
-    bandpower_apodise = 0
+    bandpower_theta_min = 0.5
+    bandpower_theta_max = 300.0
+    bandpower_apodise = 1
     bandpower_Delta_x = 0.5
 
-    used_stats = ["PeeE", "PneE"]
+    used_stats = ["PneE", "PeeE"]
     if create_mocks:
         cut_bin_nE = []
         ell_range_EE = [100, 1500]
