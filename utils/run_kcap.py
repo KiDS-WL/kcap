@@ -596,7 +596,7 @@ class K1000Pipeline:
                                      multinest_efficiency=0.8,
                                      multinest_const_efficiency=False,
                                      emcee_walker=80,
-                                     emcee_covariance_file=None,
+                                     emcee_covariance_file="",
                                      maxlike_method="Nelder-Mead",
                                      maxlike_tolerance=1e-3,
                                      max_posterior=True,
