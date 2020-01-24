@@ -190,7 +190,7 @@ class K1000Pipeline:
                 # Replace with fiducial values
                 values[section][k] = K1000Pipeline.set_parameter_range(v, {})
 
-    def choose_pipeline(self, name=None, pipeline=None, sample=True, fix_values=None, set_keys=None):
+    def choose_pipeline(self, name=None, pipeline=None, sample=True, set_parameters=None, fix_values=None, set_keys=None):
         if name is not None:
             pipeline = self.pipelines[name]
 
@@ -213,17 +213,17 @@ class K1000Pipeline:
                 del config[mod][key]
             
         # Set keys in specific modules
-        set_keys = pipeline.get("set_keys", set_keys if set_keys else [])
+        set_keys = pipeline.get("set_keys", []) + (set_keys or [])
         for mod, key, val in set_keys:
             config[mod][key] = val
 
         # Set parameters/parameter ranges
-        set_range = pipeline.get("set_parameters", [])
+        set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
         for section, parameter, vals in set_range:
             values[section][parameter] = self.set_parameter_range(values[section][parameter], vals)
 
         # Fix parameters to their ficucial values to prevent sampling over them.
-        fix_values = pipeline.get("fix_values", fix_values if fix_values else [])        
+        fix_values = pipeline.get("fix_values", []) + (fix_values or [])
         for fix_val in fix_values:
             self.fix_values(values, *fix_val)
 
@@ -779,6 +779,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
+    parser.add_argument("--set-parameters", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set parameters in the values file.")
 
     parser.add_argument("--sampler", default="multinest")
     parser.add_argument("--sampler-config", nargs=2, action="append", metavar=("PARAMETER", "VALUE"), help="Set keys in the sampler configuration.")
@@ -950,8 +951,20 @@ if __name__ == "__main__":
         p.default_config_cuts["cut_modules"].remove("load_source_nz")
         p.default_config_cuts["cut_modules"].remove("load_lens_nz")
 
-    if create_mocks:
-        p.choose_pipeline(pipeline_name, sample=False, fix_values=args.fix_values, set_keys=args.set_keys)
+    set_parameters = []
+    if args.set_parameters:
+        for sec, param, val in args.set_parameters:
+            val = [float(s) for s in val.split()]
+            if len(val) == 1:
+                set_parameters.append((sec, param, {"fiducial" : val[0]}))
+            elif len(val) == 3:
+                set_parameters.append((sec, param, {"min" : val[0], "fiducial" : val[1], "max" : val[2]}))
+            else:
+                raise ValueError(f"You tried to set parameters with --set-parameters but the passed value is neither a single float, nor a triplet: {val}")
+
+
+    if create_mocks:        
+        p.choose_pipeline(pipeline_name, sample=False, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
         block = p.run_pipeline()
 
         if args.verbose:
@@ -982,7 +995,7 @@ if __name__ == "__main__":
         create_git_status_file(os.path.join(data_dir, "git_status.txt"))
 
     else:
-        p.choose_pipeline(pipeline_name, fix_values=args.fix_values, set_keys=args.set_keys)
+        p.choose_pipeline(pipeline_name, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
 
 
         config_dir = os.path.join(output_dir, "config")
