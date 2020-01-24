@@ -351,7 +351,7 @@ class K1000Pipeline:
                                             "zmid"               : 2.0,
                                             "nz_mid"             : 100,
                                             "zmax"               : 6.0,
-                                            "nz"                 : 100,
+                                            "nz"                 : 150,
                                             "background_zmax"    : 6.0,
                                             "background_zmin"    : 0.0,
                                             "background_nz"      : 6000,
