@@ -24,10 +24,10 @@ if __name__ == "__main__":
     dz_cov_file = base_dz_cov_file
     boss_data_files = base_boss_data_files
 
-    sampler = "multinest"
+    sampler = "test"
     
     run_type = "nE_magnification"
-    run_name_root = "mag"
+    run_name_root = "test_sampler"
     for alpha in [3.0,
                   ]:
        run_name = f"{run_name_root}_{run_type}_alpha_{alpha}"
@@ -38,8 +38,8 @@ if __name__ == "__main__":
               "--dz-covariance-file", dz_cov_file,
               "--BOSS-data-files", *boss_data_files,
               "--sampler", sampler,
-              "--sampler-config", "multinest_efficiency", "0.3",
-              "--sampler-config", "nested_sampling_tolerance", "1.0e-2",
+              #"--sampler-config", "multinest_efficiency", "0.3",
+              #"--sampler-config", "nested_sampling_tolerance", "1.0e-2",
               "--magnification-alpha", str(alpha), 
               "--overwrite"]
        subprocess.run(["python", script] + cmd, check=True)

@@ -1,0 +1,10 @@
+# Current version/revision of repository (git describe --always):
+d4c37122c
+
+# Current revision of repository (git rev-parse HEAD):
+d4c37122ca97cfe95d539943a02bf59c73482ccc
+
+# Uncommited changes (git diff --stat):
+runs/mocks/magnification_configs.py | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
