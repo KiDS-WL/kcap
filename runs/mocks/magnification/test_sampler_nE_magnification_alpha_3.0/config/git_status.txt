@@ -1,10 +1,11 @@
 # Current version/revision of repository (git describe --always):
-d4c37122c
+553419d79
 
 # Current revision of repository (git rev-parse HEAD):
-d4c37122ca97cfe95d539943a02bf59c73482ccc
+553419d79e33ef831a40f413f636193814c60a29
 
 # Uncommited changes (git diff --stat):
-runs/mocks/magnification_configs.py | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+.../test_sampler_nE_magnification_alpha_3.0/config/pipeline.ini       | 2 +-
+ .../test_sampler_nE_magnification_alpha_3.0/config/values.ini         | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
