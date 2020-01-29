@@ -4,6 +4,7 @@ import warnings
 import configparser
 import argparse
 import subprocess
+import collections
 
 import numpy as np
 
@@ -52,45 +53,78 @@ class K1000Pipeline:
         self.full_config = self.create_config(**kwargs)
         self.full_values, self.full_priors = self.create_values()
 
-        self.default_config_cuts =            {"cut_modules"   : ["load_source_nz", "load_lens_nz",
+
+        wedges_modules = ["wedges", "BOSS_like"]
+        wedges_param_range = [("cosmological_parameters", "omch2", {"max" : 0.2}),
+                              ("cosmological_parameters", "n_s", {"max" : 1.1})]
+
+        ggl_modules = ["approximate_P_gm", "bandpower_ggl"]
+        ggl_keys = [("projection", "position-shear")]
+        ggl_stats = [("scale_cuts", "use_stats", ["PneE"])]
+
+        cosmic_shear_modules = ["linear_alignment", "bandpower_shear_e"]
+        cosmic_shear_keys = [("projection", "fast-shear-shear-ia")]
+        cosmic_shear_stats = [("scale_cuts", "use_stats", ["PeeE"])]
+
+        IA_values = [("intrinsic_alignment_parameters", "A")]
+        baryon_values = [("halo_model_parameters", "A")]
+
+        nofz_modules = ["correlated_dz_priors", "source_photoz_bias",]
+        nofz_values = [("nofz_shifts",)]
+
+        bias_values = [("bias_parameters",)]
+
+        self.default_config_cuts =            {"cut_modules"   : ["load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
+                                                                  "add_intrinsic",
                                                                   "magnification_alphas",
                                                                   "add_magnification",
                                                                   "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
-                                               "cut_keys"      : [("projection", "magnification-shear")] }
+                                               "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
+                                                                  ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
+                                                                  ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
+                                                                  ("projection", "magnification-shear")] }
 
-        self.pipelines = {"EE_nE_w" :         {"cut_modules"   : [],
-                                               "cut_keys"      : [],},
-                          "EE_nE_w_mocks" :   {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "sample"        : False,},
+        self.pipelines = {"EE_nE_w" :         {"cut_modules"    : [],
+                                               "cut_keys"       : [],
+                                               "set_parameters" : wedges_param_range},
 
+                          "EE_nE" :           {"cut_modules"    : wedges_modules,},
+ 
+                          "EE_w" :            {"cut_modules"    : ggl_modules,
+                                               "cut_keys"       : ggl_keys,
+                                               "set_keys"       : cosmic_shear_stats,
+                                               "set_parameters" : wedges_param_range,},
+                           
+                          "nE_w" :            {"cut_modules"    : cosmic_shear_modules,
+                                               "cut_keys"       : cosmic_shear_keys,
+                                               "set_keys"       : ggl_stats,
+                                               "set_parameters" : wedges_param_range,
+                                               "fix_values"     : IA_values,},
+ 
+                          "EE" :              {"cut_modules"    : wedges_modules + ggl_modules,
+                                               "cut_keys"       : ggl_keys,
+                                               "set_keys"       : cosmic_shear_stats,
+                                               "fix_values"     : bias_values,},
+
+                          "nE" :              {"cut_modules"    : wedges_modules + cosmic_shear_modules,
+                                               "cut_keys"       : cosmic_shear_keys,
+                                               "set_keys"       : ggl_stats,
+                                               "fix_values"     : IA_values,},
+
+                          "w" :               {"cut_modules"    : cosmic_shear_modules + ggl_modules \
+                                                                  + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "projection", "scale_cuts", "2x2pt_like"],
+                                               "cut_keys"       : cosmic_shear_keys + ggl_keys,
+                                               "set_parameters" : wedges_param_range,
+                                               "fix_values"     : IA_values + baryon_values + nofz_values},
+                                              
+
+                          # Old settings, will get removed soon:
                           # 3x2pt w/ magnification
                           "EE_nE_w_magnification_mocks" :   
                                               {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
                                                "cut_values"    : ["nofz_shifts"],
                                                "uncut_modules" : ["magnification_alphas", "add_magnification",],
                                                "uncut_keys"    : [("projection", "magnification-shear")],
-                                               "sample"        : False,},
-                          
-                          "EE" :              {"cut_modules"   : ["wedges", "BOSS_like", "approximate_P_gm",
-                                                                  "load_lens_nz",
-                                                                  "bandpower_ggl"],
-                                               "cut_keys"      : [("projection", "position-shear")],
-                                               "set_keys"      : [("scale_cuts", "use_stats", "PeeE")],
-                                               "cut_values"    : ["bias_parameters"]},
-                          "EE_mocks" :        {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like", "approximate_P_gm",
-                                                                  "load_lens_nz",
-                                                                  "bandpower_ggl"],
-                                               "cut_keys"      : [("projection", "position-shear")],
-                                               "set_keys"      : [("scale_cuts", "use_stats", "PeeE")],
-                                               "cut_values"    : ["nofz_shifts", "bias_parameters"],
-                                               "sample"        : False,},
-
-                          "EE_nE" :           {"cut_modules"   : ["wedges", "BOSS_like",],},
-                          "EE_nE_mocks" :     {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like",],
-                                               "cut_values"    : ["nofz_shifts"],
                                                "sample"        : False,},
 
                           #Fast IA
@@ -106,7 +140,38 @@ class K1000Pipeline:
                                                "sample"        : False,},
                          }
 
-    def choose_pipeline(self, name=None, pipeline=None):
+    @staticmethod
+    def set_parameter_range(value, config):
+        if isinstance(value, collections.Iterable):
+            l, m, u = value
+        else:
+            m = value
+            l = None
+            u = None
+
+        if "min" in config or "max" in config:
+            # Set (or  change) the range
+            l = config.get("min", l)
+            m = config.get("fiducial", m)
+            u = config.get("max", u)
+            if not all([l,m,u]):
+                raise ValueError(f"min, fiducial, and max need to be specified but got {[l,m,u]}.")
+            return [l,m,u]
+        else:
+            # No range, i.e., fixed parameter
+            m = config.get("fiducial", m)
+            return m
+
+    @staticmethod
+    def fix_values(values, section, parameter=None):
+        # Loop over all values in section sec
+        for k, v in values[section].items():
+            # Check if key matches or was never specified
+            if k == parameter or parameter is None:
+                # Replace with fiducial values
+                values[section][k] = K1000Pipeline.set_parameter_range(v, {})
+
+    def choose_pipeline(self, name=None, pipeline=None, sample=True, set_parameters=None, fix_values=None, set_keys=None):
         if name is not None:
             pipeline = self.pipelines[name]
 
@@ -114,29 +179,52 @@ class K1000Pipeline:
         values = {**self.full_values}
         priors = {**self.full_priors}
 
+        # Remove/re-add modules to the pipeline. 
         uncut_modules = pipeline.get("uncut_modules", [])
         cut_modules = pipeline.get("cut_modules", []) + self.default_config_cuts["cut_modules"]
         for mod in cut_modules:
             if mod not in uncut_modules and mod in config:
                 del config[mod]
 
+        # Remove/re-add keys from/to modules in the pipeline. 
         uncut_keys = pipeline.get("uncut_keys", [])
         cut_keys = pipeline.get("cut_keys", []) + self.default_config_cuts["cut_keys"]
         for mod, key in cut_keys:
             if (mod, key) not in uncut_keys and mod in config and key in config[mod]:
                 del config[mod][key]
+            
+        # Set keys in specific modules
+        set_keys = pipeline.get("set_keys", []) + (set_keys or [])
+        for mod, key, val in set_keys:
+            config[mod][key] = val
 
-        if "set_keys" in pipeline:
-            for mod, key, val in pipeline["set_keys"]:
-                config[mod][key] = val
+        # Set parameters/parameter ranges
+        set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
+        for section, parameter, vals in set_range:
+            values[section][parameter] = self.set_parameter_range(values[section][parameter], vals)
 
-        if "cut_values" in pipeline:
-            for val in pipeline["cut_values"]:
+        # Fix parameters to their ficucial values to prevent sampling over them.
+        fix_values = pipeline.get("fix_values", []) + (fix_values or [])
+        for fix_val in fix_values:
+            self.fix_values(values, *fix_val)
+
+        # Remove parameters (should not be used, fix_values is better)
+        cut_values = pipeline.get("cut_values", [])
+        for val in cut_values:
+            if isinstance(val, str):
+                # Cut whole section
                 del values[val]
                 priors.pop(val, None)
+            else:
+                # Cut only specific value
+                sec, key = val
+                del values[sec][key]
+                priors[sec].pop(key, None)
 
-        if not pipeline.get("sample", True):
-            # Not sampling, i.e., create mocks
+        
+        # If we're creating mocks, i.e., not sampling, fix all parameters to 
+        # their fiducial values
+        if not sample:
             for section in values.keys():
                 for key, value in values[section].items():
                     if isinstance(value, (list, tuple)):
@@ -158,9 +246,6 @@ class K1000Pipeline:
         block = cosmosis_utils.dict_to_datablock(params)
         pipeline(block)
 
-        for k, v in block.keys():
-            print(k, v)
-
         return block
 
     def build_ini(self):
@@ -172,10 +257,6 @@ class K1000Pipeline:
 
         priors_ini = configparser.ConfigParser()
         priors_ini.read_dict(self.flatten_config(self.priors))
-
-        print(cosmosis_utils.config_to_string(ini))
-        print(cosmosis_utils.config_to_string(values_ini))
-        print(cosmosis_utils.config_to_string(priors_ini))
 
         return ini, values_ini, priors_ini
 
@@ -230,6 +311,9 @@ class K1000Pipeline:
                             bandpower_apodise,
                             bandpower_Delta_x,
                             used_stats,
+                            cut_bin_nE,
+                            ell_range_EE,
+                            ell_range_nE,
                             halofit_version,
                             create_mocks,
                             noisy_mocks):
@@ -267,7 +351,7 @@ class K1000Pipeline:
                                             "zmid"               : 2.0,
                                             "nz_mid"             : 100,
                                             "zmax"               : 6.0,
-                                            "nz"                 : 100,
+                                            "nz"                 : 150,
                                             "background_zmax"    : 6.0,
                                             "background_zmin"    : 0.0,
                                             "background_nz"      : 6000,
@@ -344,7 +428,7 @@ class K1000Pipeline:
                                             "shear-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
                                             #"position-intrinsic" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "intrinsic-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
-                                            #"fast-shear-shear-ia" : f"{source_nz_sample}-{source_nz_sample}",
+                                            "fast-shear-shear-ia" : f"{source_nz_sample}-{source_nz_sample}",
                                             "magnification-shear" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "verbose" : False,
                                             "get_kernel_peaks" : False},
@@ -449,6 +533,12 @@ class K1000Pipeline:
                                             #"scale_cuts_filename" : os.path.join(SCALE_CUT_PATH, "scale_cuts.ini"),
                                             #"scale_cuts_option" : "scale_cuts_none",
                                             "use_stats" : " ".join(used_stats),
+
+                                            "cut_pair_PneE" : " ".join(cut_bin_nE),
+
+                                            "keep_ang_PeeE" : ell_range_EE,
+                                            "keep_ang_PneE" : ell_range_nE,
+
     
                                             # Section names for data
                                             "xi_plus_extension_name" : "xiP",
@@ -462,7 +552,7 @@ class K1000Pipeline:
                                             "xi_minus_section_name" : "shear_xi_minus_binned",
                                             "bandpower_ggl_section_name" : "bandpower_galaxy_shear",
                                             "bandpower_e_cosmic_shear_section_name" : "bandpower_shear_e",
-                                            #cosebis_section_name = cosebis
+                                            "cosebis_section_name" : "cosebis",
 
                                             "simulate"  : create_mocks,
                                             "simulate_with_noise" : noisy_mocks,
@@ -506,7 +596,10 @@ class K1000Pipeline:
                                      multinest_efficiency=0.8,
                                      multinest_const_efficiency=False,
                                      emcee_walker=80,
-                                     emcee_covariance_file=None,
+                                     emcee_covariance_file="",
+                                     maxlike_method="Nelder-Mead",
+                                     maxlike_tolerance=1e-3,
+                                     max_posterior=True,
                                      ):
         config = {  "pipeline" :   {"modules"           : " ".join(modules),
                                     "values"            : parameter_file,
@@ -532,12 +625,20 @@ class K1000Pipeline:
                                     "constant_efficiency" : "T" if multinest_const_efficiency else "F"},
 
                     "emcee"      : {"walkers"           : emcee_walker,
-                                    "samples"           :  max_iterations,
+                                    "samples"           : max_iterations,
                                     "covmat"            : emcee_covariance_file,
                                     "nsteps"            : 5},
 
                     "metropolis" : {"samples"           : max_iterations,
                                     "nsteps"            : 1},
+
+                    "test" :       {"save_dir"          : os.path.join(output_dir, "data_block"),
+                                    "fatal_errors"      : "T",},
+
+                    "maxlike" :    {"method"          : maxlike_method,
+                                    "tolerance"       : maxlike_tolerance,
+                                    "maxiter"         : max_iterations,
+                                    "max_posterior"   : "T" if max_posterior else "F"},
                     }
 
         config[sampler_name] = samplers[sampler_name]
@@ -545,7 +646,7 @@ class K1000Pipeline:
         return config
 
     def create_values(self):
-        values = {"cosmological_parameters" :      {"omch2"       : [ 0.051,  0.13,      0.2],
+        values = {"cosmological_parameters" :      {"omch2"       : [ 0.051,  0.13,      0.255],
                                                     "ombh2"       : [ 0.019,  0.0225,    0.026],
                                                     "h0"          : [ 0.64,   0.7,       0.82],
                                                     "n_s"         : [ 0.84,   0.97,      1.1],
@@ -570,8 +671,8 @@ class K1000Pipeline:
                                                     "a_vir_bin_1" : [0.0,     3.8,      12.0],
 
                                                     "b1_bin_2"    : [0.5,     2.3,       9.0],
-                                                    "b2_bin_2"    : [-1.0,    0.5,       8.0],
-                                                    "gamma3_bin_2": [-8.0,    0.1,       8.0],
+                                                    "b2_bin_2"    : [-1.0,    0.5,       8.0], # Double-check
+                                                    "gamma3_bin_2": [-8.0,    0.1,       8.0], # Double-check
                                                     "a_vir_bin_2" : [0.0,     3.0,      12.0],}}
 
         priors = {"nofz_shifts"                  : {"p_1"         : ["gaussian",    0.0,       1.0],
@@ -622,88 +723,133 @@ def create_BOSS_data_file(mock_data, filename):
                                     mock_data["w3"], mock_data["w3_err"])).T,
                 comments="#   s/(Mpc/h)          xi_3w,1       sigma xi_3w,1         xi_3w,2        sigma xi_3w,2        xi_3w,3        sigma xi_3w,3")
 
+def stage_data_files(directory, *args):
+    staged_paths = []
+    for filename in args:
+        f = os.path.split(filename)[1]
+        new_f = shutil.copy(filename, os.path.join(directory, f))
+        staged_paths.append(new_f)
+    return staged_paths
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--root-dir", required=True)
     parser.add_argument("--run-type", required=True)
 
     parser.add_argument("--KiDS-data-file", required=True)
+    parser.add_argument("--dz-covariance-file", default=os.path.join(KCAP_PATH, "data/KV450/nofz/DIR_cov.asc"))
 
-    parser.add_argument("--mock-dir")
+    parser.add_argument("--BOSS-data-files", nargs="+", default=[os.path.join(BOSS_PATH,
+                                                                    "CosmoMC_BOSS/data/BOSS.DR12.lowz.3xiwedges_measurements.txt"),
+                                                                 os.path.join(BOSS_PATH,
+                                                                    "CosmoMC_BOSS/data/BOSS.DR12.highz.3xiwedges_measurements.txt")])
+    parser.add_argument("--BOSS-covariance-files", nargs="+", default=[os.path.join(BOSS_PATH,
+                                                                        "CosmoMC_BOSS/data/BOSS.DR12.lowz.3xiwedges_covmat.txt"), 
+                                                                       os.path.join(BOSS_PATH,
+                                                                        "CosmoMC_BOSS/data/BOSS.DR12.highz.3xiwedges_covmat.txt")])
+
+    parser.add_argument("--create-mocks", action="store_true")
     parser.add_argument("--noiseless-mocks", action="store_true")
 
-    parser.add_argument("--run-dir")
+    
     parser.add_argument("--run-name")
 
     parser.add_argument("--halofit-version", default="mead")
     parser.add_argument("--magnification-alpha", default="3.0")
 
+    parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
+    parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
+    parser.add_argument("--set-parameters", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set parameters in the values file.")
+
     parser.add_argument("--sampler", default="multinest")
+    parser.add_argument("--sampler-config", nargs=2, action="append", metavar=("PARAMETER", "VALUE"), help="Set keys in the sampler configuration.")
 
-    parser.add_argument("--nofz-files", action="store_true")
+    parser.add_argument("--use-nz-files", action="store_true", help="Use individually specified n(z) files instead those from the twopoint file.")
+    parser.add_argument("--source-nz-files", nargs="+", default=[os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.1t0.3.asc"),
+                                                                 os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.3t0.5.asc"),
+                                                                 os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.5t0.7.asc"),
+                                                                 os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.7t0.9.asc"),
+                                                                 os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.9t1.2.asc")])
+    parser.add_argument("--lens-nz-files", nargs="+", default=[os.path.join(KCAP_PATH, "data/BOSS/nofz/nOfZ_hist_BOSSA_tomo0.dat"),
+                                                               os.path.join(KCAP_PATH, "data/BOSS/nofz/nOfZ_hist_BOSSA_tomo1.dat")])
 
-    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="Don't throw errors when directories already exist.")
+    parser.add_argument("--verbose", action="store_true")
 
     args = parser.parse_args()
 
+
+    # Set up paths
+    root_dir = args.root_dir
+    # main directory for run (default: root_dir/run_name)
+    if args.run_name:
+        run_name = args.run_name
+        output_dir = os.path.join(root_dir, args.run_name)
+    else:
+        run_name = args.run_type
+        output_dir = root_dir
+
+    # directory for data files
+    data_dir = os.path.join(output_dir, "data")
+
+    KiDS_data_dir = os.path.join(data_dir, "KiDS")
+    BOSS_data_dir = os.path.join(data_dir, "BOSS")
+    
+    os.makedirs(KiDS_data_dir, exist_ok=args.overwrite)
+    os.makedirs(BOSS_data_dir, exist_ok=args.overwrite)
+
+    # Set up original file paths
+    KiDS_twopoint_data_file = args.KiDS_data_file
+    dz_covariance_file = args.dz_covariance_file
+
+    BOSS_data_files = args.BOSS_data_files
+    BOSS_cov_files = args.BOSS_covariance_files
+
     pipeline_name = args.run_type
-    create_mocks = args.mock_dir is not None
+    
+    create_mocks = args.create_mocks
     noisy_mocks = not args.noiseless_mocks
 
-    if create_mocks:
-        mock_dir = args.mock_dir
+
+    if not create_mocks:        
+        # Stage files to run data directory
+        KiDS_twopoint_data_file, dz_covariance_file = stage_data_files(KiDS_data_dir, KiDS_twopoint_data_file, dz_covariance_file)
+        BOSS_data_files = stage_data_files(BOSS_data_dir, *BOSS_data_files)
+        BOSS_cov_files = stage_data_files(BOSS_data_dir, *BOSS_cov_files)
+
+        KiDS_mock_output_file = ""
+        BOSS_mock_output_files = {}
     else:
-        run_dir = args.run_dir
-        run_name = args.run_name
-        mock_dir = os.path.join(run_dir, run_name, "data")
-        if not run_dir or not run_name:
-            parser.error("If not creating mocks, --run-dir and --run-name need to be specified.")
+        # Get the twopoint filename and strip the extension (.fits)
+        KiDS_twopoint_data_file_name = os.path.split(KiDS_twopoint_data_file)[1][:-5]
+        KiDS_twopoint_data_file_name += f"_mock_{'noisy' if noisy_mocks else 'noiseless'}"
 
-    #KiDS_twopoint_data_file = os.path.join(SCALE_CUT_PATH, "test_files/twoPoint_PneE+PeeE.fits")
-    KiDS_twopoint_data_file = args.KiDS_data_file
+        KiDS_mock_output_file = os.path.join(KiDS_data_dir, KiDS_twopoint_data_file_name)
+        BOSS_mock_output_files = {1 : os.path.join(BOSS_data_dir, f"BOSS_mock_{'noisy' if noisy_mocks else 'noiseless'}_bin_1.txt"),
+                                  2 : os.path.join(BOSS_data_dir, f"BOSS_mock_{'noisy' if noisy_mocks else 'noiseless'}_bin_2.txt")}
 
-    BOSS_data_files = [os.path.join(BOSS_PATH,
-                                    "CosmoMC_BOSS/data/BOSS.DR12.lowz.3xiwedges_measurements.txt"),
-                       os.path.join(BOSS_PATH,
-                                    "CosmoMC_BOSS/data/BOSS.DR12.highz.3xiwedges_measurements.txt")]
-    BOSS_cov_files = [os.path.join(BOSS_PATH,
-                                "CosmoMC_BOSS/data/BOSS.DR12.lowz.3xiwedges_covmat.txt"), 
-                      os.path.join(BOSS_PATH,
-                                "CosmoMC_BOSS/data/BOSS.DR12.highz.3xiwedges_covmat.txt")]
+    if args.use_nz_files:
+        source_nz_files = args.source_nz_files
+        lens_nz_files = args.lens_nz_files
 
-    KiDS_twopoint_data_file_name = os.path.split(KiDS_twopoint_data_file)[1]
-    if KiDS_twopoint_data_file_name[-5:].lower() != ".fits":
-        raise ValueError("--KiDS-data-file needs to be a FITS file.")
-    KiDS_twopoint_data_file_name = KiDS_twopoint_data_file_name[:-5]
-
-    KiDS_mock_output_file = os.path.join(mock_dir, KiDS_twopoint_data_file_name)
-    BOSS_mock_output_files = {1 : os.path.join(mock_dir, "BOSS_mock_bin_1.txt"),
-                              2 : os.path.join(mock_dir, "BOSS_mock_bin_2.txt")}
-
-    if not create_mocks:
-        BOSS_data_files = list(BOSS_mock_output_files.values())
-        #KiDS_twopoint_data_file = KiDS_mock_output_file + ".fits"
-
-    if args.nofz_files:
-        source_nz_files = [os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.1t0.3.asc"),
-                            os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.3t0.5.asc"),
-                            os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.5t0.7.asc"),
-                            os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.7t0.9.asc"),
-                            os.path.join(KCAP_PATH, "data/KV450/nofz/Nz_DIR_z0.9t1.2.asc")]
-
-        lens_nz_files = [os.path.join(KCAP_PATH, "data/BOSS/nofz/nOfZ_hist_BOSSA_tomo0.dat"),
-                        os.path.join(KCAP_PATH, "data/BOSS/nofz/nOfZ_hist_BOSSA_tomo1.dat")]
-
-        source_nz_sample = "KV450_5bin"
-        lens_nz_sample = "BOSS"
+        if not create_mocks:
+            source_nofz_dir = os.path.join(KiDS_data_dir, "nofz")
+            lens_nofz_dir = os.path.join(BOSS_data_dir, "nofz")
+            
+            os.makedirs(source_nofz_dir, exist_ok=args.overwrite)
+            os.makedirs(lens_nofz_dir, exist_ok=args.overwrite)
+            
+            source_nz_files = stage_data_files(source_nofz_dir, *source_nz_files)
+            lens_nz_files = stage_data_files(lens_nofz_dir, *lens_nz_files)
+        
+        source_nz_sample = "SOURCE"
+        lens_nz_sample = "LENS"
     else:
         source_nz_files = []
         lens_nz_files = []
         source_nz_sample = "SOURCE"
         lens_nz_sample = "LENS"
-
-    dz_covariance_file = os.path.join(KCAP_PATH, "data/KV450/nofz/DIR_cov.asc")
 
     BOSS_like_name = "xi_wedges_like"
     if create_mocks:
@@ -725,12 +871,22 @@ if __name__ == "__main__":
     bandpower_ell_min = 100.0
     bandpower_ell_max = 1500.0
     bandpower_n_bin = 8
-    bandpower_theta_min = 0.25
-    bandpower_theta_max = 397.0
-    bandpower_apodise = 0
+    bandpower_theta_min = 0.5
+    bandpower_theta_max = 300.0
+    bandpower_apodise = 1
     bandpower_Delta_x = 0.5
 
-    used_stats = ["PeeE", "PneE"]
+    used_stats = ["PneE", "PeeE"]
+    if create_mocks:
+        cut_bin_nE = []
+        ell_range_EE = [100, 1500]
+        ell_range_nE = [100, 1500]
+    else:
+        # For GGL, remove bins 1-1, 2-1, 2-2, 2-3 (lens-source)
+        cut_bin_nE = ["1+1", "2+1",  "2+2", "2+3"]
+        ell_range_EE = [100, 1500]
+        # For GGL, remove the last ell bin
+        ell_range_nE = [100, 1070]
 
     halofit_version = args.halofit_version
     magnification_alphas = [str(args.magnification_alpha)]*2
@@ -764,79 +920,110 @@ if __name__ == "__main__":
                         bandpower_apodise=bandpower_apodise,
                         bandpower_Delta_x=bandpower_Delta_x,
                         used_stats=used_stats,
+                        cut_bin_nE=cut_bin_nE,
+                        ell_range_EE=ell_range_EE,
+                        ell_range_nE=ell_range_nE,
                         halofit_version=halofit_version,
                         create_mocks=create_mocks,
                         noisy_mocks=noisy_mocks)
     
-    if args.nofz_files:
+    if args.use_nz_files:
         p.default_config_cuts["cut_modules"] += ["load_nz_fits"]
         p.default_config_cuts["cut_modules"].remove("load_source_nz")
         p.default_config_cuts["cut_modules"].remove("load_lens_nz")
 
-    if create_mocks:
-        os.makedirs(mock_dir, exist_ok=args.overwrite)
-        p.choose_pipeline(pipeline_name)
+    set_parameters = []
+    if args.set_parameters:
+        for sec, param, val in args.set_parameters:
+            val = [float(s) for s in val.split()]
+            if len(val) == 1:
+                set_parameters.append((sec, param, {"fiducial" : val[0]}))
+            elif len(val) == 3:
+                set_parameters.append((sec, param, {"min" : val[0], "fiducial" : val[1], "max" : val[2]}))
+            else:
+                raise ValueError(f"You tried to set parameters with --set-parameters but the passed value is neither a single float, nor a triplet: {val}")
+
+
+    if create_mocks:        
+        p.choose_pipeline(pipeline_name, sample=False, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
         block = p.run_pipeline()
+
+        if args.verbose:
+            for k, v in block.keys():
+                print(k, v)
+
         if "BOSS_like" in p.config:
             mock_BOSS = p.create_mock_BOSS(block, BOSS_like_name, num_ell, noisy_mocks)
             for b, data in mock_BOSS.items():
                 create_BOSS_data_file(data, BOSS_mock_output_files[b])
             for f in BOSS_cov_files:
-                shutil.copy(f, mock_dir)
+                shutil.copy(f, BOSS_data_dir)
 
         ini = configparser.ConfigParser()
         ini.read_dict(p.flatten_config(p.config))
         values_ini = configparser.ConfigParser()
         values_ini.read_dict(p.flatten_config(p.values))
 
-        with open(os.path.join(mock_dir, f"{KiDS_twopoint_data_file_name}.ini"), "w") as f:
+        with open(os.path.join(data_dir, f"pipeline.ini"), "w") as f:
             ini.write(f)
-        with open(os.path.join(mock_dir, f"{KiDS_twopoint_data_file_name}_values.ini"), "w") as f:
+        with open(os.path.join(data_dir, f"values.ini"), "w") as f:
             values_ini.write(f)
 
         # Write the command that was used to run the script to a file
-        with open(os.path.join(mock_dir, "command.sh"), "w") as f:
+        with open(os.path.join(data_dir, "command.sh"), "w") as f:
             f.write(" ".join(sys.argv))
 
-        create_git_status_file(os.path.join(mock_dir, "git_status.txt"))
+        create_git_status_file(os.path.join(data_dir, "git_status.txt"))
 
     else:
-        p.choose_pipeline(pipeline_name)
+        p.choose_pipeline(pipeline_name, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
 
-        config_dir = os.path.join(run_dir, run_name, "config")
-        output_dir = os.path.join(run_dir, run_name, "output")
-        log_dir = os.path.join(run_dir, run_name, "logs")
-        print(f"Creating run directory for {run_name}: {config_dir}")
+
+        config_dir = os.path.join(output_dir, "config")
+        chain_dir = os.path.join(output_dir, "chain")
+        log_dir = os.path.join(output_dir, "logs")
+
         os.makedirs(config_dir, exist_ok=args.overwrite)
-        os.makedirs(output_dir, exist_ok=args.overwrite)
+        os.makedirs(chain_dir, exist_ok=args.overwrite)
         os.makedirs(log_dir, exist_ok=args.overwrite)
 
-        config_file = os.path.join(config_dir, f"{run_name}.ini")
-        values_file = os.path.join(config_dir, f"{run_name}_values.ini")
-        priors_file = os.path.join(config_dir, f"{run_name}_priors.ini")
+        config_file = os.path.join(config_dir, f"pipeline.ini")
+        values_file = os.path.join(config_dir, f"values.ini")
+        priors_file = os.path.join(config_dir, f"priors.ini")
 
         derived_parameters=["cosmological_parameters/S_8",
                             "cosmological_parameters/sigma_8",
                             "cosmological_parameters/omega_m",
+                            "cosmological_parameters/omega_nu",
+                            "cosmological_parameters/omega_lambda",
                             "cosmological_parameters/cosmomc_theta",]
         if "correlated_dz_priors" in p.config:
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
 
-        p.set_sampling_config(#likelihoods=["BOSS_like"],
-                            derived_parameters=derived_parameters,
-                            parameter_file=values_file,
-                            prior_file=priors_file,
-                            verbose=True,
-                            debug=False,
-                            output_dir=output_dir,
-                            run_name=run_name,
-                            sampler_name=sampler,
-                            max_iterations="1000000",)
+        sampler_config = {"derived_parameters"  : derived_parameters,
+                          "parameter_file"      : values_file,
+                          "prior_file"          : priors_file,
+                          "verbose"             : True,
+                          "debug"               : False,
+                          "output_dir"          : chain_dir,
+                          "run_name"            : run_name,
+                          "sampler_name"        : sampler,
+                          "max_iterations"      : "1000000",}
+
+        if args.sampler_config:
+            sampler_config.update(**dict(args.sampler_config))
+
+        p.set_sampling_config(**sampler_config)
         if sampler == "multinest":
-            os.makedirs(os.path.join(output_dir, "multinest"), exist_ok=args.overwrite)
+            os.makedirs(os.path.join(chain_dir, "multinest"), exist_ok=args.overwrite)
     
         ini, values_ini, priors_ini = p.build_ini()
+
+        if args.verbose:
+            print(cosmosis_utils.config_to_string(ini))
+            print(cosmosis_utils.config_to_string(values_ini))
+            print(cosmosis_utils.config_to_string(priors_ini))
 
         with open(config_file, "w") as f:
             ini.write(f)
