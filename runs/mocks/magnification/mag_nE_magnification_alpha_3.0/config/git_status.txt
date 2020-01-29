@@ -1,0 +1,10 @@
+# Current version/revision of repository (git describe --always):
+ca1336903
+
+# Current revision of repository (git rev-parse HEAD):
+ca133690379ea5a8fc3912151555f8891360f865
+
+# Uncommited changes (git diff --stat):
+utils/run_kcap.py | 59 +++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 33 insertions(+), 26 deletions(-)
+

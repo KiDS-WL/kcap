@@ -116,29 +116,34 @@ class K1000Pipeline:
                                                "cut_keys"       : cosmic_shear_keys + ggl_keys,
                                                "set_parameters" : wedges_param_range,
                                                "fix_values"     : IA_values + baryon_values + nofz_values},
-                                              
+                            }
 
-                          # Old settings, will get removed soon:
-                          # 3x2pt w/ magnification
-                          "EE_nE_w_magnification_mocks" :   
-                                              {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "uncut_modules" : ["magnification_alphas", "add_magnification",],
-                                               "uncut_keys"    : [("projection", "magnification-shear")],
-                                               "sample"        : False,},
+        self.pipelines["nE_magnification"] = {**self.pipelines["nE"],
+                                              "uncut_modules"         : ["magnification_alphas",
+                                                                         "add_magnification"],
+                                              "uncut_keys"            : [("projection", "magnification-shear")]}    
 
-                          #Fast IA
-                          "EE_nE_fastIA_mocks" :     
-                                              {"cut_modules"   : ["add_intrinsic",
-                                                                  "correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like",],
-                                               "cut_keys"      : [("projection", "shear-shear"),
-                                                                  ("projection", "shear-intrinsic"), 
-                                                                  ("projection", "intrinsic-intrinsic")],
-                                               "set_keys"      : [("projection", "fast-shear-shear-ia", "SOURCE-SOURCE")],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "sample"        : False,},
-                         }
+                        #   # Old settings, will get removed soon:
+                        #   # 3x2pt w/ magnification
+                        #   "EE_nE_w_magnification_mocks" :   
+                        #                       {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
+                        #                        "cut_values"    : ["nofz_shifts"],
+                        #                        "uncut_modules" : ["magnification_alphas", "add_magnification",],
+                        #                        "uncut_keys"    : [("projection", "magnification-shear")],
+                        #                        "sample"        : False,},
+
+                        #   #Fast IA
+                        #   "EE_nE_fastIA_mocks" :     
+                        #                       {"cut_modules"   : ["add_intrinsic",
+                        #                                           "correlated_dz_priors", "source_photoz_bias",
+                        #                                           "wedges", "BOSS_like",],
+                        #                        "cut_keys"      : [("projection", "shear-shear"),
+                        #                                           ("projection", "shear-intrinsic"), 
+                        #                                           ("projection", "intrinsic-intrinsic")],
+                        #                        "set_keys"      : [("projection", "fast-shear-shear-ia", "SOURCE-SOURCE")],
+                        #                        "cut_values"    : ["nofz_shifts"],
+                        #                        "sample"        : False,},
+                        #  }
 
     @staticmethod
     def set_parameter_range(value, config):
@@ -171,7 +176,9 @@ class K1000Pipeline:
                 # Replace with fiducial values
                 values[section][k] = K1000Pipeline.set_parameter_range(v, {})
 
-    def choose_pipeline(self, name=None, pipeline=None, sample=True, set_parameters=None, fix_values=None, set_keys=None):
+    def choose_pipeline(self, name=None, pipeline=None, sample=True, 
+                        set_parameters=None, fix_values=None, set_keys=None,
+                        uncut_modules=None, uncut_keys=None):
         if name is not None:
             pipeline = self.pipelines[name]
 
@@ -180,14 +187,14 @@ class K1000Pipeline:
         priors = {**self.full_priors}
 
         # Remove/re-add modules to the pipeline. 
-        uncut_modules = pipeline.get("uncut_modules", [])
+        uncut_modules = pipeline.get("uncut_modules", []) + (uncut_modules or [])
         cut_modules = pipeline.get("cut_modules", []) + self.default_config_cuts["cut_modules"]
         for mod in cut_modules:
             if mod not in uncut_modules and mod in config:
                 del config[mod]
 
         # Remove/re-add keys from/to modules in the pipeline. 
-        uncut_keys = pipeline.get("uncut_keys", [])
+        uncut_keys = pipeline.get("uncut_keys", []) + (uncut_keys or [])
         cut_keys = pipeline.get("cut_keys", []) + self.default_config_cuts["cut_keys"]
         for mod, key in cut_keys:
             if (mod, key) not in uncut_keys and mod in config and key in config[mod]:
