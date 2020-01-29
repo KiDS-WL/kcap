@@ -68,6 +68,7 @@ class K1000Pipeline:
 
         IA_values = [("intrinsic_alignment_parameters", "A")]
         baryon_values = [("halo_model_parameters", "A")]
+        RSD_values = [("bias_parameters", "a_vir_bin_1"), ("bias_parameters", "a_vir_bin_2")]
 
         nofz_modules = ["correlated_dz_priors", "source_photoz_bias",]
         nofz_values = [("nofz_shifts",)]
@@ -88,7 +89,8 @@ class K1000Pipeline:
                                                "cut_keys"       : [],
                                                "set_parameters" : wedges_param_range},
 
-                          "EE_nE" :           {"cut_modules"    : wedges_modules,},
+                          "EE_nE" :           {"cut_modules"    : wedges_modules,
+                                               "fix_values"     : RSD_values,},
  
                           "EE_w" :            {"cut_modules"    : ggl_modules,
                                                "cut_keys"       : ggl_keys,
@@ -109,7 +111,7 @@ class K1000Pipeline:
                           "nE" :              {"cut_modules"    : wedges_modules + cosmic_shear_modules,
                                                "cut_keys"       : cosmic_shear_keys,
                                                "set_keys"       : ggl_stats,
-                                               "fix_values"     : IA_values,},
+                                               "fix_values"     : IA_values + RSD_values,},
 
                           "w" :               {"cut_modules"    : cosmic_shear_modules + ggl_modules \
                                                                   + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "projection", "scale_cuts", "2x2pt_like"],
@@ -423,7 +425,7 @@ class K1000Pipeline:
 
                     "magnification_alphas":{"file" : os.path.join(KCAP_PATH, 
                                                         "utils/magnification_alphas.py"),
-                                            "alphas" : " ".join(magnification_alphas)},
+                                            "alpha_binned" : " ".join(magnification_alphas)},
 
                     "projection" :         {"file" : os.path.join(CSL_PATH, 
                                                         "structure/projection/project_2d.py"),
