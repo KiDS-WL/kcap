@@ -25,8 +25,8 @@ if __name__ == "__main__":
 #SBATCH --requeue                           # Allow requeing
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=ttr@roe.ac.uk
-#SBATCH -o {outputdir}/logs/log_{args.run_name}.out
-#SBATCH -e {outputdir}/logs/log_{args.run_name}.err
+#SBATCH -o runs/logs/log_{args.run_name}.out
+#SBATCH -e runs/logs/log_{args.run_name}.err
 #SBATCH --partition={args.partition}
 module load intel
 module load openmpi/4.0.0/intel
@@ -38,7 +38,7 @@ mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py -
     """
     print(template)
 
-    with open(os.path.join(outputdir, "logs", "slurm_script_command.sh"), "w") as f:
+    with open(os.path.join(outputdir, "config", "slurm_script_command.sh"), "w") as f:
         f.write(" ".join(sys.argv))
-    with open(os.path.join(outputdir, "logs", "sbatch_command.sh"), "w") as f:
+    with open(os.path.join(outputdir, "config", "sbatch_command.sh"), "w") as f:
         f.write(template)
