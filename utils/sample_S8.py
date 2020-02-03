@@ -6,8 +6,8 @@ cosmo = section_names.cosmological_parameters
 
 def setup(options):
     alpha = options.get_double(option_section, "alpha", default=0.5)
-    S8_input_name = options.get_double(option_section, "S8_name", default="S_8_input")
-    sigma8_output_name = options.get_double(option_section, "sigma8_name", default="sigma_8_input")
+    S8_input_name = options.get_string(option_section, "S8_name", default="S_8_input")
+    sigma8_output_name = options.get_string(option_section, "sigma8_name", default="sigma_8_input")
     return alpha, S8_input_name, sigma8_output_name
 
 
@@ -15,7 +15,7 @@ def execute(block, config):
     alpha, S8_input_name, sigma8_output_name = config
     # Get parameters from sampler and CAMB output
     S8_input = block[cosmo, S8_input_name]
-    if block.has_key(cosmo, "omega_m"):
+    if (cosmo, "omega_m") in block:
         # Use Omega_m if available
         Omega_m = block[cosmo, "omega_m"]
     else:

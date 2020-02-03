@@ -4,10 +4,10 @@ import camb
 import numpy as np
 
 def setup(options):
-    sigma8_name = options.get(option_section, "sigma8_name", default="sigma_8_input")
-    kmax = options.get(option_section, "kmax", default=1.2)
-    k_per_logint = options.get(option_section, "k_per_logint", default=5)
-    return kmax, k_per_logint
+    sigma8_name = options.get_string(option_section, "sigma8_name", default="sigma_8_input")
+    kmax = options.get_double(option_section, "kmax", default=1.2)
+    k_per_logint = options.get_int(option_section, "k_per_logint", default=5)
+    return sigma8_name, kmax, k_per_logint
 
 def execute(block, config):
     sigma8_name, kmax, k_per_logint = config
@@ -17,10 +17,10 @@ def execute(block, config):
     ombh2 = block[names.cosmological_parameters, "ombh2"]
     omch2 = block[names.cosmological_parameters, "omch2"]
     omk = block[names.cosmological_parameters, "omega_k"]
-    mnu = block.get(names.cosmological_parameters, "mnu", default=0.06)
+    mnu = block.get_double(names.cosmological_parameters, "mnu", default=0.06)
 
-    w = block.get(names.cosmological_parameters, "w", default=-1.0)
-    wa = block.get(names.cosmological_parameters, "wa", default=0.0)
+    w = block.get_double(names.cosmological_parameters, "w", default=-1.0)
+    wa = block.get_double(names.cosmological_parameters, "wa", default=0.0)
 
     ns = block[names.cosmological_parameters, "n_s"]
     sigma8 = block[names.cosmological_parameters, sigma8_name]
