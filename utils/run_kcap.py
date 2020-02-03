@@ -75,7 +75,8 @@ class K1000Pipeline:
 
         bias_values = [("bias_parameters",)]
 
-        self.default_config_cuts =            {"cut_modules"   : ["load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
+        self.default_config_cuts =            {"cut_modules"   : ["sample_S8", "sigma8toAs",
+                                                                  "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
                                                                   "magnification_alphas",
                                                                   "add_magnification",
@@ -324,6 +325,12 @@ class K1000Pipeline:
         
         config = {  "sample_ln_As"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sample_ln_As.py"),},
+                                                
+                    "sample_S8"       : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_S8.py"),},
+
+                    "sigma8toAs"       : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sigma8toAs.py"),},
 
                     "correlated_dz_priors":{"file" : os.path.join(KCAP_PATH,
                                                             "utils/correlated_priors.py"),
