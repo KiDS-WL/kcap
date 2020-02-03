@@ -173,7 +173,9 @@ class K1000Pipeline:
                 # Replace with fiducial values
                 values[section][k] = K1000Pipeline.set_parameter_range(v, {})
 
-    def choose_pipeline(self, name=None, pipeline=None, sample=True, set_parameters=None, fix_values=None, set_keys=None):
+    def choose_pipeline(self, name=None, pipeline=None, sample=True, 
+                        set_parameters=None, fix_values=None, set_keys=None,
+                        cut_modules=None, uncut_modules=None):
         if name is not None:
             pipeline = self.pipelines[name]
 
@@ -182,8 +184,8 @@ class K1000Pipeline:
         priors = {**self.full_priors}
 
         # Remove/re-add modules to the pipeline. 
-        uncut_modules = pipeline.get("uncut_modules", [])
-        cut_modules = pipeline.get("cut_modules", []) + self.default_config_cuts["cut_modules"]
+        uncut_modules = pipeline.get("uncut_modules", []) + (uncut_modules or [])
+        cut_modules = pipeline.get("cut_modules", []) + (cut_modules or []) + self.default_config_cuts["cut_modules"]
         for mod in cut_modules:
             if mod not in uncut_modules and mod in config:
                 del config[mod]
@@ -203,7 +205,7 @@ class K1000Pipeline:
         # Set parameters/parameter ranges
         set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
         for section, parameter, vals in set_range:
-            values[section][parameter] = self.set_parameter_range(values[section][parameter], vals)
+            values[section][parameter] = self.set_parameter_range(values[section].get(parameter, 0), vals)
 
         # Fix parameters to their ficucial values to prevent sampling over them.
         fix_values = pipeline.get("fix_values", []) + (fix_values or [])
@@ -620,6 +622,7 @@ class K1000Pipeline:
 
         samplers = {"multinest" :  {"max_iterations"    : max_iterations,
                                     "multinest_outfile_root" : os.path.join(output_dir, "multinest", f"multinest_{run_name}_"),
+                                    "update_interval"   : 20,
                                     "resume"            : "T" if resume else "F",
                                     "live_points"       : live_points,
                                     "efficiency"        : multinest_efficiency,
@@ -763,6 +766,9 @@ if __name__ == "__main__":
     parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
     parser.add_argument("--set-parameters", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set parameters in the values file.")
+
+    parser.add_argument("--cut-modules", nargs=1, action="append", metavar="MODULE", help="Remove a module from the pipeline.")
+    parser.add_argument("--enable-modules", nargs=1, action="append", metavar="MODULE", help="Enable a module in the pipeline.")
 
     parser.add_argument("--sampler", default="multinest")
     parser.add_argument("--sampler-config", nargs=2, action="append", metavar=("PARAMETER", "VALUE"), help="Set keys in the sampler configuration.")
@@ -944,10 +950,16 @@ if __name__ == "__main__":
                 set_parameters.append((sec, param, {"min" : val[0], "fiducial" : val[1], "max" : val[2]}))
             else:
                 raise ValueError(f"You tried to set parameters with --set-parameters but the passed value is neither a single float, nor a triplet: {val}")
+    
+    set_keys = args.set_keys
+    fix_values = args.fix_values
+    cut_modules = [m[0] for m in args.cut_modules] if args.cut_modules else None
+    uncut_modules = [m[0] for m in args.enable_modules] if args.enable_modules else None
 
-
-    if create_mocks:        
-        p.choose_pipeline(pipeline_name, sample=False, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
+    if create_mocks:
+        p.choose_pipeline(pipeline_name, sample=False, 
+                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          cut_modules=cut_modules, uncut_modules=uncut_modules)
         block = p.run_pipeline()
 
         if args.verbose:
@@ -978,7 +990,9 @@ if __name__ == "__main__":
         create_git_status_file(os.path.join(data_dir, "git_status.txt"))
 
     else:
-        p.choose_pipeline(pipeline_name, set_parameters=set_parameters, fix_values=args.fix_values, set_keys=args.set_keys)
+        p.choose_pipeline(pipeline_name, 
+                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          cut_modules=cut_modules, uncut_modules=uncut_modules)
 
 
         config_dir = os.path.join(output_dir, "config")
@@ -995,6 +1009,7 @@ if __name__ == "__main__":
 
         derived_parameters=["cosmological_parameters/S_8",
                             "cosmological_parameters/sigma_8",
+                            "cosmological_parameters/A_s",
                             "cosmological_parameters/omega_m",
                             "cosmological_parameters/omega_nu",
                             "cosmological_parameters/omega_lambda",
