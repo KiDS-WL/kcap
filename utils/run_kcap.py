@@ -75,7 +75,8 @@ class K1000Pipeline:
 
         bias_values = [("bias_parameters",)]
 
-        self.default_config_cuts =            {"cut_modules"   : ["sample_S8", "sigma8toAs",
+        self.default_config_cuts =            {"cut_modules"   : ["sample_S8", "sample_S8_squared", "sigma8toAs",
+                                                                  "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
                                                                   "magnification_alphas",
@@ -206,7 +207,10 @@ class K1000Pipeline:
         # Set parameters/parameter ranges
         set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
         for section, parameter, vals in set_range:
-            values[section][parameter] = self.set_parameter_range(values[section].get(parameter, 0), vals)
+            if not vals:
+                del values[section][parameter]
+            else:
+                values[section][parameter] = self.set_parameter_range(values[section].get(parameter, 0), vals)
 
         # Fix parameters to their ficucial values to prevent sampling over them.
         fix_values = pipeline.get("fix_values", []) + (fix_values or [])
@@ -328,6 +332,22 @@ class K1000Pipeline:
                                                 
                     "sample_S8"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sample_S8.py"),},
+                    "sample_S8_squared" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_S8.py"),
+                                           "S8_squared" : "T",
+                                           "S8_name"    : "S_8_2_input"},
+
+                    "sample_bsigma8S8_bin_1" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_bsigma8S8.py"),
+                                           "bsigma8S8_name" : "bsigma8S8_bin_1_input",
+                                           "b_name"         : "b1_bin_1"},
+
+                    "sample_bsigma8S8_bin_2" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_bsigma8S8.py"),
+                                           "bsigma8S8_name" : "bsigma8S8_bin_2_input",
+                                           "b_name"         : "b1_bin_2"},
+
+                    
 
                     "sigma8toAs"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sigma8toAs.py"),},
@@ -950,6 +970,10 @@ if __name__ == "__main__":
     set_parameters = []
     if args.set_parameters:
         for sec, param, val in args.set_parameters:
+            if val.lower() == "none":
+                # Remove parameter
+                set_parameters.append((sec, param, None))
+                continue
             val = [float(s) for s in val.split()]
             if len(val) == 1:
                 set_parameters.append((sec, param, {"fiducial" : val[0]}))
@@ -1024,6 +1048,11 @@ if __name__ == "__main__":
         if "correlated_dz_priors" in p.config:
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
+        
+        if "sample_bsigma8S8_bin_1" in p.config:
+            derived_parameters += ["bias_parameters/b1_bin_1"]
+        if "sample_bsigma8S8_bin_2" in p.config:
+            derived_parameters += ["bias_parameters/b1_bin_2"]
 
         sampler_config = {"derived_parameters"  : derived_parameters,
                           "parameter_file"      : values_file,

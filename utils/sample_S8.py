@@ -1,3 +1,5 @@
+import numpy as np
+
 from cosmosis.datablock import names as section_names
 from cosmosis.datablock import option_section
 
@@ -6,15 +8,18 @@ cosmo = section_names.cosmological_parameters
 
 def setup(options):
     alpha = options.get_double(option_section, "alpha", default=0.5)
+    S8_squared = options.get_bool(option_section, "S8_squared", default=False)
     S8_input_name = options.get_string(option_section, "S8_name", default="S_8_input")
     sigma8_output_name = options.get_string(option_section, "sigma8_name", default="sigma_8_input")
-    return alpha, S8_input_name, sigma8_output_name
+    return alpha, S8_squared, S8_input_name, sigma8_output_name
 
 
 def execute(block, config):
-    alpha, S8_input_name, sigma8_output_name = config
+    alpha, S8_squared, S8_input_name, sigma8_output_name = config
     # Get parameters from sampler and CAMB output
     S8_input = block[cosmo, S8_input_name]
+    if S8_squared:
+        S8_input = np.sqrt(S8_input)
     if (cosmo, "omega_m") in block:
         # Use Omega_m if available
         Omega_m = block[cosmo, "omega_m"]
