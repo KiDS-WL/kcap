@@ -33,7 +33,8 @@ if __name__ == "__main__":
                "--dz-covariance-file", dz_cov_file,
                "--BOSS-data-files", *boss_data_files,
                "--BOSS-covariance-files", *boss_cov_files,
-               "--sampler", "maxlike"]
+               "--sampler", "maxlike",
+               "--sampler-config", "maxlike_tolerance", "0.01"]
         subprocess.run(["python", script] + cmd, check=True)
 
     # Multinest and test sampler runs
@@ -60,6 +61,20 @@ if __name__ == "__main__":
             "--BOSS-covariance-files", *boss_cov_files,
             "--sampler", "multinest",
             *multinest_settings]
+    subprocess.run(["python", script] + cmd, check=True)
+
+    # MAP sampler
+    output_root_dir = "runs/methodology/chains/MAP_noiseless"
+    run_name_root = "MAP"
+    run_name = f"{run_name_root}_{run_type}" 
+    cmd = ["--root-dir", output_root_dir,
+            "--run-name", run_name,
+            "--run-type", run_type,
+            "--KiDS-data-file", twopoint_file,
+            "--dz-covariance-file", dz_cov_file,
+            "--BOSS-data-files", *boss_data_files,
+            "--BOSS-covariance-files", *boss_cov_files,
+            "--sampler", "maxlike"]
     subprocess.run(["python", script] + cmd, check=True)
 
     # Test sampler
