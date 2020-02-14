@@ -75,7 +75,7 @@ class K1000Pipeline:
 
         bias_values = [("bias_parameters",)]
 
-        self.default_config_cuts =            {"cut_modules"   : ["sample_S8", "sample_S8_squared", "sigma8toAs",
+        self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
@@ -340,7 +340,8 @@ class K1000Pipeline:
                                                             "utils/sample_ln_As.py"),},
                                                 
                     "sample_S8"       : {"file" : os.path.join(KCAP_PATH,
-                                                            "utils/sample_S8.py"),},
+                                                            "utils/sample_S8.py"),
+                                         "S8_name"    : "S_8_input"},
                     "sample_S8_squared" : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sample_S8.py"),
                                            "S8_squared" : "T",
@@ -691,7 +692,8 @@ class K1000Pipeline:
                                                     "ombh2"       : [ 0.019,  0.0225,    0.026],
                                                     "h0"          : [ 0.64,   0.7,       0.82],
                                                     "n_s"         : [ 0.84,   0.97,      1.1],
-                                                    "ln_1e10_A_s" : [ 1.5,    2.72,      4.0],
+                                                    "S_8_input"   : [ 0.1,    0.7458,    1.3],
+                                                    #"ln_1e10_A_s" : [ 1.5,    2.72,      4.0],
                                                     "omega_k"     :           0.0,
                                                     "w"           :          -1.0,
                                                     "mnu"         :           0.06,             #normal hierarchy
@@ -712,7 +714,7 @@ class K1000Pipeline:
                                                     "a_vir_bin_1" : [0.0,     3.8,      12.0],
 
                                                     "b1_bin_2"    : [0.5,     2.3,       9.0],
-                                                    "b2_bin_2"    : [-1.0,    0.5,       8.0], # Double-check
+                                                    "b2_bin_2"    : [-4.0,    0.5,       8.0], # Double-check
                                                     "gamma3_bin_2": [-8.0,    0.1,       8.0], # Double-check
                                                     "a_vir_bin_2" : [0.0,     3.0,      12.0],}}
 
