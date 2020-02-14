@@ -4,9 +4,9 @@ import os
 if __name__ == "__main__":
 
     script = "utils/run_kcap.py"
-        
-    # Need to change?
-    dz_cov_file = "data/KV450/nofz/DIR_cov.asc"
+
+    # Updated to the SOM covariance
+    dz_cov_file = "data/KV450/nofz/SOM_cov.asc"
 
     # Case for 3x2pt. For the full setup we'd want to loop over the run_type
     run_type  = "EE_nE_w"
