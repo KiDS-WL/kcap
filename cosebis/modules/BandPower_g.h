@@ -19,10 +19,12 @@ public:
 	BandPower_g();
 	BandPower_g(number thetamin,number thetamax, string Response_type,
 		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH
+		,bool Analytic=false
 		,string FolderName="./BandPower/"
 		,string FileName="g");
 	void initialize(number thetamin,number thetamax, string Response_type,
 		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH
+		,bool Analytic=false
 		,string FolderName="./BandPower/"
 		,string FileName="g");
 	~BandPower_g();

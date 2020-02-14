@@ -112,6 +112,7 @@ public:
 	void setInput(vector<number> log_ell,vector<vector<number> > InputPower);
 	//sets the input power spectrum for a single bin
 	void setInput_single(vector<number> log_ell,vector<number> InputPower);
+	void setInput_single_withExtrapolation(vector<number> log_ell,vector<number> InputPower);
 	//this is the case where either there are no redshift bins or the input is given as one bin pair
 	//void setInput(vector<number> log_ell,vector<number> InputPower);
 	//returns the input power for the redshift bin and ell given as inputs

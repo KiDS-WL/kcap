@@ -59,12 +59,11 @@ void BandPower_W::initialize(number thetamin,number thetamax, string Response_fu
 	setBandPower_WName(FolderName,gFileName,WFileName);
 	set_bessel_order(bessel_order);
 	setTheta(thetamin,thetamax,Delta_x);
-	gSet=false;
+	//gSet=false;
 	set_noApodise(noApodise);
 	Set_Response_function(Response_function_type,l_min_vec,l_max_vec);
-	setAnalytic(Analytic);
 	if(!noApodise)
-		set_g();
+	 	set_g(Analytic);
 }
 
 
@@ -100,10 +99,8 @@ void BandPower_W::set_bessel_order(int bessel_order1)
 
 void BandPower_W::setTheta(number thetamin1,number thetamax1,number Delta_x1)
 {
-	//clog<<"setting thetamin,thetamax"<<endl;
 	thetamin=thetamin1;
 	thetamax=thetamax1;
-	//clog<<"thetamin="<<thetamin<<" thetamax="<<thetamax<<endl;
 	Delta_x=Delta_x1;
 }
 
@@ -136,23 +133,17 @@ void BandPower_W::set_l_min_max(number l_min1,number l_max1)
 }
 
 
-void BandPower_W::set_g()
+void BandPower_W::set_g(bool Analytic)
 {
-	if(!gSet)
-	{
-		//clog<<"g not set setting now:"<<endl;
-		g.initialize(thetamin,thetamax, Response_function_type,l_min_vec,l_max_vec,LLOW,LHIGH,FolderName,gFileName);
-		gSet=true;
-	}
-}
 
-void BandPower_W::setAnalytic(bool Analytic)
-{
-	if(!gSet)
-	{
-		set_g();
-	}
-	g.setAnalytic(Analytic);
+	clog<<"in set_g Delta_x is:"<<Delta_x<<endl;
+	number thetamin_g=exp(log(thetamin)-Delta_x/2.0);
+	number thetamax_g=exp(log(thetamax)+Delta_x/2.0);
+	clog<<"thetamin_g="<<thetamin_g<<endl;
+	clog<<"thetamax_g="<<thetamax_g<<endl;
+
+	g.initialize(thetamin_g,thetamax_g, Response_function_type,l_min_vec,l_max_vec,LLOW,LHIGH,Analytic,FolderName,gFileName);
+
 }
 
 //down to here in initialize
@@ -220,6 +211,7 @@ number BandPower_W::integrant(number theta)
 	{
 		// this is a general solution when apodisation is set
 		integ=theta*Apodise(theta)*gsl_sf_bessel_Jn(bessel_order,ell*theta)*g.value(theta);
+		//integ=theta*Apodise(theta)*gsl_sf_bessel_Jn(bessel_order,ell*theta)*Theta_g_tophat(theta);
 	}
 	return integ;
 }
@@ -228,6 +220,7 @@ number BandPower_W::integrant(number theta)
 void BandPower_W::print_integrant(bool noApodise1,int bessel_order1, number ell1, int bin_index1)
 {
 	noApodise=noApodise1;
+	set_g(Analytic);
 	string ap_str;
 
 	if(noApodise)
@@ -239,12 +232,12 @@ void BandPower_W::print_integrant(bool noApodise1,int bessel_order1, number ell1
 	}
 
 	ell=ell1;
-	int nInteg=10000;
+	int nInteg=1000;
 	bin_index=bin_index1;
 	matrix integrant_mat(2,nInteg);
 	g.set(bin_index,bessel_order);
 
-	clog<<"thetamin="<<thetamin<<"thetamax="<<thetamax<<endl;
+	clog<<"in integrant: thetamin="<<thetamin<<" thetamax="<<thetamax<<endl;
 
 	if(noApodise)
 	{
@@ -259,7 +252,7 @@ void BandPower_W::print_integrant(bool noApodise1,int bessel_order1, number ell1
 	{
 		for(int i=0; i<nInteg; i++)
 		{
-			number theta=exp(log(thetamin)+log(thetamax/thetamin)/(nInteg-1.)*i);
+			number theta=exp(log(0.1*arcmin)+log(400.0/0.1)/(nInteg-1.)*i);
 			integrant_mat.load(0,i,theta/arcmin);
 			integrant_mat.load(1,i,integrant(theta));
 		}
@@ -348,23 +341,24 @@ int BandPower_W::show_bin_index()
 
 void BandPower_W::determine_integration_limits()
 {
-	const int Nbins = 10000;
+	const int Nbins = 100000;
 	integ_limits.clear();
-	// make table of integrant values (Wn's only) on a very fine grid
+	// make table of integrant values on a very fine grid
 	matrix table(2,Nbins);
-	// number tmin=thetamin+exp(Delta_x);
-	// number tmax=thetamax-exp(Delta_x);
-	//clog<<"/////////////////////////////////////////////////////////////////"<<endl;
-	//clog<<"tmin="<<tmin/arcmin<<endl;
-	//clog<<"tmax="<<tmax/arcmin<<endl;
-	//clog<<"/////////////////////////////////////////////////////////////////"<<endl;
+	number tmin=exp(log(thetamin)-Delta_x/2.);
+	number tmax=exp(log(thetamax)+Delta_x/2.);
+	// clog<<"/////////////////////////////////////////////////////////////////"<<endl;
+	// clog<<"tmin="<<tmin/arcmin<<endl;
+	// clog<<"tmax="<<tmax/arcmin<<endl;
+	// clog<<"/////////////////////////////////////////////////////////////////"<<endl;
 	//exit(1);
 	for(int i=0;i<Nbins;i++)
 	{
-		table.load(0,i,exp(log(thetamin)+log(thetamax/thetamin)/(Nbins-1.)*i));
+		table.load(0,i,exp(log(tmin)+log(tmax/tmin)/(Nbins-1.)*i));
 		table.load(1,i,gsl_sf_bessel_Jn(bessel_order,ell*table.get(0,i))*g.value(table.get(0,i)));
 	}
-	integ_limits.push_back(thetamin);
+
+	integ_limits.push_back(tmin);
 	//integ_limits.push_back(tmin);
 	for(int i=1;i<Nbins-1;i++)
 	{
@@ -375,13 +369,13 @@ void BandPower_W::determine_integration_limits()
 		}
 	}
 	//integ_limits.push_back(tmax);
-	integ_limits.push_back(thetamax);
+	integ_limits.push_back(tmax);
 }
 
 
 void BandPower_W::determine_integration_limits_W_noAp()
 {
-	const int Nbins = 1000;
+	const int Nbins = 100000;
 	integ_limits.clear();
 	vector<number> integ_y;
 	// make table of integrant values (Wn's only) on a very fine grid
@@ -451,20 +445,60 @@ number BandPower_W::Apodise(number theta)
 	number u2_bound=x_u+Delta_x/2.;
 	number result=0.;
 	//clog<<"x="<<x<<" l1_bound="<<l1_bound<<" l2_bound="<<l2_bound<<" u1_bound="<<u1_bound<<" u2_bound="<<u2_bound<<endl;
-	if((l1_bound<=x) && (x<l2_bound))
+	//exit(1);
+	if( (l1_bound<=x) && (x<l2_bound) )
 	{
 		//clog<<"in apodise: x_l="<<x_l<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*((x-(x_l+Delta_x/2.))/Delta_x)),2);
+		result= pow( cos( pi/2. * ( ( x-(x_l+Delta_x/2.) )/Delta_x) ) ,2);
 	}
 	else if((l2_bound<=x) && (x<u1_bound))
 		result= 1.;
 	else if( (u1_bound<=x ) && (x<u2_bound) )
 	{
 		//clog<<"in apodise: x_u="<<x_u<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*((x-(x_u-Delta_x/2.))/Delta_x)),2);
+		result= pow( cos( pi/2. * ( ( x- (x_u-Delta_x/2.) )/Delta_x ) ) ,2);
 	}
 	else
 		result= 0.;
 
 	return result;
+}
+
+
+//if analytic then uses this one
+number BandPower_W::Theta_g_tophat(number theta)
+{
+	if(bessel_order==0)
+	{
+		number ell_theta_u=l_max_vec[bin_index]*theta;
+		number ell_theta_l=l_min_vec[bin_index]*theta;
+		number result= 1./theta*(
+			 l_max_vec[bin_index]*gsl_sf_bessel_Jn(1,ell_theta_u)
+			-l_min_vec[bin_index]*gsl_sf_bessel_Jn(1,ell_theta_l));
+		return result;
+	}
+	else if(bessel_order==2)
+	{
+		number ell_theta_u=l_max_vec[bin_index]*theta;
+		number ell_theta_l=l_min_vec[bin_index]*theta;
+		number result=-1./theta/theta*(
+			 ell_theta_u*gsl_sf_bessel_Jn(1,ell_theta_u)
+			-ell_theta_l*gsl_sf_bessel_Jn(1,ell_theta_l)
+			+2.*gsl_sf_bessel_Jn(0,ell_theta_u)
+			-2.*gsl_sf_bessel_Jn(0,ell_theta_l));
+		return result;
+	}
+	else if(bessel_order==4)
+	{
+		number ell_theta_u=l_max_vec[bin_index]*theta;
+		number ell_theta_l=l_min_vec[bin_index]*theta;
+		number G_m_ell_theta_u=((ell_theta_u-8./ell_theta_u)*gsl_sf_bessel_Jn(1,ell_theta_u))-8.*gsl_sf_bessel_Jn(2,ell_theta_u);
+		number G_m_ell_theta_l=((ell_theta_l-8./ell_theta_l)*gsl_sf_bessel_Jn(1,ell_theta_l))-8.*gsl_sf_bessel_Jn(2,ell_theta_l);
+		number result= 1./theta/theta*(G_m_ell_theta_u-G_m_ell_theta_l);
+		return result;
+	}
+	else
+	{
+		return 0;
+	}
 }

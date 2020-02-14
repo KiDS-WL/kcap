@@ -64,6 +64,7 @@ public:
 	///calculates power for a given redshift bin combination 
 	void setPower(vector<number> log_ell_vec,vector<vector<number> > InputPower);
 	void setPower_single(vector<number> log_x, vector<number> Input);
+	void setPower_single_withExtrapolation(vector<number> log_x, vector<number> Input);
 	///Return power
 	number ReturnPower(number ell,int rPair);
 	///sets 2PCFs from input KsiP and KsiM. Makes tables of them for interpolation. NOTE: the Ksi+- here need to

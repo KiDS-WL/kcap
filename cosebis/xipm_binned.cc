@@ -42,6 +42,7 @@ extern "C" {
 		number theta_max; //maximum theta for xi, in arcmin
 
 		int nTheta; // number of theta bins for xi (assumes log binning)
+		string x_name; //by default this is theta, but if you want to do some other binning change it 
 
 		//read the bin centers from file, no bining done for the theory in this case
 		matrix theta_mat; //theta values for xi_plus in arcmin
@@ -133,6 +134,18 @@ extern "C" {
 			}
 		}
 
+		status=options->get_val<string>(sectionName, string("x_name"), config->x_name);
+		if(status)
+		{
+			clog<<"x_name is not given, going to set to default: theta"<<endl;
+			config->x_name="theta";
+		}
+		else
+		{
+			clog<<"got the values of x_name:"<<config->x_name<<endl;
+		}
+
+
 		status=options->get_val<string>(sectionName, string("output_section_name"), config->output_section_name);
 
 		if(status)
@@ -142,7 +155,7 @@ extern "C" {
 		}
 		else
 		{
-			clog<<"git the value of output_section_name: "<<config->output_section_name<<endl;
+			clog<<"got the value of output_section_name: "<<config->output_section_name<<endl;
 		}
 
 		status=options->get_val<string>(sectionName, string("input_section_name"), config->input_section_name);
@@ -165,7 +178,7 @@ extern "C" {
 		}
 		else
 		{
-			clog<<"got the values of config->input_section_name:"<<config->input_section_name<<endl;
+			clog<<"got the values of input_section_name:"<<config->input_section_name<<endl;
 		}
 
 
@@ -563,9 +576,9 @@ extern "C" {
 		DATABLOCK_STATUS status = (DATABLOCK_STATUS)0;
 		const DATABLOCK_STATUS failure = (DATABLOCK_STATUS)1;
 
-		clog<<endl<<endl;
-		clog<<"*********in xipm_binned interface execute*********"<<endl;
-		clog<<endl;
+		// clog<<endl<<endl;
+		// clog<<"*********in xipm_binned interface execute*********"<<endl;
+		// clog<<endl;
 
 		//shear_xi_plus or shear_xi_minus are the the default names of the input section name. 
 		//This is another cosmosis library that calculates the theory value of 2pcfs
@@ -595,14 +608,15 @@ extern "C" {
 
 		//read theta values from shear_xi sections
 		vector<number> theta_in;
-		status = block->get_val(config->input_section_name, string("theta"), theta_in);
+		//clog<<"reading the x values"<<endl;
+		status = block->get_val(config->input_section_name, config->x_name, theta_in);
 		if (status) 
 		{
 			clog<<"Could not load theta_in to xipm likelihood"<<endl;
 			return status;
 		}
 		int nTheta_in=theta_in.size();
-
+		//clog<<"read the x values"<<endl;
 		// make vectors for logtheta used for interpolation
 		vector<number> logtheta(nTheta_in);
 		// change units from radians to arcmin
@@ -675,7 +689,7 @@ extern "C" {
 				// read in input xi
 				vector<number> xi;
 				string name_in=string("bin_")+toString(i_bin)+string("_")+toString(j_bin);
-				string theta_name_in=string("theta_")+name_in;
+				string theta_name_in=config->x_name+string("_")+name_in;
 				
 				bool has_val = block->has_val(config->input_section_name, name_in);
 				if (has_val) 
@@ -738,7 +752,7 @@ extern "C" {
 					// now add c-term contributions
 					if(config->add_c_term)
 					{
-						clog<<"adding cosntant c-term"<<endl;
+						//clog<<"adding cosntant c-term"<<endl;
 						if(config->type=="plus")
 						{
 							matrix ones_mat(config->nTheta);
@@ -789,7 +803,7 @@ extern "C" {
 
 					if(config->add_2D_cterm)
 					{
-						clog<<"adding 2D cterm"<<endl;
+						//clog<<"adding 2D cterm"<<endl;
 						matrix xi_2D(config->nTheta);
 						if(config->inputXi2D_given)
 						{
@@ -842,6 +856,8 @@ extern "C" {
 				} // end of hasval for input xi
 			} //end of second for loop
 		} //end of first for loop
+		status = block->put_val(config->output_section_name, "nbin_a", num_z_bin_A);
+		status = block->put_val(config->output_section_name, "nbin_b", num_z_bin_B);
 		return status;
 	} //end of execute
 }// end of extern C

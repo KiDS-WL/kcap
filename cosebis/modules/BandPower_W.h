@@ -73,9 +73,9 @@ public:
 	///sets the l_min to the first l_min in l_min_vec and l_max to the last l_max in l_max_vec
 	void set_l_min_max(number l_min1,number l_max1);
 	/// if noApodise=true sets g by calling BandPower_g_pm
-	void set_g();
+	void set_g(bool Analytic);
 	///sets results to analytic if Analytic=true, if not top hat sets it back to false.
-	void setAnalytic(bool Analytic);
+	//void setAnalytic(bool Analytic);
 	///////////////////////////////////////////////////////////////////////////
 
 	//sets the power spectrum response function
@@ -103,6 +103,7 @@ public:
 	///returns the analytic value of g_pm if the resposnse function: S_i(ell) is a top hat.
 	//number Theta_g_pm_TopHat(number theta);
 	number Apodise(number theta);
+	number Theta_g_tophat(number theta);
 
 private:
 	/// internal parameters
