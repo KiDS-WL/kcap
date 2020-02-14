@@ -50,7 +50,7 @@ if __name__ == "__main__":
     multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                           "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
 
-    run_name_root = "mulitnest"
+    run_name_root = "multinest"
     run_name = f"{run_name_root}_{run_type}" 
     cmd = ["--root-dir", output_root_dir,
             "--run-name", run_name,
