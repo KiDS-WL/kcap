@@ -120,29 +120,38 @@ class K1000Pipeline:
                                                "cut_keys"       : cosmic_shear_keys + ggl_keys,
                                                "set_parameters" : wedges_param_range,
                                                "fix_values"     : IA_values + baryon_values + nofz_values},
-                                              
+                            }
 
-                          # Old settings, will get removed soon:
-                          # 3x2pt w/ magnification
-                          "EE_nE_w_magnification_mocks" :   
-                                              {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "uncut_modules" : ["magnification_alphas", "add_magnification",],
-                                               "uncut_keys"    : [("projection", "magnification-shear")],
-                                               "sample"        : False,},
+        self.pipelines["nE_magnification"] = {**self.pipelines["nE"],
+                                              "uncut_modules"         : ["magnification_alphas",
+                                                                         "add_magnification"],
+                                              "uncut_keys"            : [("projection", "magnification-shear")]}
+        self.pipelines["EE_nE_w_magnification"] = {**self.pipelines["EE_nE_w"],
+                                              "uncut_modules"         : ["magnification_alphas",
+                                                                         "add_magnification"],
+                                              "uncut_keys"            : [("projection", "magnification-shear")]}  
 
-                          #Fast IA
-                          "EE_nE_fastIA_mocks" :     
-                                              {"cut_modules"   : ["add_intrinsic",
-                                                                  "correlated_dz_priors", "source_photoz_bias",
-                                                                  "wedges", "BOSS_like",],
-                                               "cut_keys"      : [("projection", "shear-shear"),
-                                                                  ("projection", "shear-intrinsic"), 
-                                                                  ("projection", "intrinsic-intrinsic")],
-                                               "set_keys"      : [("projection", "fast-shear-shear-ia", "SOURCE-SOURCE")],
-                                               "cut_values"    : ["nofz_shifts"],
-                                               "sample"        : False,},
-                         }
+                        #   # Old settings, will get removed soon:
+                        #   # 3x2pt w/ magnification
+                        #   "EE_nE_w_magnification_mocks" :   
+                        #                       {"cut_modules"   : ["correlated_dz_priors", "source_photoz_bias",],
+                        #                        "cut_values"    : ["nofz_shifts"],
+                        #                        "uncut_modules" : ["magnification_alphas", "add_magnification",],
+                        #                        "uncut_keys"    : [("projection", "magnification-shear")],
+                        #                        "sample"        : False,},
+
+                        #   #Fast IA
+                        #   "EE_nE_fastIA_mocks" :     
+                        #                       {"cut_modules"   : ["add_intrinsic",
+                        #                                           "correlated_dz_priors", "source_photoz_bias",
+                        #                                           "wedges", "BOSS_like",],
+                        #                        "cut_keys"      : [("projection", "shear-shear"),
+                        #                                           ("projection", "shear-intrinsic"), 
+                        #                                           ("projection", "intrinsic-intrinsic")],
+                        #                        "set_keys"      : [("projection", "fast-shear-shear-ia", "SOURCE-SOURCE")],
+                        #                        "cut_values"    : ["nofz_shifts"],
+                        #                        "sample"        : False,},
+                        #  }
 
     @staticmethod
     def set_parameter_range(value, config):
