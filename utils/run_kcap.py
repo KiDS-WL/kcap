@@ -1061,10 +1061,10 @@ if __name__ == "__main__":
         if "correlated_dz_priors" in p.config:
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
-        if "source_photoz_bias" in p.config and p.config["source_photoz_bias"]["output_delta_z"]:
+        if "source_photoz_bias" in p.config and p.config["source_photoz_bias"]["output_deltaz"]:
             # Get the mean n(z) shifts
             n_source_bin = len(p.config["correlated_dz_priors"]["output_parameters"].split(" "))
-            sec = p.config["source_photoz_bias"]["output_section"]
+            sec = p.config["source_photoz_bias"]["output_section_name"]
             derived_parameters += [f"{sec}/bias_{i+1}" for i in range(n_source_bin)]
         
         if "sample_bsigma8S8_bin_1" in p.config:
