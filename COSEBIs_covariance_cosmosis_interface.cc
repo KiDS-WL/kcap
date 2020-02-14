@@ -433,7 +433,6 @@ extern "C"
 		vector<number> En_vec_all;
 		vector <vector<number> > InputPower_vec_vec;
 		int nPairs=0;
-
 		for (int i_bin=1; i_bin<=num_z_bin_A; i_bin++) 
 		{
 			for (int j_bin=1; j_bin<=num_z_bin_B; j_bin++) 
@@ -444,7 +443,7 @@ extern "C"
 				bool has_val = block->has_val(config->input_section_name, name_in);
 				if (has_val) 
 				{
-					//clog<<"bin_"<<j_bin<<"_"<<i_bin<<endl;
+					//clog<<name_in<<endl;
 					status = block->get_val<vector<number> >(config->input_section_name, name_in, C_ell);
 					InputPower_vec_vec.push_back(C_ell);
 					///put Cl in a vector to send to COSEBIs.

@@ -8,31 +8,28 @@ BandPower_g::BandPower_g()
 	LHIGH=1e6;
 	FolderName="./cosebis/BandPower/";
 	FileName="g";
+	Analytic=false;
 }
 
 //constructor 
 BandPower_g::BandPower_g(number thetamin,number thetamax, string Response_type,
-		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH,
+		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH,bool Analytic,
 		string FolderName,string FileName)
 {
   clog<<"in BandPower_g.........."<<endl;
-  initialize(thetamin,thetamax,Response_type,l_min_vec,l_max_vec,LLOW,LHIGH,FolderName,FileName);
-  setBandPower_gName(FolderName,FileName);
-  setTheta(thetamin,thetamax);
-  Set_Response_function(Response_type,l_min_vec,l_max_vec);
-  Analytic=false;
+  initialize(thetamin,thetamax,Response_type,l_min_vec,l_max_vec,LLOW,LHIGH,Analytic,FolderName,FileName);
 }
 
 void BandPower_g::initialize(number thetamin,number thetamax, string Response_type,
-		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH,
+		vector<number> l_min_vec,vector<number> l_max_vec,number LLOW, number LHIGH, bool Analytic,
 		string FolderName,string FileName)
 {
   clog<<"in BandPower_g initialize"<<endl;
   setTheta(thetamin,thetamax);
   setBandPower_gName(FolderName,FileName);
   Set_Response_function(Response_type,l_min_vec,l_max_vec);
-  Analytic=false;
   set_l_min_max(LLOW,LHIGH);
+  setAnalytic(Analytic);
 }
 
 BandPower_g::~BandPower_g(){}
@@ -170,8 +167,10 @@ void BandPower_g::set(int bin_index1,int bessel_order1)
 	}
 	fhandler.close();
 	// make table of myself and save or load existing one
-	clog<<"thetamin="<<thetamin<<" thetamax="<<thetamax<<" nTheta="<<nTheta<<endl;
+	clog<<"in set g: thetamin="<<thetamin<<" thetamax="<<thetamax<<" nTheta="<<nTheta<<endl;
 	makeTable(thetamin,thetamax,nTheta,false);
+	saveTable();
+
 	extrapolationOff();
 }
 

@@ -25,8 +25,8 @@ l_max_vec=np.exp(np.log(lmin)+np.log(lmax/lmin)/(nBands)*(ibins+1.))
 
 arcmin=np.pi/180./60.
 
-tmin=0.25
-tmax=397.0
+tmin=0.5
+tmax=300.0
 
 thetamin='%.2f' % tmin
 thetamax='%.2f' % tmax
@@ -41,30 +41,118 @@ FolderName="../BandPower_outputs/"
 bessel_order=0
 
 
-plt.clf()
-
-for b in range(nBands):
+for b in range(1):
 	iband=b+1
 	ellRange='%.2f' % l_min_vec[b]+"-"+ '%.2f' % l_max_vec[b]
-	Wfilename=FolderName+"W_noAp_"+str(bessel_order)+"_"+ellRange+"_"+thetaRange+".table"	
-	file=open(Wfilename)
-	W=np.loadtxt(file,comments='#')
+	# Wfilename=FolderName+"W_noAp_"+str(bessel_order)+"_"+ellRange+"_"+thetaRange+".table"	
+	# file=open(Wfilename)
+	# W=np.loadtxt(file,comments='#')
 # 
+	# Wfilename=FolderName_BJ+"bandpower_filter_output_0_100.0_140.29.dat"
+	# file=open(Wfilename)
+	# W_ap_bj=np.loadtxt(file,comments='#')
+#
 	Wfilename=FolderName+"W_ap0.50_"+str(bessel_order)+"_"+ellRange+"_"+thetaRange+".table"
 	file=open(Wfilename)
 	W_ap=np.loadtxt(file,comments='#')
 # 
-	Wfilename=FolderName+"W_ap0.00_"+str(bessel_order)+"_"+ellRange+"_"+thetaRange+".table"
-	file=open(Wfilename)
-	W_ap0=np.loadtxt(file,comments='#')
+	# Wfilename=FolderName+"W_ap0.00_"+str(bessel_order)+"_"+ellRange+"_"+thetaRange+".table"
+	# file=open(Wfilename)
+	# W_ap0=np.loadtxt(file,comments='#')
 # 
+	plt.clf()
 	plt.xscale("log")
-	plt.plot(np.exp(W[:,0]),W[:,1],'-b')
+	plt.plot(W_ap_bj[:,0],W_ap_bj[:,2]-W_ap_bj[:,3],'-b')
 	plt.plot(np.exp(W_ap[:,0]),W_ap[:,1],'-r')
-	plt.plot(np.exp(W_ap0[:,0]),W_ap0[:,1],'-g')
+	# plt.plot(np.exp(W_ap0[:,0]),W_ap0[:,1],'-g')
 	plt.axvline(x=l_min_vec[b],ls='--',color='k')
 	plt.axvline(x=l_max_vec[b],ls='--',color='k')
 	plt.show()
+
+FolderName="../BandPower_outputs/"
+FolderName_rad= "../BandPower_apodisation_test/"
+FolderName_BJ = "../Benjamins_Bandpower/"
+
+
+iband=b+1
+ellRange='%.2f' % l_min_vec[b]+"-"+ '%.2f' % l_max_vec[b]
+# 
+Wfilename=FolderName_BJ+"bandpower_filter_output_0_100.0_140.29.dat"
+file=open(Wfilename)
+W_ap_bj=np.loadtxt(file,comments='#')
+#
+
+FolderName="../BandPower_outputs_test_g/"
+# apodised all arcmin
+Wfilename=FolderName+"W_ap0.50_0"+"_"+ellRange+"_0.50-300.00.table"
+file=open(Wfilename)
+W0=np.loadtxt(file,comments='#')
+
+Wfilename=FolderName+"W_ap0.50_4"+"_"+ellRange+"_0.50-300.00.table"
+file=open(Wfilename)
+W4=np.loadtxt(file,comments='#')
+
+W_EE_ap_test_g=W0+W4
+W_EB_ap_test_g=W0-W4
+
+
+FolderName="../BandPower_outputs_test_g_table/"
+# apodised all arcmin
+Wfilename=FolderName+"W_ap0.50_0"+"_"+ellRange+"_0.50-300.00.table"
+file=open(Wfilename)
+W0=np.loadtxt(file,comments='#')
+
+Wfilename=FolderName+"W_ap0.50_4"+"_"+ellRange+"_0.50-300.00.table"
+file=open(Wfilename)
+W4=np.loadtxt(file,comments='#')
+
+W_EE_ap_test_g_table=W0+W4
+W_EB_ap_test_g_table=W0-W4
+
+
+
+plt.clf()
+plt.xscale("log")
+# plt.plot(W_ap_bj[:,0],W_ap_bj[:,1],'-g',label='unapodised')
+plt.plot(W_ap_bj[:,0],W_ap_bj[:,2],'-b',label='appodised')
+# plt.plot(W_ap_bj[:,0],W_ap_bj[:,3],'-m',label='B-modes appodised')
+plt.plot(np.exp(W_EE_ap_test_g_table[:,0]/2.),W_EE_ap_test_g_table[:,1]/2.,'--g',label="g_table")
+# plt.plot(np.exp(W_EE_ap_test_g[:,0]/2.),W_EE_ap_test_g[:,1]/2.,'--c',label="g_direct")
+plt.axvline(x=l_min_vec[b],ls='--',color='k')
+plt.axvline(x=l_max_vec[b],ls='--',color='k')
+plt.legend(loc='best')
+plt.show()
+
+
+
+
+FolderName="../BandPower/"
+# apodised all arcmin
+Wfilename=FolderName+"g_0_1_0.39-385.21.table"
+file=open(Wfilename)
+g0_wide=np.loadtxt(file,comments='#')
+
+FolderName="../BandPower/"
+# apodised all arcmin
+Wfilename=FolderName+"g_0_1_0.50-300.00.table"
+file=open(Wfilename)
+g0=np.loadtxt(file,comments='#')
+
+
+plt.plot(g0_wide[:,0],g0_wide[:,1],'-r')
+plt.plot(g0[:,0],g0[:,1],'--b')
+plt.show()
+
+
+
+FolderName="../"
+# apodised all arcmin
+Wfilename=FolderName+"integrant_Ap0.50_bin0_ell_105.00_0.ascii"
+file=open(Wfilename)
+integrant=np.loadtxt(file,comments='#')
+
+plt.plot(integrant[:,0],integrant[:,1])
+plt.show()
 
 
 

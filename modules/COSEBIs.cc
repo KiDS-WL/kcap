@@ -196,6 +196,26 @@ void COSEBIs::setPower_single(vector<number> log_x, vector<number> Input)
 }
 
 
+void COSEBIs::setPower_single_withExtrapolation(vector<number> log_x, vector<number> Input)
+{
+	//clog<<"in set input, nPairs=";
+	//nPairs=Input.size();
+	//clog<<nPairs<<endl;
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	nPairs=1;
+	powerspectrum_vec.clear();
+	powerspectrum_vec.push_back(function_cosebis());
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	powerspectrum_vec[0].loadWithValues(log_x,Input,true);
+	powerspectrum_vec[0].extrapolationOn();
+}
+
+
+
+number COSEBIs::ReturnPower(number ell,int rPair)
+{
+	return powerspectrum_vec[rPair].value(ell);
+}
 
 
 number COSEBIs::integrant(number l)
@@ -265,11 +285,6 @@ number COSEBIs::integrant(number l)
 
 }
 
-
-number COSEBIs::ReturnPower(number ell,int rPair)
-{
-	return powerspectrum_vec[rPair].value(ell);
-}
 
 
 matrix COSEBIs::returnIntegrandForPowerCase(vector <number> ell_vec, int n, int redshift)

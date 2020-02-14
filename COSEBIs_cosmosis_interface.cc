@@ -13,15 +13,12 @@
 //could add an option to read B-modes in and use it to constrain c-term
 
 /*
-Fix the ordering of theory
+ordering of the theory is such that the likelihood in this interface works
 */
 
 extern "C" {
 
 	const string shear_cl = SHEAR_CL_SECTION;
-	const number MinPowerCOSEBIs=0.1;
-	const number MaxPowerCOSEBIs=1e6;
-	const int PowerTableNumberCOSEBIs=200;
 	const string cterm_section= "shear_c_bias";
 
 	typedef struct COSEBIs_config 
@@ -485,7 +482,23 @@ extern "C" {
 					
 					matrix En_mat;
 					//put C(l) in cosebis object
-					config->cosebis->setPower_single(logell,C_ell);
+					//config->cosebis->setPower_single(logell,C_ell);
+					//this also extrapolates the input Cl to LHIGH
+					config->cosebis->setPower_single_withExtrapolation(logell,C_ell);
+					/*
+					int n_ell=400;
+					matrix power_mat(2,n_ell);
+					number ell_min=0.1;
+					number ell_max=5e5;
+					for(int i=0; i<n_ell; i++)
+					{
+						number ell=exp(log(ell_min)+log(ell_max/ell_min)/(n_ell-1.0)*i);
+						number power=config->cosebis->ReturnPower(ell,0);
+						power_mat.load(0,i,ell);
+						power_mat.load(1,i,power);
+					}
+					power_mat.printOut((string("TestExtrapolate/power_")+name_in).c_str(),5);
+					*/
 					//Calculate COSEBIs for the given C(l)
 					En_mat=config->cosebis->calEn();
 					
@@ -611,6 +624,9 @@ extern "C" {
 				}
 			}
 		}
+		status = block->put_val<double>(config->output_section_name, string("nbin_a"), num_z_bin_A);
+		status = block->put_val<double>(config->output_section_name, string("nbin_b"), num_z_bin_B);
+		
 
 		
 		

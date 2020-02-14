@@ -14,6 +14,14 @@
 extern "C" 
 {
 	const string cterm_section= "shear_c_bias";
+	/* If bandpower weights are not saved 
+	 will calculate them for NLBINS log-bins with ell from LLOW to LHIGH
+	 If you want more or less acuuracy, change these numbers. 
+	 Note that if you go beyond LHIGH of 1e5 you might get artifacts. 
+	 To imporove things you need to change Nbins in determine_integration_limits */
+	const int NLBINS=1000;
+	const number LLOW=0.1;
+	const number LHIGH= 1e4;
 
 	typedef struct BandPower_config 
 	{
@@ -33,15 +41,10 @@ extern "C"
 		number sigma_m;
 		matrix BP_data;
 		matrix Cov_mat;
-		//bool dolikelihood;
 	}
 	BandPower_config;
 
-	//const string shear_cl = SHEAR_CL_SECTION;
-	const int NLBINS=5000;
-	const number LLOW=0.1;
-	const number LHIGH= 1e4;
-
+	
 	//define a structure with everything that is needed to be read in setup and sent to execute
 	//Some of these are read from the ini file. For example input_section_name and n_max
 	//Some are initialized in the setup, such as BandPower. 
@@ -83,39 +86,6 @@ extern "C"
 		}
 		else
 			clog<<"got the value of output_section_name:"<<config->output_section_name<<endl;
-
-		/* likehood in here does not work currently because of the ordering of the data and cov versus bandpowers
-		// This is where the input data file is. If data or covariance are not given likelihood is not caluclated
-		string input_bandpower_filename;
-		status=options->get_val<string>(sectionName, string("input_bandpower_filename"), input_bandpower_filename);
-		if (status) 
-		{
-			clog<<"Could not load input_bandpower_filename to BandPower, ";
-			clog<<"will not produce likelihood"<<endl;
-			config->dolikelihood=false;
-		}
-		else
-		{
-			clog<<"got the value of input_bandpower_filename:"<<input_bandpower_filename<<endl;
-			///read BP_data from file
-			config->BP_data.readFromASCII_marika((input_bandpower_filename).c_str());
-			config->dolikelihood=true;
-			//get input covariance file name
-			//if covariance is not given likelihood is not calculated
-			string InputCovarianceFileName;
-			status=options->get_val<string>(sectionName, string("input_covariance_filename"), InputCovarianceFileName);
-			if (status) 
-			{
-				clog<<"Could not find the name of the input Covariance for bandpower file"<<endl;
-				config->dolikelihood=false;
-			}
-			else
-			{
-				clog<<"got the name of the input Covariance for BandPower file="<<InputCovarianceFileName<<endl;
-				///read Covariance from file
-	        	config->Cov_mat.readFromASCII_marika((InputCovarianceFileName).c_str());
-	        }
-		}*/
 	
 		//minimum theta value that is used to estimate band powers from xi_pm, in arcmins
 		//make sure this matches what is used for the data
@@ -143,8 +113,6 @@ extern "C"
 		//change them to randian
 		config->thetamin*=arcmin;
 		config->thetamax*=arcmin;
-		//clog<<"thetamin in rad="<<config->thetamin<<endl;
-		//clog<<"thetamax in rad="<<config->thetamax<<endl;
 
 		//first lets look for a file with l_min l_max for each band power bin
 		string l_min_max_file;
@@ -270,6 +238,8 @@ extern "C"
 			ap_str+=toString(Delta_x,2);
 		}
 
+
+
 		//This is the bandpower filter type that we want to mimic.
 		//The only option that the code understands for now is tophat
 		string Response_function_type;
@@ -300,8 +270,6 @@ extern "C"
 			else
 				clog<<"setting analytic to true"<<endl;
 		}
-
-
 		
 		//set file names for g and W filters
 		string gFileName="g";
@@ -309,6 +277,33 @@ extern "C"
 		string type_str;
 		bool real=false;
 
+
+		//testing W apodised
+/*
+		BandPower_W *W = new BandPower_W();
+		int bessel_order=0;
+		noApodise=true;
+		clog<<"going to initialize W "<<endl;
+		//now testing W
+		//Delta_x=0.5;
+		W->initialize(config->thetamin,config->thetamax,Response_function_type,
+				config->l_min_vec,config->l_max_vec,bessel_order,noApodise,Delta_x,Analytic,LLOW,LHIGH,NLBINS);
+		FolderName="../cosmosis_in_out/BandPower_results/";
+		W->setBandPower_WName(FolderName,"g","W_noAp");
+		for(int b=0; b<config->nBands; b++)
+		{
+			W->print_integrant(noApodise,0,105,b);
+		}
+		W->setBandPower_WName(FolderName,"g","W_Ap");
+		noApodise=false;
+		W->set_noApodise(noApodise);
+		//clog<<"!!!!!!!!!!!!!!!!!!!setting Ap_more!!!!!!!!!!!!!!!!!!"<<endl;
+		for(int b=0; b<config->nBands; b++)
+		{
+			W->print_integrant(noApodise,0,105,b);
+		}
+		exit(1);
+		*/
 		//   initialize BandPower based on the type the user asks for
 		// options are: clustering, ggl, cosmic_shear_e and cosmic_shear_b
 		status=options->get_val<string>(sectionName, string("type"), type_str);
@@ -516,31 +511,32 @@ extern "C"
 				string name_in=string("bin_")+toString(i_bin)+string("_")+toString(j_bin);
 				string index_name_in=string("index_")+name_in;
 				bool has_val = block->has_val(config->input_section_name, name_in);
-				//clog<<"name_in="<<name_in<<endl;
 				if (has_val) 
 				{
 					nPairs++;
 					status = block->get_val<vector<number> >(config->input_section_name, name_in, C_ell);
 					//find BP for this bin and save it.
 					matrix BP_mat;
-					//clog<<"setting BP"<<endl;
+
 					if(config->type==0)
 					{
-						config->BP0->setInput_single(logell,C_ell);
+						config->BP0->setInput_single_withExtrapolation(logell,C_ell);
 						BP_mat=config->BP0->calBP();
 					}
 					else if(config->type==2)
 					{
-						config->BP2->setInput_single(logell,C_ell);
+						config->BP2->setInput_single_withExtrapolation(logell,C_ell);
 						BP_mat=config->BP2->calBP();
 					}
 					else if(config->type==3)
 					{
-						config->BP0->setInput_single(logell,C_ell);
+						//config->BP0->setInput_single(logell,C_ell);
+						config->BP0->setInput_single_withExtrapolation(logell,C_ell);
 						matrix BP_mat0;
 						BP_mat0=config->BP0->calBP();
 
-						config->BP4->setInput_single(logell,C_ell);
+						//config->BP4->setInput_single(logell,C_ell);
+						config->BP4->setInput_single_withExtrapolation(logell,C_ell);
 						matrix BP_mat4;
 						BP_mat4=config->BP4->calBP();
 
@@ -548,11 +544,11 @@ extern "C"
 					}
 					else if(config->type==4)
 					{
-						config->BP0->setInput_single(logell,C_ell);
+						config->BP0->setInput_single_withExtrapolation(logell,C_ell);
 						matrix BP_mat0;
 						BP_mat0=config->BP0->calBP();
 
-						config->BP4->setInput_single(logell,C_ell);
+						config->BP4->setInput_single_withExtrapolation(logell,C_ell);
 						matrix BP_mat4;
 						BP_mat4=config->BP4->calBP();
 
@@ -569,51 +565,17 @@ extern "C"
 					status = block->put_val<vector<number> >(config->output_section_name, name_in, BP_vec);
 					status = block->put_val<vector<int> >(config->output_section_name, index_name_in, n_bands);
 				}
-				// else
-				// {
-				// 	clog<<"has_val is false. Could not load bin_"<<j_bin<<"_"<< i_bin<<" in C_ell to bandpower"<<endl;
-				// }
 			}
 		}
-
 
 		status = block->put_val<vector<number> >(config->output_section_name, string("l_min_vec"), config->l_min_vec);
 		status = block->put_val<vector<number> >(config->output_section_name, string("l_max_vec"), config->l_max_vec);
 		status = block->put_val<bool>(config->output_section_name, string("b_modes"), config->IsItBmodes);
 		status = block->put_val<double>(config->output_section_name, string("theta_min"), config->thetamin);
 		status = block->put_val<double>(config->output_section_name, string("theta_max"), config->thetamax);
+		status = block->put_val<double>(config->output_section_name, string("nbin_a"), num_z_bin_A);
+		status = block->put_val<double>(config->output_section_name, string("nbin_b"), num_z_bin_B);
 		
-		/* This doesn't work with the ordering of the bins right now. 
-		if(config->dolikelihood)
-		{
-			int nBands=config->nBands;
-			matrix BP_theory(1,BP_vec_all.size());  
-	        for(int i=0; i<BP_vec_all.size(); i++)
-		        	BP_theory.load(0,i,BP_vec_all[i]);
-
-			// make a resized data and covariance matrix to match the n_max
-	        int nBands_in=int(config->BP_data.rows/nPairs);
-	        if(nBands>nBands_in)
-	        {
-	            clog<<"set nBands="<<nBands<<" is larger than the input nBands in the data vector:"<<nBands_in<<endl;
-	            exit(1);
-	        }
-	        matrix BP_data(nBands*nPairs);
-	        for(int i=0;i<nBands*nPairs;i++)
-	            BP_data.load(i,config->BP_data.get((ceil(i/nBands)*nBands_in+i%nBands)));
-
-	        matrix Cov_mat(nBands*nPairs,nBands*nPairs);
-	        for(int i=0;i<nBands*nPairs;i++)
-				for(int j=0;j<nBands*nPairs;j++)
-					Cov_mat.load(i,j,config->Cov_mat.get((ceil(i/nBands)*nBands_in+i%nBands),(ceil(j/nBands)*nBands_in+j%nBands)));
-
-			///Calculate likelihood here
-			number ChiS=calChiS(BP_theory,BP_data,Cov_mat);
-			number likelihood_val=-ChiS/2.0;
-			string likename=config->output_section_name+"_like";
-			status = block->put_val<number>(LIKELIHOODS_SECTION, likename, likelihood_val);
-		}*/
-
 	    return status;
 	}
 }// end of extern C

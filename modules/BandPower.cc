@@ -159,13 +159,15 @@ void BandPower::set_g(bool Analytic)
 	{
 		//clog<<"g not set setting now:"<<endl;
 		//BandPower_g g();
+		number thetamin_g=exp(log(thetamin)-Delta_x/2.0);
+		number thetamax_g=exp(log(thetamax)+Delta_x/2.0);
 		g_vec.clear();
 		for(int i=0; i<nBands; i++)
 			g_vec.push_back(BandPower_g());
 		for(int i=0; i<nBands; i++)
 		{
-			g_vec[i].initialize(thetamin,thetamax, Response_function_type,l_min_vec,l_max_vec,LLOW,LHIGH,FolderName,gFileName);
-			g_vec[i].setAnalytic(Analytic);
+			g_vec[i].initialize(thetamin_g,thetamax_g, Response_function_type,l_min_vec,l_max_vec,LLOW,LHIGH,Analytic,FolderName,gFileName);
+			//g_vec[i].setAnalytic(Analytic);
 		}
 		gSet=true;
 	}
@@ -191,7 +193,7 @@ void BandPower::set_W(bool Analytic)
 				LHIGH,
 				NLBINS,
 				FolderName,gFileName,WFileName);
-			W_vec[i].setAnalytic(Analytic);
+			//W_vec[i].setAnalytic(Analytic);
 			W_vec[i].set(i,bessel_order);
 		}
 		WSet=true;
@@ -314,17 +316,19 @@ void BandPower::setInput_single(vector<number> log_x, vector<number> Input)
 	power_corr_vec[0].extrapolationOff();
 }
 
-
-// //this is the case where either there are no redshift bins or the input is given as one bin pair
-// void BandPower::setInput(vector<number> log_x,vector<number> Input)
-// {
-// 	nPairs=1;
-// 	power_corr_vec.clear();
-// 	power_corr_vec.push_back(function_cosebis());
-// 	power_corr_vec[0].loadWithValues(log_x,Input,true);
-// 	power_corr_vec[0].extrapolationOff();
-// }
-
+void BandPower::setInput_single_withExtrapolation(vector<number> log_x, vector<number> Input)
+{
+	//clog<<"in set input, nPairs=";
+	//nPairs=Input.size();
+	//clog<<nPairs<<endl;
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	nPairs=1;
+	power_corr_vec.clear();
+	power_corr_vec.push_back(function_cosebis());
+	//clog<<"log_x.size()="<<log_x.size()<<" Input.size()="<<Input.size()<<endl;
+	power_corr_vec[0].loadWithValues(log_x,Input,true);
+	power_corr_vec[0].extrapolationOn();
+}
 
 number BandPower::ReturnPower(number ell,int rPair)
 {
@@ -430,7 +434,7 @@ matrix BandPower::calBP(vector<int> index)
 
 void BandPower::determine_integration_limits_real()
 {
-	const int Nbins = 1000;
+	const int Nbins = 10000;
 	integ_limits_vec.clear();
 	// make table of integrant values (Wn's only) on a very fine grid
 	matrix table(2,Nbins);
@@ -471,7 +475,7 @@ void BandPower::determine_integration_limits_real()
 
 void BandPower::determine_integration_limits_Fourier()
 {
-	const int Nbins = 1000;
+	const int Nbins = 10000;
 	integ_limits_vec.clear();
 
 	vector<number> integ_y;
@@ -502,17 +506,6 @@ void BandPower::determine_integration_limits_Fourier()
 		integ_limits.push_back(LHIGH);
 		integ_limits_vec.push_back(integ_limits);
 	}
-
-
-	// integ_y.push_back(G_mu(ell,l_max_vec[bin_index],bessel_order));
-	// matrix integ_limits_mat(2,integ_limits.size());
-	// for(int i=0;i<integ_limits.size(); i++)
-	// {
-	// 	integ_limits_mat.load(0,i,integ_limits[i]);
-	// 	integ_limits_mat.load(1,i,integ_y[i]);
-	// }
-	//integ_limits_mat.printOut((string("integ_limits_noAp")+toString(bessel_order)+string("_")+toString(ell,2)+string(".ascii")).c_str(),5);
-	//table.printOut((string("table_G")+toString(bessel_order)+string("_")+toString(ell,2)+string(".ascii")).c_str(),5);
 }
 
 
@@ -525,8 +518,8 @@ number BandPower::Apodise(number theta)
 		return 1.;
 
 	number x= log(theta);
-	number x_l=log(thetamin)+Delta_x/2.;
-	number x_u=log(thetamax)-Delta_x/2.;
+	number x_l=log(thetamin);
+	number x_u=log(thetamax);
 	number l1_bound=x_l-Delta_x/2.;
 	number l2_bound=x_l+Delta_x/2.;
 	number u1_bound=x_u-Delta_x/2.;
@@ -536,18 +529,15 @@ number BandPower::Apodise(number theta)
 	if((l1_bound<=x) && (x<l2_bound))
 	{
 		//clog<<"in apodise: x_l="<<x_l<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*(x-(x_l+Delta_x/2.)/Delta_x)),2);
+		result= pow(cos(pi/2.*((x-(x_l+Delta_x/2.))/Delta_x)),2);
 	}
-
 	else if((l2_bound<=x) && (x<u1_bound))
 		result= 1.;
-
 	else if( (u1_bound<=x ) && (x<u2_bound) )
 	{
 		//clog<<"in apodise: x_u="<<x_u<<" x="<<x<<endl;
-		result= pow(cos(pi/2.*(x-(x_u-Delta_x/2.)/Delta_x)),2);
+		result= pow(cos(pi/2.*((x-(x_u-Delta_x/2.))/Delta_x)),2);
 	}
-
 	else
 		result= 0.;
 

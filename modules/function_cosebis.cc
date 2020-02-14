@@ -299,7 +299,7 @@ void function_cosebis::interpolationOn()
   interpolation = true;
 }
 
-/* 
+/*
 //Quadratic extrapolation
 number function_cosebis::extrapolate(number x)
 {
@@ -312,7 +312,7 @@ number function_cosebis::extrapolate(number x)
   if (tableSize<3 || !extrapolation)
     return 0.0;
 
-  if (x>referenceX[tableSize])
+  if (x>referenceX[tableSize-1])
     {
       x1 = referenceX[tableSize-3];
       y1 = referenceY[tableSize-3];
@@ -331,7 +331,13 @@ number function_cosebis::extrapolate(number x)
       y3 = referenceY[2];
     }
 
-  return (x-x1)*(x-x2)/(x3-x1)/(x3-x2)*y3 +
+if(logTable) //x is already log
+    return exp((x-x1)*(x-x2)/(x3-x1)/(x3-x2)*log(y3) +
+         (x-x1)*(x-x3)/(x2-x1)/(x2-x3)*log(y2) +
+         (x-x2)*(x-x3)/(x1-x2)/(x1-x3)*log(y1));
+
+  else
+    return (x-x1)*(x-x2)/(x3-x1)/(x3-x2)*y3 +
          (x-x1)*(x-x3)/(x2-x1)/(x2-x3)*y2 +
          (x-x2)*(x-x3)/(x1-x2)/(x1-x3)*y1;
 }*/
@@ -348,25 +354,25 @@ number function_cosebis::extrapolate(number x)
   if (tableSize<3 || !extrapolation)
     return 0.0;
   
-  if (x>referenceX[tableSize])
+  if (x>referenceX[tableSize-1])
   {
-    x1 = referenceX[tableSize];
-    y1 = referenceY[tableSize];
-    x2 = referenceX[tableSize-1];
-    y2 = referenceY[tableSize-1];
+    x1 = referenceX[tableSize-1];
+    y1 = referenceY[tableSize-1];
+    x2 = referenceX[tableSize-2];
+    y2 = referenceY[tableSize-2];
   }
   else
   {
-    x2 = referenceX[1];
-    y2 = referenceY[1];
-    x1 = referenceX[2];
-    y1 = referenceY[2];
+    x1 = referenceX[1];
+    y1 = referenceY[1];
+    x2 = referenceX[2];
+    y2 = referenceY[2];
   }
   
   if(logTable) //x is already log
-    return exp(log(y1)+(x-x1)/(x2-x1)*(log(y2)-log(y1)));
+    return exp(log(y2)+(x-x2)/(x1-x2)*(log(y1)-log(y2)));
   else
-    return y1+(x-x1)/(x2-x1)*(y2-y1);
+    return y2+(x-x2)/(x1-x2)*(y1-y2);
 }
 
 
