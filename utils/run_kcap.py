@@ -449,7 +449,9 @@ class K1000Pipeline:
                                             "mode" : "additive",
                                             "sample" : f"nz_{source_nz_sample}",
                                             "bias_section" : "nofz_shifts",
-                                            "interpolation" : "linear"},
+                                            "interpolation" : "linear",
+                                            "output_deltaz" : True,
+                                            "output_section_name" :  "delta_z_out"},
 
                     "linear_alignment" :   {"file" : os.path.join(CSL_PATH, 
                                                         "intrinsic_alignments/la_model/linear_alignments_interface.py"),
@@ -461,7 +463,7 @@ class K1000Pipeline:
 
                     "projection" :         {"file" : os.path.join(CSL_PATH, 
                                                         "structure/projection/project_2d.py"),
-                                            "ell_min" : 10.0,
+                                            "ell_min" : 1.0,
                                             "ell_max" : 3.0e4,
                                             "n_ell"  : 400,
                                             "shear-shear" : f"{source_nz_sample}-{source_nz_sample}",
@@ -1059,6 +1061,11 @@ if __name__ == "__main__":
         if "correlated_dz_priors" in p.config:
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
+        if "source_photoz_bias" in p.config and p.config["source_photoz_bias"]["output_delta_z"]:
+            # Get the mean n(z) shifts
+            n_source_bin = len(p.config["correlated_dz_priors"]["output_parameters"].split(" "))
+            sec = p.config["source_photoz_bias"]["output_section"]
+            derived_parameters += [f"{sec}/bias_{i+1}" for i in range(n_source_bin)]
         
         if "sample_bsigma8S8_bin_1" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_1"]
