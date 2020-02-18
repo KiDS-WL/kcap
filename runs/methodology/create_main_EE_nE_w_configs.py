@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     for i in range(noise_begin, noise_end):
         root_data_dir = f"runs/methodology/data/noisy_fiducial/base_{i}_EE_nE_w/data/"
-        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgretta_nOfZ_bucerosBroad_mock_noisy.fits")
+        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
         boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_1.txt"),
                            os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_2.txt")]
         boss_cov_files =  [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     if noise_begin == 0:
         # Multinest and test sampler runs
         root_data_dir = "runs/methodology/data/noisefree_fiducial/base_EE_nE_w/data/"
-        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgretta_nOfZ_bucerosBroad_mock_noiseless.fits")
+        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
         boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_1.txt"),
                           os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_2.txt")]
         boss_cov_files =  [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
