@@ -44,4 +44,3 @@ if __name__ == "__main__":
                 "--run-type", run_type]
         subprocess.run(["python", script] + cmd, check=True)
 
-
