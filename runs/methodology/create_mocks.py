@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 data_name = f"{data_name_root}_{i}_{run_type}"
 
                 KiDS_twopoint_file_mean = f"{output_dir}base_{i}_EE_nE_w/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits"
-                KiDS_twopoint_file_save = f"{output_dir}{data_name}/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits"
+                KiDS_twopoint_file_save = f"{output_dir}{data_name}/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noisy.fits"
                 
                 subprocess.run(['mkdir', '-p', f'{output_dir}{data_name}/data/KiDS/'])
                 cmd = ['new_from_mean_and_cov', KiDS_twopoint_file_mean, KiDS_twopoint_file_cov, KiDS_twopoint_file_save]
