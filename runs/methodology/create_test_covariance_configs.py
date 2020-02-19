@@ -31,7 +31,7 @@ if __name__ == "__main__":
         if noise_begin == 0:
 
             root_data_dir = f"runs/methodology/data/noisefree_fiducial/{data_name_root}_EE_nE_w/data/"
-            twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noiseless.fits")
+            twopoint_file = os.path.join(root_data_dir, f"KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noiseless.fits")
 
             # Multinest
             output_root_dir = f"runs/methodology/test_covariance/{data_name_root}/multinest"
