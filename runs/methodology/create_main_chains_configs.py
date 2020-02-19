@@ -24,7 +24,6 @@ if __name__ == "__main__":
         # Configs for noiseless cases; only made if noise_begin = 0
         if noise_begin == 0:
             
-            # Multinest and test sampler runs
             root_data_dir = "runs/methodology/data/noisefree_fiducial/base_EE_nE_w/data/"
             twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
             boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_1.txt"),
