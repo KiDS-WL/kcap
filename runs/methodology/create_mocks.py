@@ -19,16 +19,16 @@ if __name__ == "__main__":
     if sys.argv[1] == 'main_chains':
 
         KiDS_twopoint_file =  "../K1000-data/Phase-1/twopoint/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad.fits"
-        run_name_root = "base"
+        data_name_root = "base"
 
         # Create noiseless mock data vector
         if noise_begin == 0:
             output_dir = "runs/methodology/data/noisefree_fiducial/"
-            run_name = f"{run_name_root}_{run_type}"
+            data_name = f"{data_name_root}_{run_type}"
             cmd = ["--create-mocks", "--noiseless-mocks",
                     "--root-dir", output_dir,
                     "--KiDS-data-file", KiDS_twopoint_file,
-                    "--run-name", run_name,
+                    "--run-name", data_name,
                     "--run-type", run_type]
             subprocess.run(["python", script] + cmd, check=True)
 
@@ -36,12 +36,12 @@ if __name__ == "__main__":
         output_dir = "runs/methodology/data/noisy_fiducial/"
 
         for i in range(noise_begin, noise_end):
-            run_name = f"{run_name_root}_{i}_{run_type}"
+            data_name = f"{data_name_root}_{i}_{run_type}"
 
             cmd = ["--create-mocks",
                     "--root-dir", output_dir,
                     "--KiDS-data-file", KiDS_twopoint_file,
-                    "--run-name", run_name,
+                    "--run-name", data_name,
                     "--run-type", run_type]
             subprocess.run(["python", script] + cmd, check=True)
 
@@ -49,22 +49,22 @@ if __name__ == "__main__":
 
         print('WARNING: you might need to have run main_chains to avoid errors')
         
-        KiDS_twopoint_tag_list = ['theoryEgretta']
-        run_name_root_list     = ['theory_complex']
+        KiDS_twopoint_tag_list = ['theoryBuceros', 'theoryEgretta', 'simBuceros', 'simEgretta']
+        data_name_root_list    = ['theory_simple', 'theory_complex', 'mock_simple', 'mock_complex']
 
         # Create noiseless mock data vector
-        for KiDS_twopoint_tag, run_name_root in zip(KiDS_twopoint_tag_list, run_name_root_list):
+        for KiDS_twopoint_tag, data_name_root in zip(KiDS_twopoint_tag_list, data_name_root_list):
             KiDS_twopoint_file =  f"../K1000-data/Phase-1/twopoint/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad.fits"
 
             # Create noiseless mock data vector
             if noise_begin == 0:
                 output_dir = "runs/methodology/data/noisefree_fiducial/"
-                run_name = f"{run_name_root}_{run_type}"
+                data_name = f"{data_name_root}_{run_type}"
 
                 cmd = ["--create-mocks", "--noiseless-mocks",
                         "--root-dir", output_dir,
                         "--KiDS-data-file", KiDS_twopoint_file,
-                        "--run-name", run_name,
+                        "--run-name", data_name,
                         "--run-type", run_type]
                 subprocess.run(["python", script] + cmd, check=True)
 
@@ -76,12 +76,12 @@ if __name__ == "__main__":
             KiDS_twopoint_file_cov = KiDS_twopoint_file
 
             for i in range(noise_begin, noise_end):
-                run_name = f"{run_name_root}_{i}_{run_type}"
+                data_name = f"{data_name_root}_{i}_{run_type}"
 
                 KiDS_twopoint_file_mean = f"{output_dir}base_{i}_EE_nE_w/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits"
-                KiDS_twopoint_file_save = f"{output_dir}{run_name}/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits"
+                KiDS_twopoint_file_save = f"{output_dir}{data_name}/data/KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits"
                 
-                subprocess.run(['mkdir', '-p', f'{output_dir}{run_name}/data/KiDS/'])
+                subprocess.run(['mkdir', '-p', f'{output_dir}{data_name}/data/KiDS/'])
                 cmd = ['new_from_mean_and_cov', KiDS_twopoint_file_mean, KiDS_twopoint_file_cov, KiDS_twopoint_file_save]
                 subprocess.run(["python", script2] + cmd, check=True)
 
