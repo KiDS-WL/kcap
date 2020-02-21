@@ -14,8 +14,8 @@ if __name__ == "__main__":
     # dz covariance from SOM, scaled by factor 4
     dz_cov_file = "data/KV450/nofz/SOM_cov_multiplied.asc"
 
-    # To be expanded
-    run_type_list = ["EE_nE_w", "EE_nE", "EE_w", "nE_w"]
+    # Run over all possible combinations
+    run_type_list = ["EE_nE_w", "EE_nE", "EE_w", "nE_w", "EE", "nE", "w"]
 
     # Loop over different run_type
     for run_type in run_type_list:
