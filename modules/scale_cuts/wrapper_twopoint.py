@@ -3,7 +3,7 @@
     ##############################
     ##  wrapper_twopoint.py	##
     ##  Chieh-An Lin		##
-    ##  Version 2020.02.19	##
+    ##  Version 2020.02.21	##
     ##############################
 
 
@@ -254,30 +254,5 @@ class TwoPointWrapper(twopoint.TwoPointFile):
             self.mask_scale(statsTag, min_scale=angMin_angMax[0], max_scale=angMin_angMax[1]) ## Keep an angular range for a specific tomo bin
         return
 
-###############################################################################
-## Main function
-
-if __name__ == "__main__":
-    
-    if len(sys.argv) == 1:
-        raise AssertionError('Need an argument here.\n Available ones are: new_from_mean_and_cov')
-    
-    if sys.argv[1] == 'new_from_mean_and_cov':
-        if len(sys.argv) != 5:
-            raise AssertionError('Usage: python wrapper_twopoint.py new_from_mean_and_cov pathForMean pathForCov pathForOutput')
-        
-        path_mean = sys.argv[2]
-        path_cov  = sys.argv[3]
-        path_save = sys.argv[4]
-        
-        TP_mean = TwoPointWrapper.from_fits(path_mean)
-        TP_cov  = TwoPointWrapper.from_fits(path_cov, covmat_name='COVMAT')
-        mean    = TP_mean.makeMeanVector()
-        TP_cov.replaceMeanVector(mean)
-        TP_cov.to_fits(path_save, overwrite=True)
-        
-    else:
-        print('Did nothing.')
-    
 ###############################################################################
 
