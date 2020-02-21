@@ -1,34 +1,31 @@
-import sys
 import subprocess
 import os
+import argparse
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
-        noise_begin = int(sys.argv[1])
-        noise_end   = int(sys.argv[2])
-    else:
-        noise_begin = 0
-        noise_end   = 1
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--noise-free', action='store_true', help='create noise-free configs')
+    parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
+    args = parser.parse_args()
 
     script = "utils/run_kcap.py"
 
-    # No dz
+    # Let dz_cov fall back to the default value; we are fixing dz shift anyway
     #dz_cov_file = "data/KV450/nofz/id_cov.asc"
 
-    # Case for 2x2pt
+    # We only study 2x2pt in `test_covariance`
     run_type = "EE_nE"
 
     KiDS_twopoint_tag_list = ['theoryBuceros', 'theoryEgretta', 'simBuceros', 'simEgretta']
     data_name_root_list    = ['theory_simple', 'theory_complex', 'mock_simple', 'mock_complex']
-    cut_dz_modules         = ["--cut-modules", "correlated_dz_priors",
-                              "--cut-modules", "source_photoz_bias"]
+    fix_dz                 = ["--fix-values", "nofz_shifts"]
 
     # Loop over different covariances
     for KiDS_twopoint_tag, data_name_root in zip(KiDS_twopoint_tag_list, data_name_root_list):
 
-        # Configs for noiseless cases; only made if noise_begin = 0
-        if noise_begin == 0:
+        # Configs for noise-free cases
+        if args.noise_free:
 
             root_data_dir = f"runs/methodology/data/noisefree_fiducial/{data_name_root}_EE_nE_w/data/"
             twopoint_file = os.path.join(root_data_dir, f"KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noiseless.fits")
@@ -46,7 +43,7 @@ if __name__ == "__main__":
                     "--KiDS-data-file", twopoint_file,
                     "--sampler", "multinest",
                     *multinest_settings,
-                    *cut_dz_modules]
+                    *fix_dz]
             subprocess.run(["python", script] + cmd, check=True)
 
             # Noiseless MAP sampler
@@ -58,7 +55,7 @@ if __name__ == "__main__":
                     "--run-type", run_type,
                     "--KiDS-data-file", twopoint_file,
                     "--sampler", "maxlike",
-                    *cut_dz_modules]
+                    *fix_dz]
             subprocess.run(["python", script] + cmd, check=True)
 
             # Test sampler
@@ -70,7 +67,7 @@ if __name__ == "__main__":
                     "--run-type", run_type,
                     "--KiDS-data-file", twopoint_file,
                     "--sampler", "test",
-                    *cut_dz_modules]
+                    *fix_dz]
             subprocess.run(["python", script] + cmd, check=True)
 
         # Noisy MAP runs; loop over noise realizations
@@ -78,7 +75,7 @@ if __name__ == "__main__":
         run_name_root = "MAP"
         MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 
-        for i in range(noise_begin, noise_end):
+        for i in range(args.noise_range[0], args.noise_range[1]):
             root_data_dir = f"runs/methodology/data/noisy_fiducial/{data_name_root}_{i}_EE_nE_w/data/"
             twopoint_file = os.path.join(root_data_dir, f"KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noisy.fits")
             run_name = f"{run_name_root}_{i}_{run_type}"
@@ -89,6 +86,6 @@ if __name__ == "__main__":
                   "--KiDS-data-file", twopoint_file,
                   "--sampler", "maxlike",
                   *MAP_settings,
-                  *cut_dz_modules]
+                  *fix_dz]
             subprocess.run(["python", script] + cmd, check=True)
 

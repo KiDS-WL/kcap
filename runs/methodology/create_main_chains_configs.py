@@ -1,29 +1,27 @@
-import sys
 import subprocess
 import os
+import argparse
 
 if __name__ == "__main__":
 
-    if len(sys.argv) > 1:
-        noise_begin = int(sys.argv[1])
-        noise_end   = int(sys.argv[2])
-    else:
-        noise_begin = 0
-        noise_end   = 1
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--noise-free', action='store_true', help='create noise-free configs')
+    parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
+    args = parser.parse_args()
 
     script = "utils/run_kcap.py"
 
-    # Updated to the SOM covariance
+    # dz covariance from SOM, scaled by factor 4
     dz_cov_file = "data/KV450/nofz/SOM_cov_multiplied.asc"
 
     # To be expanded
-    run_type_list = ["EE_nE_w"]
+    run_type_list = ["EE_nE_w", "EE_nE", "EE_w", "nE_w"]
 
     # Loop over different run_type
     for run_type in run_type_list:
 
-        # Configs for noiseless cases; only made if noise_begin = 0
-        if noise_begin == 0:
+        # Configs for noise-free cases
+        if args.noise_free:
             
             root_data_dir = "runs/methodology/data/noisefree_fiducial/base_EE_nE_w/data/"
             twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
@@ -82,7 +80,7 @@ if __name__ == "__main__":
         output_root_dir = "runs/methodology/main_chains/MAP"
         run_name_root = "MAP"
 
-        for i in range(noise_begin, noise_end):
+        for i in range(args.noise_range[0], args.noise_range[1]):
             root_data_dir   = f"runs/methodology/data/noisy_fiducial/base_{i}_EE_nE_w/data/"
             twopoint_file   = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
             boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_1.txt"),
