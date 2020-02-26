@@ -17,8 +17,9 @@ if __name__ == "__main__":
     uncorr_dz_cov_file = "data/KV450/nofz/id_cov.asc"
     corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # dz covariance from SOM, scaled by factor 4
     sampler_ln_As_settings = [
-        "--uncut-modules", ["sample_ln_As"],
-        "--cut-modules", ["sample_S8"]
+        "--uncut-modules", "sample_ln_As",
+        "--uncut-modules", "sigma8toAs",
+        "--cut-modules", "sample_S8"
     ]
     
     data_name_root_list = ["S8_corr", "lnAs_corr", "S8_uncorr", "lnAs_uncorr"]
