@@ -25,13 +25,13 @@ if __name__ == "__main__":
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/multinest', exist_ok=True)
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP_noiseless', exist_ok=True)
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/test', exist_ok=True)
-        os.symlink(f"../../../main_chains/multinest/multinest_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_EE_nE")
-        os.symlink(f"../../../main_chains/MAP_noiseless/MAP_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_EE_nE")
-        os.symlink(f"../../../main_chains/MAP_noiseless/test", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/test")
+        os.symlink(f"../../../main_chains/multinest/multinest_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_{run_type}")
+        os.symlink(f"../../../main_chains/MAP_noiseless/MAP_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_{run_type}")
+        os.symlink(f"../../../main_chains/test/test_sampler_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/test/test_sampler_{run_type}")
 
     for i in range(args.noise_range[0], args.noise_range[1]):
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
-        os.symlink(f"../../../main_chains/MAP/MAP_{i}_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_EE_nE")
+        os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}")
 
     data_name_root = "sabotaged"
 
