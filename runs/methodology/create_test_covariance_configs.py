@@ -14,12 +14,13 @@ if __name__ == "__main__":
     # Let dz_cov fall back to the default value; we are fixing dz shift anyway
     #dz_cov_file = "data/KV450/nofz/id_cov.asc"
 
-    # We only study 2x2pt in `test_covariance`
-    run_type = "EE_nE"
+    # In`test_covariance`: 2x2pt, fixed dz to 0
+    test_name = "test_covariance"
+    run_type  = "EE_nE"
+    fix_dz    = ["--fix-values", "nofz_shifts"]
 
     KiDS_twopoint_tag_list = ['theoryBuceros', 'theoryEgretta', 'simBuceros', 'simEgretta']
     data_name_root_list    = ['theory_simple', 'theory_complex', 'mock_simple', 'mock_complex']
-    fix_dz                 = ["--fix-values", "nofz_shifts"]
 
     # Loop over different covariances
     for KiDS_twopoint_tag, data_name_root in zip(KiDS_twopoint_tag_list, data_name_root_list):
@@ -31,7 +32,7 @@ if __name__ == "__main__":
             twopoint_file = os.path.join(root_data_dir, f"KiDS/twoPoint_PneE+PeeE_mean_None_cov_{KiDS_twopoint_tag}_nOfZ_bucerosBroad_mock_noiseless.fits")
 
             # Multinest
-            output_root_dir = f"runs/methodology/test_covariance/{data_name_root}/multinest"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/multinest"
             multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                                   "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
             run_name_root = "multinest"
@@ -47,7 +48,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
             # Noiseless MAP sampler
-            output_root_dir = f"runs/methodology/test_covariance/{data_name_root}/MAP_noiseless"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless"
             run_name_root = "MAP"
             run_name = f"{run_name_root}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
@@ -59,7 +60,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
             # Test sampler
-            output_root_dir = f"runs/methodology/test_covariance/{data_name_root}/test"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/test"
             run_name_root = "test_sampler"
             run_name = f"{run_name_root}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
@@ -71,7 +72,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
         # Noisy MAP runs; loop over noise realizations
-        output_root_dir = f"runs/methodology/test_covariance/{data_name_root}/MAP"
+        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP"
         run_name_root = "MAP"
         MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 

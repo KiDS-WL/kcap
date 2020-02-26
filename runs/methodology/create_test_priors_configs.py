@@ -11,93 +11,98 @@ if __name__ == "__main__":
 
     script = "utils/run_kcap.py"
 
-    # dz covariance from SOM, scaled by factor 4
-    dz_cov_file = "data/KV450/nofz/SOM_cov_multiplied.asc"
+    # In`test_priors`: 2x2pt
+    test_name = "test_priors"
+    run_type  = "EE_nE"
+    uncorr_dz_cov_file = "data/KV450/nofz/id_cov.asc"
+    corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # dz covariance from SOM, scaled by factor 4
+    sampler_ln_As_settings = [
+        "--uncut-modules", ["sample_ln_As"],
+        "--cut-modules", ["sample_S8"]
+    ]
+    
+    data_name_root_list = ["S8_corr", "lnAs_corr", "S8_uncorr", "lnAs_uncorr"]
 
-    # Run over all possible combinations
-    run_type_list = ["EE_nE_w", "EE_nE", "EE_w", "nE_w", "EE", "nE", "w"]
+    # Loop over different prior
+    for data_name_root in data_name_root_list:
+        tag_list = data_name_root.split('_')
 
-    # Loop over different run_type
-    for run_type in run_type_list:
+        if tag_list[0] == "lnAs":
+            S8_lnAs_settings = sampler_ln_As_settings
+        else:
+            S8_lnAs_settings = []
+
+        if tag_list[1] == "uncorr":
+            dz_cov_file = uncorr_dz_cov_file
+        else:
+            dz_cov_file = corr_dz_cov_file
 
         # Configs for noise-free cases
         if args.noise_free:
-            
+
             root_data_dir = "runs/methodology/data/noisefree_fiducial/base_EE_nE_w/data/"
             twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
-            boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_1.txt"),
-                              os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_2.txt")]
-            boss_cov_files =  [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
-                              os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
 
             # Multinest
-            output_root_dir = "runs/methodology/main_chains/multinest"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/multinest"
             multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                                   "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
-
             run_name_root = "multinest"
-            run_name = f"{run_name_root}_{run_type}" 
+            run_name = f"{run_name_root}_{run_type}"
+
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
                     "--KiDS-data-file", twopoint_file,
                     "--dz-covariance-file", dz_cov_file,
-                    "--BOSS-data-files", *boss_data_files,
-                    "--BOSS-covariance-files", *boss_cov_files,
                     "--sampler", "multinest",
-                    *multinest_settings]
+                    *multinest_settings,
+                    *S8_lnAs_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
             # Noiseless MAP sampler
-            output_root_dir = "runs/methodology/main_chains/MAP_noiseless"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless"
             run_name_root = "MAP"
-            run_name = f"{run_name_root}_{run_type}" 
+            run_name = f"{run_name_root}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
                     "--KiDS-data-file", twopoint_file,
                     "--dz-covariance-file", dz_cov_file,
-                    "--BOSS-data-files", *boss_data_files,
-                    "--BOSS-covariance-files", *boss_cov_files,
-                    "--sampler", "maxlike"]
+                    "--sampler", "maxlike",
+                    *S8_lnAs_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
             # Test sampler
-            output_root_dir = "runs/methodology/main_chains/test"
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/test"
             run_name_root = "test_sampler"
-            run_name = f"{run_name_root}_{run_type}" 
+            run_name = f"{run_name_root}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
                     "--KiDS-data-file", twopoint_file,
                     "--dz-covariance-file", dz_cov_file,
-                    "--BOSS-data-files", *boss_data_files,
-                    "--BOSS-covariance-files", *boss_cov_files,
-                    "--sampler", "test"]
+                    "--sampler", "test",
+                    *S8_lnAs_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
         # Noisy MAP runs; loop over noise realizations
-        output_root_dir = "runs/methodology/main_chains/MAP"
+        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP"
         run_name_root = "MAP"
         MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 
         for i in range(args.noise_range[0], args.noise_range[1]):
-            root_data_dir   = f"runs/methodology/data/noisy_fiducial/base_{i}_EE_nE_w/data/"
-            twopoint_file   = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
-            boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_1.txt"),
-                              os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_2.txt")]
-            boss_cov_files  = [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
-                              os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
+            root_data_dir = f"runs/methodology/data/noisy_fiducial/base_{i}_EE_nE_w/data/"
+            twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
+            run_name = f"{run_name_root}_{i}_{run_type}"
 
-            run_name = f"{run_name_root}_{i}_{run_type}" 
             cmd = ["--root-dir", output_root_dir,
                   "--run-name", run_name,
                   "--run-type", run_type,
                   "--KiDS-data-file", twopoint_file,
-                  "--dz-covariance-file", dz_cov_file,
-                  "--BOSS-data-files", *boss_data_files,
-                  "--BOSS-covariance-files", *boss_cov_files,
+                    "--dz-covariance-file", dz_cov_file,
                   "--sampler", "maxlike",
-                  *MAP_settings]
+                  *MAP_settings,
+                  *S8_lnAs_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
