@@ -13,14 +13,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     script = "utils/run_kcap.py"
+    
+    data_name_root = "base"
 
     # Always create 3x2pt data vector for mocks
     # Configs know how to use only part of them properly
     run_type = "EE_nE_w"
-
+    
     KiDS_twopoint_file = "../K1000-data/Phase-1/twopoint/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad.fits"
-
-    data_name_root = "base"
+    
+    # Always use identity matrix to generate mocks
+    # Otherwise dz parameters will be transformed by the covariance
+    dz_cov_file = "data/KV450/nofz/id_cov.asc"
 
     # Create noiseless mock data vector
     if args.noise_free:
@@ -30,6 +34,7 @@ if __name__ == "__main__":
         cmd = ["--create-mocks", "--noiseless-mocks",
                 "--root-dir", output_dir,
                 "--KiDS-data-file", KiDS_twopoint_file,
+                "--dz-covariance-file", dz_cov_file,
                 "--run-name", data_name,
                 "--run-type", run_type]
         subprocess.run(["python", script] + cmd, check=True)
@@ -43,6 +48,7 @@ if __name__ == "__main__":
         cmd = ["--create-mocks",
                 "--root-dir", output_dir,
                 "--KiDS-data-file", KiDS_twopoint_file,
+                "--dz-covariance-file", dz_cov_file,
                 "--run-name", data_name,
                 "--run-type", run_type]
         subprocess.run(["python", script] + cmd, check=True)
