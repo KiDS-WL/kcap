@@ -5,7 +5,7 @@ import sys
 sys.path.append("modules/scale_cuts/")
 from wrapper_twopoint import TwoPointWrapper
 
-    
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     run_type = "EE_nE_w"
     data_name_root = 'sabotaged'
     KiDS_twopoint_file = f"../K1000-data/Phase-1/twopoint/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad.fits"
+    dz_cov_file = "data/KV450/nofz/id_cov.asc"
 
     # Create noiseless mock data vector
     if args.noise_free:
@@ -38,6 +39,7 @@ if __name__ == "__main__":
         cmd = ["--create-mocks", "--noiseless-mocks",
                 "--root-dir", output_dir,
                 "--KiDS-data-file", KiDS_twopoint_file,
+                "--dz-covariance-file", dz_cov_file,
                 "--run-name", data_name,
                 "--run-type", run_type,
                 *dz_sabotage_settings]
