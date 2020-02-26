@@ -11,18 +11,34 @@ if __name__ == "__main__":
 
     script = "utils/run_kcap.py"
 
-    # In`test_priors`: 2x2pt
+    # In `test_priors`: 2x2pt
     test_name = "test_priors"
     run_type  = "EE_nE"
-    uncorr_dz_cov_file = "data/KV450/nofz/id_cov.asc"
-    corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # dz covariance from SOM, scaled by factor 4
+    uncorr_dz_cov_file = "data/KV450/nofz/id_cov.asc" # uncorrelated dz covariance
+    corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # SOM dz covariance scaled by factor 4
     sampler_ln_As_settings = [
         "--enable-modules", "sample_ln_As",
         "--cut-modules", "sample_S8",
         "--cut-modules", "sigma8toAs"
     ]
-    
-    data_name_root_list = ["lnAs_corr", "S8_uncorr", "lnAs_uncorr"] # Skip "S8_corr" as it is the same as main chains
+
+    data_name_root = "S8_corr"
+
+    # S8 corr is a repeated case; establish symbolic links
+    if args.noise_free:
+        os.makedirs(f'runs/methodology/{test_name}/{data_name_root}', exist_ok=True)
+        os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/multinest', exist_ok=True)
+        os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP_noiseless', exist_ok=True)
+        os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/test', exist_ok=True)
+        os.symlink(f"../../../../main_chains/multinest/multinest_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_EE_nE")
+        os.symlink(f"../../../../main_chains/MAP_noiseless/MAP_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_EE_nE")
+        os.symlink(f"../../../../main_chains/MAP_noiseless/test", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/test")
+
+    for i in range(args.noise_range[0], args.noise_range[1]):
+        os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
+        os.symlink(f"../../../../main_chains/MAP/MAP_{i}_EE_nE", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_EE_nE")
+
+    data_name_root_list = ["S8_uncorr", "lnAs_corr", "lnAs_uncorr"] # Skip "S8_corr" as it is the same as in a case from main chains
 
     # Loop over different prior
     for data_name_root in data_name_root_list:
