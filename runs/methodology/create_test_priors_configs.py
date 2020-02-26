@@ -18,11 +18,11 @@ if __name__ == "__main__":
     corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # dz covariance from SOM, scaled by factor 4
     sampler_ln_As_settings = [
         "--enable-modules", "sample_ln_As",
-        "--enable-modules", "sigma8toAs",
-        "--cut-modules", "sample_S8"
+        "--cut-modules", "sample_S8",
+        "--cut-modules", "sigma8toAs"
     ]
     
-    data_name_root_list = ["S8_corr", "lnAs_corr", "S8_uncorr", "lnAs_uncorr"]
+    data_name_root_list = ["lnAs_corr", "S8_uncorr", "lnAs_uncorr"] # Skip "S8_corr" as it is the same as main chains
 
     # Loop over different prior
     for data_name_root in data_name_root_list:
