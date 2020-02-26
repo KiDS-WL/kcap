@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Let dz_cov fall back to the default value; we are fixing dz shift anyway
     #dz_cov_file = "data/KV450/nofz/id_cov.asc"
 
-    # In`test_covariance`: 2x2pt, fixed dz to 0
+    # In `test_covariance`: 2x2pt, fixed dz to 0
     test_name = "test_covariance"
     run_type  = "EE_nE"
     fix_dz    = ["--fix-values", "nofz_shifts"]
