@@ -33,7 +33,7 @@ if __name__ == "__main__":
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
         os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}")
 
-    remove_GGL_overlap_settings = ["--set-keys", "scale_cuts", "cut_pair_pnee", "1+1 1+2 1+3 2+1 2+2 2+3 2+4"]
+    remove_GGL_overlap_settings = ["--set-keys", "scale_cuts", "cut_pair_PneE", "1+1 1+2 1+3 2+1 2+2 2+3 2+4"]
     data_name_root = "remove_GGL_overlap"
 
     # Configs for noise-free cases
