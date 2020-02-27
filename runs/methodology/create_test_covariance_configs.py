@@ -82,11 +82,11 @@ if __name__ == "__main__":
             run_name = f"{run_name_root}_{i}_{run_type}"
 
             cmd = ["--root-dir", output_root_dir,
-                  "--run-name", run_name,
-                  "--run-type", run_type,
-                  "--KiDS-data-file", twopoint_file,
-                  "--sampler", "maxlike",
-                  *MAP_settings,
-                  *fix_dz]
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--sampler", "maxlike",
+                    *MAP_settings,
+                    *fix_dz]
             subprocess.run(["python", script] + cmd, check=True)
 
