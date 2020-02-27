@@ -17,9 +17,9 @@ if __name__ == "__main__":
     run_type    = "EE_nE"
     dz_cov_file = "data/KV450/nofz/SOM_cov_multiplied.asc"
 
-    data_name_root = "base" # the unsabotaged cases are recognized as EE_nE chains in main chains
+    data_name_root = "base"
 
-    # S8 corr is a repeated case; establish symbolic links
+    # base is EE_nE in main chains; create symbolic links
     if args.noise_free:
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}', exist_ok=True)
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/multinest', exist_ok=True)
@@ -91,11 +91,11 @@ if __name__ == "__main__":
         run_name = f"{run_name_root}_{i}_{run_type}"
 
         cmd = ["--root-dir", output_root_dir,
-              "--run-name", run_name,
-              "--run-type", run_type,
-              "--KiDS-data-file", twopoint_file,
+                "--run-name", run_name,
+                "--run-type", run_type,
+                "--KiDS-data-file", twopoint_file,
                 "--dz-covariance-file", dz_cov_file,
-              "--sampler", "maxlike",
-              *MAP_settings]
+                "--sampler", "maxlike",
+                *MAP_settings]
         subprocess.run(["python", script] + cmd, check=True)
 
