@@ -32,7 +32,7 @@ if __name__ == "__main__":
                               os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
 
             # Multinest
-            output_root_dir = "runs/methodology/{test_name}/multinest"
+            output_root_dir = f"runs/methodology/{test_name}/multinest"
             multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                                   "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
             # Noiseless MAP sampler
-            output_root_dir = "runs/methodology/{test_name}/MAP_noiseless"
+            output_root_dir = f"runs/methodology/{test_name}/MAP_noiseless"
             run_name_root = "MAP"
             run_name = f"{run_name_root}_{run_type}" 
             cmd = ["--root-dir", output_root_dir,
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
             # Test sampler
-            output_root_dir = "runs/methodology/{test_name}/test"
+            output_root_dir = f"runs/methodology/{test_name}/test"
             run_name_root = "test_sampler"
             run_name = f"{run_name_root}_{run_type}" 
             cmd = ["--root-dir", output_root_dir,
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
         # Noisy MAP runs; loop over noise realizations
-        output_root_dir = "runs/methodology/{test_name}/MAP"
+        output_root_dir = f"runs/methodology/{test_name}/MAP"
         run_name_root = "MAP"
         MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 
