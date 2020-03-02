@@ -18,6 +18,7 @@ if __name__ == "__main__":
     corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # SOM dz covariance scaled by factor 4
     sampler_ln_As_settings = [
         "--enable-modules", "sample_ln_As",
+        "--set-parameter", "cosmological_parameters", "ln_1e10_a_s", "1.5 2.72 4.0",
         "--cut-modules", "sample_S8",
         "--cut-modules", "sigma8toAs"
     ]
