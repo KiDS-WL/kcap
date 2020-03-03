@@ -47,11 +47,8 @@ if __name__ == "__main__":
         ["--sampler-config", "maxlike_tolerance", "0.003"],
         ["--sampler-config", "maxlike_tolerance", "0.001"]
     ]
-    n_start_begin = 0
-    n_start_end   = 1
+    
     # Do nothing for noise-free cases
-    #if args.noise_free:
-        #pass
 
     # Noisy MAP runs; loop over noise realizations
     for i in range(args.noise_range[0], args.noise_range[1]):
@@ -77,9 +74,9 @@ if __name__ == "__main__":
                         "--BOSS-covariance-files", *boss_cov_files,
                         "--sampler", "maxlike",
                         *MAP_settings]
-                subprocess.run(["python", script] + cmd, check=True)            
+                subprocess.run(["python", script] + cmd, check=True)
 
-        for j in range(n_start_begin, n_start_end):
+        for j in range(args.random_start_range[0], args.random_start_range[1]):
             output_dir = "runs/methodology/data/noisy_fiducial/random_start{j}/"
 
             for data_name_root, MAP_settings in zip(data_name_root_list, MAP_settings_list):
