@@ -72,15 +72,27 @@ if __name__ == "__main__":
 
         for j in range(args.random_start_range[0], args.random_start_range[1]):
             output_dir = f"runs/methodology/data/noisy_fiducial/random_start{j}/"
+            random_start_file = f'{output_dir}start{j}_noise{i}.npy'
+            starting_point_settings = np.load(random_start_file)
+            run_name_root = "MAP"
+            run_name = f"{run_name_root}_{i}_{run_type}"
+
+            output_root_dir = f"runs/methodology/{test_name}/base_start{j}/MAP"
+
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--BOSS-data-files", *boss_data_files,
+                    "--BOSS-covariance-files", *boss_cov_files,
+                    "--sampler", "maxlike",
+                    *starting_point_settings]
+            subprocess.run(["python", script] + cmd, check=True)
 
             for data_name_root, MAP_settings in zip(data_name_root_list, MAP_settings_list):
                 output_root_dir = f"runs/methodology/{test_name}/{data_name_root}_start{j}/MAP"
-                run_name_root = "MAP"
 
-                random_start_file = f'{output_dir}start{j}_noise{i}.npy'
-                starting_point_settings = np.load(random_start_file)
-
-                run_name = f"{run_name_root}_{i}_{run_type}"
                 cmd = ["--root-dir", output_root_dir,
                         "--run-name", run_name,
                         "--run-type", run_type,
