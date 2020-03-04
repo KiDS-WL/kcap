@@ -42,8 +42,8 @@ def sample_random_starting_point():
 
     starting_point_settings = []
 
-    for key1, value1 in priorDict.item():
-        for key2, value2 in value1.item():
+    for key1, value1 in priorDict.items():
+        for key2, value2 in value1.items():
             p = np.random.uniform(value2[0], value2[1], 1)[0]
             starting_point_settings.append("--set-parameters")
             starting_point_settings.append(key1)
