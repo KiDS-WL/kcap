@@ -1,3 +1,4 @@
+import os
 import argparse
 
 
@@ -56,14 +57,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     #parser.add_argument('--noise-free', action='store_true', help='create noise-free mocks')
     parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy mocks indexed by i with BEGIN <= i < END')
-    parser.add_argument('--do-fiducial', action='store_true', help='TODO')
     parser.add_argument('--random-start-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create configs with random starting points indexed by i with BEGIN <= i < END')
     args = parser.parse_args()
 
     script = "utils/run_kcap.py"
-
-    n_start_begin = 0
-    n_start_end   = 1
 
     for j in range(args.random_start_range[0], args.random_start_range[1]):
 
