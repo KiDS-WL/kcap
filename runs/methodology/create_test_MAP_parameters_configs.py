@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     #parser.add_argument('--noise-free', action='store_true', help='create noise-free configs')
     parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
-    parser.add_argument('--do-fiducial', action='store_true', help='TODO')
+    parser.add_argument('--do-fiducial', action='store_true', help='Change tolerance values without randomizing starting points')
     parser.add_argument('--random-start-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create configs with random starting points indexed by i with BEGIN <= i < END')
     
     args = parser.parse_args()
@@ -78,6 +78,7 @@ if __name__ == "__main__":
             run_name = f"{run_name_root}_{i}_{run_type}"
 
             output_root_dir = f"runs/methodology/{test_name}/base_start{j}/MAP"
+            MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"] ## Original settings from the main chains
 
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
@@ -87,6 +88,7 @@ if __name__ == "__main__":
                     "--BOSS-data-files", *boss_data_files,
                     "--BOSS-covariance-files", *boss_cov_files,
                     "--sampler", "maxlike",
+                    *MAP_settings,
                     *starting_point_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
