@@ -68,10 +68,10 @@ if __name__ == "__main__":
         # Do nothing for noise-free cases
 
         # Create noisy mocks
-        output_dir = "runs/methodology/data/noisy_fiducial/random_start{j}/"
+        output_dir = f"runs/methodology/data/noisy_fiducial/random_start{j}/"
         os.makedirs(f'{output_dir}', exist_ok=True)
 
         for i in range(args.noise_range[0], args.noise_range[1]):
             starting_point_settings = sample_random_starting_point()
-            np.save('{output_dir}start{j}_noise{i}.npy', starting_point_settings)
+            np.save(f'{output_dir}start{j}_noise{i}.npy', starting_point_settings)
 
