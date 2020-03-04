@@ -77,13 +77,13 @@ if __name__ == "__main__":
                 subprocess.run(["python", script] + cmd, check=True)
 
         for j in range(args.random_start_range[0], args.random_start_range[1]):
-            output_dir = "runs/methodology/data/noisy_fiducial/random_start{j}/"
+            output_dir = f"runs/methodology/data/noisy_fiducial/random_start{j}/"
 
             for data_name_root, MAP_settings in zip(data_name_root_list, MAP_settings_list):
                 output_root_dir = f"runs/methodology/{test_name}/{data_name_root}_start{j}/MAP"
                 run_name_root = "MAP"
 
-                random_start_file = '{output_dir}start{j}_noise{i}.npy'
+                random_start_file = f'{output_dir}start{j}_noise{i}.npy'
                 starting_point_settings = np.load(random_start_file)
 
                 run_name = f"{run_name_root}_{i}_{run_type}"
