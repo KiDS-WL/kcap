@@ -25,13 +25,25 @@ if __name__ == "__main__":
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/multinest', exist_ok=True)
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP_noiseless', exist_ok=True)
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/test', exist_ok=True)
-        os.symlink(f"../../../main_chains/multinest/multinest_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_{run_type}")
-        os.symlink(f"../../../main_chains/MAP_noiseless/MAP_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_{run_type}")
-        os.symlink(f"../../../main_chains/test/test_sampler_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/test/test_sampler_{run_type}")
+
+        destination = f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_{run_type}"
+        if not os.path.islink(destination):
+            os.symlink(f"../../../main_chains/multinest/multinest_{run_type}", destination)
+
+        destination = f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_{run_type}"
+        if not os.path.islink(destination):
+            os.symlink(f"../../../main_chains/MAP_noiseless/MAP_{run_type}", destination)
+
+        destination = f"runs/methodology/{test_name}/{data_name_root}/test/test_sampler_{run_type}"
+        if not os.path.islink(destination):
+            os.symlink(f"../../../main_chains/test/test_sampler_{run_type}", destination)
 
     for i in range(args.noise_range[0], args.noise_range[1]):
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
-        os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}")
+
+        destination = f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}"
+        if not os.path.islink(destination):
+            os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", destination)
 
     remove_GGL_overlap_settings = ["--set-keys", "scale_cuts", "cut_pair_PneE", "1+1 1+2 1+3 2+1 2+2 2+3 2+4"]
     data_name_root = "remove_GGL_overlap"
