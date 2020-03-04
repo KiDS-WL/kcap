@@ -24,18 +24,12 @@ if __name__ == "__main__":
     data_name_root = "base"
 
     # base is EE_nE_w in main chains; create symbolic links
-    #if args.noise_free:
-        #os.makedirs(f'runs/methodology/{test_name}/{data_name_root}', exist_ok=True)
-        #os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/multinest', exist_ok=True)
-        #os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP_noiseless', exist_ok=True)
-        #os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/test', exist_ok=True)
-        #os.symlink(f"../../../main_chains/multinest/multinest_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/multinest/multinest_{run_type}")
-        #os.symlink(f"../../../main_chains/MAP_noiseless/MAP_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless/MAP_{run_type}")
-        #os.symlink(f"../../../main_chains/test/test_sampler_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/test/test_sampler_{run_type}")
-
     for i in range(args.noise_range[0], args.noise_range[1]):
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
-        os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}")
+        
+        destination = f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}"
+        if not os.path.islink(destination):
+            os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", destination)
 
     data_name_root_list = [
         "tolerance0.005",

@@ -33,11 +33,11 @@ def sample_random_starting_point():
             'b1_bin_1': [0.5, 9.0], 
             'b2_bin_1': [-4.0, 8.0], 
             'gamma3_bin_1': [-8.0, 8.0], 
-            'a_vir_bin_1': [1e-6, 12.0], ## 1e-6 instead of 0 due to a bug
+            'a_vir_bin_1': [0.000001, 12.0], ## 1e-6 instead of 0 due to a bug
             'b1_bin_2': [0.5, 9.0], 
             'b2_bin_2': [-4.0, 8.0], 
             'gamma3_bin_2': [-8.0, 8.0], 
-            'a_vir_bin_2': [1e-6, 12.0] ## 1e-6 instead of 0 due to a bug
+            'a_vir_bin_2': [0.000001, 12.0] ## 1e-6 instead of 0 due to a bug
         }
     }
 
