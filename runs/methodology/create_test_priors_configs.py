@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # In `test_priors`: 2x2pt
     test_name = "test_priors"
     run_type  = "EE_nE"
-    uncorr_dz_cov_file = "data/KV450/nofz/id_cov.asc" # uncorrelated dz covariance
+    uncorr_dz_cov_file = "data/KV450/nofz/SOM_cov_multiplied_diagonal.asc" # uncorrelated dz covariance
     corr_dz_cov_file   = "data/KV450/nofz/SOM_cov_multiplied.asc" # SOM dz covariance scaled by factor 4
     sampler_ln_As_settings = [
         "--enable-modules", "sample_ln_As",
