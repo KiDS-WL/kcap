@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     for i in range(args.noise_range[0], args.noise_range[1]):
         os.makedirs(f'runs/methodology/{test_name}/{data_name_root}/MAP', exist_ok=True)
-        
+
         destination = f"runs/methodology/{test_name}/{data_name_root}/MAP/MAP_{i}_{run_type}"
         if not os.path.islink(destination):
             os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", destination)
