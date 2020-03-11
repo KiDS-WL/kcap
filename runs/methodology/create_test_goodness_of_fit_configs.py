@@ -45,69 +45,71 @@ if __name__ == "__main__":
         if not os.path.islink(destination):
             os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", destination)
 
-    data_name_root = "sabotaged"
+    data_name_root_list = ["sabotaged2", "sabotaged5"]
+    
+    for data_name_root in data_name_root_list:
 
-    # Configs for noise-free cases
-    if args.noise_free:
+        # Configs for noise-free cases
+        if args.noise_free:
 
-        root_data_dir = f"runs/methodology/data/noisefree_fiducial/{data_name_root}_EE_nE_w/data/"
-        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
+            root_data_dir = f"runs/methodology/data/noisefree_fiducial/{data_name_root}_EE_nE_w/data/"
+            twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
 
-        # Multinest
-        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/multinest"
-        multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
-                              "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
-        run_name_root = "multinest"
-        run_name = f"{run_name_root}_{run_type}"
-        cmd = ["--root-dir", output_root_dir,
-                "--run-name", run_name,
-                "--run-type", run_type,
-                "--KiDS-data-file", twopoint_file,
-                "--dz-covariance-file", dz_cov_file,
-                "--sampler", "multinest",
-                *multinest_settings]
-        subprocess.run(["python", script] + cmd, check=True)
+            # Multinest
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/multinest"
+            multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
+                                  "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
+            run_name_root = "multinest"
+            run_name = f"{run_name_root}_{run_type}"
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--sampler", "multinest",
+                    *multinest_settings]
+            subprocess.run(["python", script] + cmd, check=True)
 
-        # Noiseless MAP sampler
-        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless"
+            # Noiseless MAP sampler
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP_noiseless"
+            run_name_root = "MAP"
+            run_name = f"{run_name_root}_{run_type}"
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--sampler", "maxlike"]
+            subprocess.run(["python", script] + cmd, check=True)
+
+            # Test sampler
+            output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/test"
+            run_name_root = "test_sampler"
+            run_name = f"{run_name_root}_{run_type}"
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--sampler", "test"]
+            subprocess.run(["python", script] + cmd, check=True)
+
+        # Noisy MAP runs; loop over noise realizations
+        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP"
         run_name_root = "MAP"
-        run_name = f"{run_name_root}_{run_type}"
-        cmd = ["--root-dir", output_root_dir,
-                "--run-name", run_name,
-                "--run-type", run_type,
-                "--KiDS-data-file", twopoint_file,
-                "--dz-covariance-file", dz_cov_file,
-                "--sampler", "maxlike"]
-        subprocess.run(["python", script] + cmd, check=True)
+        MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 
-        # Test sampler
-        output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/test"
-        run_name_root = "test_sampler"
-        run_name = f"{run_name_root}_{run_type}"
-        cmd = ["--root-dir", output_root_dir,
-                "--run-name", run_name,
-                "--run-type", run_type,
-                "--KiDS-data-file", twopoint_file,
-                "--dz-covariance-file", dz_cov_file,
-                "--sampler", "test"]
-        subprocess.run(["python", script] + cmd, check=True)
+        for i in range(args.noise_range[0], args.noise_range[1]):
+            root_data_dir = f"runs/methodology/data/noisy_fiducial/{data_name_root}_{i}_EE_nE_w/data/"
+            twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
+            run_name = f"{run_name_root}_{i}_{run_type}"
 
-    # Noisy MAP runs; loop over noise realizations
-    output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP"
-    run_name_root = "MAP"
-    MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
-
-    for i in range(args.noise_range[0], args.noise_range[1]):
-        root_data_dir = f"runs/methodology/data/noisy_fiducial/{data_name_root}_{i}_EE_nE_w/data/"
-        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
-        run_name = f"{run_name_root}_{i}_{run_type}"
-
-        cmd = ["--root-dir", output_root_dir,
-                "--run-name", run_name,
-                "--run-type", run_type,
-                "--KiDS-data-file", twopoint_file,
-                "--dz-covariance-file", dz_cov_file,
-                "--sampler", "maxlike",
-                *MAP_settings]
-        subprocess.run(["python", script] + cmd, check=True)
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--sampler", "maxlike",
+                    *MAP_settings]
+            subprocess.run(["python", script] + cmd, check=True)
 
