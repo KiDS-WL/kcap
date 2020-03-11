@@ -11,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
     parser.add_argument('--do-fiducial', action='store_true', help='Change tolerance values without randomizing starting points')
     parser.add_argument('--random-start-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create configs with random starting points indexed by i with BEGIN <= i < END')
+    parser.add_argument('--do-multinest', action='store_true', help='Create a specific multinest chain')
     
     args = parser.parse_args()
 
@@ -107,3 +108,32 @@ if __name__ == "__main__":
                         *starting_point_settings]
                 subprocess.run(["python", script] + cmd, check=True)
 
+    if args.do_multinest:
+        root_data_dir = f"runs/methodology/data/noisy_fiducial/base_38_EE_nE_w/data/"
+        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noisy.fits")
+        boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_1.txt"),
+                          os.path.join(root_data_dir, "BOSS/BOSS_mock_noisy_bin_2.txt")]
+        boss_cov_files  = [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
+                          os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
+
+        output_dir = f"runs/methodology/data/noisy_fiducial/random_start2/"
+        random_start_file = f'{output_dir}start2_noise38.npy'
+        starting_point_settings = np.load(random_start_file)
+        run_name_root = "multinest"
+        run_name = f"{run_name_root}_38_{run_type}"
+
+        output_root_dir = f"runs/methodology/{test_name}/base_start2/multinest"
+        multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
+                              "--sampler-config", "nested_sampling_tolerance", "1.0e-2"]
+
+        cmd = ["--root-dir", output_root_dir,
+                "--run-name", run_name,
+                "--run-type", run_type,
+                "--KiDS-data-file", twopoint_file,
+                "--dz-covariance-file", dz_cov_file,
+                "--BOSS-data-files", *boss_data_files,
+                "--BOSS-covariance-files", *boss_cov_files,
+                "--sampler", "multinest",
+                *multinest_settings,
+                *starting_point_settings]
+        subprocess.run(["python", script] + cmd, check=True)
