@@ -65,7 +65,7 @@ if __name__ == "__main__":
         data_name = f"{data_name_root_S}_{run_type}"
         dz_sabotage_settings_S = [
             "--set-parameters", "nofz_shifts", "p_1", "-2.0", ## This means 2-sigma.
-            "--set-parameters", "nofz_shifts", "p_2", "2.0"
+            "--set-parameters", "nofz_shifts", "p_2", "2.0",
             "--set-parameters", "nofz_shifts", "p_3", "-2.0",
             "--set-parameters", "nofz_shifts", "p_4", "2.0",
             "--set-parameters", "nofz_shifts", "p_5", "-2.0"
