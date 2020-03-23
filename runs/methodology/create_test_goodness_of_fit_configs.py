@@ -45,7 +45,7 @@ if __name__ == "__main__":
         if not os.path.islink(destination):
             os.symlink(f"../../../main_chains/MAP/MAP_{i}_{run_type}", destination)
 
-    data_name_root_list = ["sabotaged2", "sabotaged5"]
+    data_name_root_list = ["sabotaged2", "sabotaged5", "sabotagedS"]
     
     for data_name_root in data_name_root_list:
 
