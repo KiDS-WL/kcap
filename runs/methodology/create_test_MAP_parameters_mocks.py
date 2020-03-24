@@ -2,7 +2,6 @@ import os
 import argparse
 import numpy as np
 import scipy.stats as stats
-import pandas as pd
 
 
 def sample_random_starting_point():
@@ -96,12 +95,24 @@ def sample_random_from_multinest(data, wgt):
         }
     }
 
+    lower = []
+    upper = []
+    for key1, value1 in dict_.items():
+        for key2, value2 in value1.items():
+            lower.append(value2[0])
+            upper.append(value2[1])
+    lower = np.array(lower)
+    upper = np.array(upper)
+
+    while np.any(random_start <= lower) or np.any(upper <= random_start):
+        random_start = kernel.resample(1)
+
     starting_point_settings = []
     ind = 0
 
     for key1, value1 in priorDict.items():
         for key2, value2 in value1.items():
-            p = random_start[ind]
+            p = random_start[ind][0]
             starting_point_settings.append("--set-parameters")
             starting_point_settings.append(key1)
             starting_point_settings.append(key2)
