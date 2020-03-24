@@ -55,58 +55,8 @@ def sample_random_starting_point():
 
     return starting_point_settings
 
-def loadAsciiChain(name, changeCol={}, lnAs=True, verbose=True):
-    f = open(name, 'r')
-    hdr = f.readline().split()
-    hdr[0] = hdr[0][1:]
-    f.close()
-    
-    data = pd.read_csv(name, dtype=float, sep='\t', comment='#', header=None)
-    data.columns = hdr
-    
-    if verbose:
-        print('Loaded \"%s\"' % name)
-        print('shape = %s' % str(data.shape))
-    
-    data.rename(columns=changeCol, inplace=True)
-    
-    if lnAs:
-        col_As   = 'COSMOLOGICAL_PARAMETERS--A_S'
-        col_lnAs = 'COSMOLOGICAL_PARAMETERS--ln_1e10_A_S'
-        data[col_As] = np.log(data[col_As]*1e+10)
-        data.rename(columns={col_As: col_lnAs}, inplace=True)
-    return data
-
-def sample_random_from_multinest(data):
-    colList = [
-        'cosmological_parameters--omch2', 
-        'cosmological_parameters--ombh2',
-        'cosmological_parameters--h0', 
-        'cosmological_parameters--n_s',
-        'COSMOLOGICAL_PARAMETERS--S_8',
-        
-        'halo_model_parameters--a',
-        
-        'intrinsic_alignment_parameters--a', 
-        
-        'nofz_shifts--p_1',
-        'nofz_shifts--p_2', 
-        'nofz_shifts--p_3', 
-        'nofz_shifts--p_4',
-        'nofz_shifts--p_5', 
-        
-        'bias_parameters--b1_bin_1',
-        'bias_parameters--b2_bin_1', 
-        'bias_parameters--gamma3_bin_1',
-        'bias_parameters--a_vir_bin_1', 
-        'bias_parameters--b1_bin_2',
-        'bias_parameters--b2_bin_2', 
-        'bias_parameters--gamma3_bin_2',
-        'bias_parameters--a_vir_bin_2', 
-    ]
-    wgt = data['weight'].values
-    data2 = [data[col].values for col in colList]
-    kernel = stats.gaussian_kde(data2, 'silverman', weights=wgt)
+def sample_random_from_multinest(data, wgt):
+    kernel = stats.gaussian_kde(data, 'silverman', weights=wgt)
     random_start = kernel.resample(1)
     
     priorDict = {
@@ -184,13 +134,15 @@ if __name__ == "__main__":
             np.save(f'{output_dir}start{j}_noise{i}.npy', starting_point_settings)
 
         # Multinest
-        name = 'runs/methodology/main_chains/multinest/multinest_EE_nE_w/chain/samples_EE_nE_w.txt'
-        data = loadAsciiChain(name, changeCol={}, lnAs=False, verbose=True)
+        multinest_prior_name = 'runs/methodology/data/multinest_prior/multinest_samples.npy'
+        weight_name = 'runs/methodology/data/multinest_prior/multinest_random_weight.npy'
+        data = np.load(multinest_prior_name)
+        wgt  = np.load(weight_name)
         output_dir = f"runs/methodology/data/noisy_fiducial/multinest_start{j}/"
         os.makedirs(f'{output_dir}', exist_ok=True)
 
         for i in range(args.noise_range[0], args.noise_range[1]):
-            starting_point_settings = sample_random_from_multinest(data)
+            starting_point_settings = sample_random_from_multinest(data, wgt)
             np.save(f'{output_dir}start{j}_noise{i}.npy', starting_point_settings)
 
 
