@@ -54,6 +54,7 @@ if __name__ == "__main__":
         boss_cov_files  = [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
                           os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
 
+        # Original start, different MAP parameters
         if args.do_fiducial:
             for data_name_root, MAP_settings in zip(data_name_root_list, MAP_settings_list):
                 output_root_dir = f"runs/methodology/{test_name}/{data_name_root}/MAP"
@@ -81,6 +82,7 @@ if __name__ == "__main__":
             output_root_dir = f"runs/methodology/{test_name}/base_start{j}/MAP"
             MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"] ## Original settings from the main chains
 
+            # Random start, original MAP parameters
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
@@ -93,6 +95,7 @@ if __name__ == "__main__":
                     *starting_point_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
+            # Random start, different MAP parameters
             for data_name_root, MAP_settings in zip(data_name_root_list, MAP_settings_list):
                 output_root_dir = f"runs/methodology/{test_name}/{data_name_root}_start{j}/MAP"
 
@@ -107,6 +110,29 @@ if __name__ == "__main__":
                         *MAP_settings,
                         *starting_point_settings]
                 subprocess.run(["python", script] + cmd, check=True)
+
+            # Multinest start
+            output_dir = f"runs/methodology/data/noisy_fiducial/multinest_start{j}/"
+            random_start_file = f'{output_dir}start{j}_noise{i}.npy'
+            starting_point_settings = np.load(random_start_file)
+            run_name_root = "MAP"
+            run_name = f"{run_name_root}_{i}_{run_type}"
+            
+            output_root_dir = f"runs/methodology/{test_name}/base_multiStart{j}/MAP"
+            MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"] ## Original settings from the main chains
+
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--BOSS-data-files", *boss_data_files,
+                    "--BOSS-covariance-files", *boss_cov_files,
+                    "--sampler", "maxlike",
+                    *MAP_settings,
+                    *starting_point_settings]
+            subprocess.run(["python", script] + cmd, check=True)
+
 
     if args.do_multinest:
         root_data_dir = f"runs/methodology/data/noisy_fiducial/base_38_EE_nE_w/data/"
