@@ -56,7 +56,7 @@ def sample_random_starting_point():
 
 def sample_random_from_multinest(data, wgt):
     kernel = stats.gaussian_kde(data, 'silverman', weights=wgt)
-    random_start = kernel.resample(1)
+    random_start = kernel.resample(1).flatten()
     
     priorDict = {
         'cosmological_parameters': {
@@ -105,14 +105,14 @@ def sample_random_from_multinest(data, wgt):
     upper = np.array(upper)
 
     while np.any(random_start <= lower) or np.any(upper <= random_start):
-        random_start = kernel.resample(1)
+        random_start = kernel.resample(1).flatten()
 
     starting_point_settings = []
     ind = 0
 
     for key1, value1 in priorDict.items():
         for key2, value2 in value1.items():
-            p = random_start[ind][0]
+            p = random_start[ind]
             starting_point_settings.append("--set-parameters")
             starting_point_settings.append(key1)
             starting_point_settings.append(key2)
