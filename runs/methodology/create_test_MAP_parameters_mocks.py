@@ -97,7 +97,7 @@ def sample_random_from_multinest(data, wgt):
 
     lower = []
     upper = []
-    for key1, value1 in dict_.items():
+    for key1, value1 in priorDict.items():
         for key2, value2 in value1.items():
             lower.append(value2[0])
             upper.append(value2[1])
