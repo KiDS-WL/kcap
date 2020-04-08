@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--noise-free', action='store_true', help='create noise-free configs')
-    parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
+    parser.add_argument('--noise-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
     args = parser.parse_args()
 
     script = "utils/run_kcap.py"
@@ -90,7 +90,13 @@ if __name__ == "__main__":
             boss_cov_files  = [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
                               os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
 
-            run_name = f"{run_name_root}_{i}_{run_type}" 
+            # Multinest start
+            output_dir = f"runs/methodology/data/multinest_start/main_chain/"
+            random_start_file = f'{output_dir}start{i}.npy'
+            starting_point_settings = np.load(random_start_file)
+            run_name = f"{run_name_root}_{i}_{run_type}"
+            
+
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
@@ -99,6 +105,6 @@ if __name__ == "__main__":
                     "--BOSS-data-files", *boss_data_files,
                     "--BOSS-covariance-files", *boss_cov_files,
                     "--sampler", "maxlike",
-                    *MAP_settings]
+                    *MAP_settings,
+                    *starting_point_settings]
             subprocess.run(["python", script] + cmd, check=True)
-
