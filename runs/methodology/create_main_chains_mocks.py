@@ -57,14 +57,15 @@ if __name__ == "__main__":
 
 
     # Multinest random
-    multinest_prior_name = 'runs/methodology/data/multinest_prior/multinest_main_samples.npy'
-    weight_name = 'runs/methodology/data/multinest_prior/multinest_main_weight.npy'
-    data = np.load(multinest_prior_name)
-    wgt  = np.load(weight_name)
-    output_dir = f"runs/methodology/data/multinest_start/main_chain/"
-    os.makedirs(f'{output_dir}', exist_ok=True)
+    if args.multi_start[0] < args.multi_start[1]:
+        multinest_prior_name = 'runs/methodology/data/multinest_prior/multinest_main_samples.npy'
+        weight_name = 'runs/methodology/data/multinest_prior/multinest_main_weight.npy'
+        data = np.load(multinest_prior_name)
+        wgt  = np.load(weight_name)
+        output_dir = f"runs/methodology/data/multinest_start/main_chain/"
+        os.makedirs(f'{output_dir}', exist_ok=True)
 
-    for i in range(args.multi_start[0], args.multi_start[1]):
-        starting_point_settings = sample_random_from_multinest(data, wgt)
-        np.save(f'{output_dir}start{i}.npy', starting_point_settings)
+        for i in range(args.multi_start[0], args.multi_start[1]):
+            starting_point_settings = sample_random_from_multinest(data, wgt)
+            np.save(f'{output_dir}start{i}.npy', starting_point_settings)
 
