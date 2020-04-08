@@ -9,7 +9,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--noise-free', action='store_true', help='create noise-free mocks')
-    parser.add_argument('--noise-range', nargs=2, default=[0, 1], type=int, metavar=('BEGIN', 'END'), help='create noisy mocks indexed by i with BEGIN <= i < END')
+    parser.add_argument('--noise-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noisy mocks indexed by i with BEGIN <= i < END')
+    parser.add_argument('--multi-start', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create random staring point from multinest prior indexed by i with BEGIN <= i < END')
     args = parser.parse_args()
 
     script = "utils/run_kcap.py"
@@ -52,4 +53,17 @@ if __name__ == "__main__":
                 "--run-name", data_name,
                 "--run-type", run_type]
         subprocess.run(["python", script] + cmd, check=True)
+
+
+    # Multinest random
+    multinest_prior_name = 'runs/methodology/data/multinest_prior/multinest_main_samples.npy'
+    weight_name = 'runs/methodology/data/multinest_prior/multinest_main_weight.npy'
+    data = np.load(multinest_prior_name)
+    wgt  = np.load(weight_name)
+    output_dir = f"runs/methodology/data/multinest_start/main_chain/"
+    os.makedirs(f'{output_dir}', exist_ok=True)
+
+    for i in range(args.multi_start[0], args.multi_start[1]):
+        starting_point_settings = sample_random_from_multinest(data, wgt)
+        np.save(f'{output_dir}start{i}.npy', starting_point_settings)
 
