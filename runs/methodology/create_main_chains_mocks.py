@@ -3,6 +3,7 @@ import sys
 import argparse
 sys.path.append("modules/scale_cuts/")
 from wrapper_twopoint import TwoPointWrapper
+import numpy as np
 
     
 if __name__ == "__main__":
