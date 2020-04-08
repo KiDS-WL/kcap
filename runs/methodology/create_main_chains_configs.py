@@ -79,7 +79,8 @@ if __name__ == "__main__":
             subprocess.run(["python", script] + cmd, check=True)
 
         # Noisy MAP runs; loop over noise realizations
-        output_root_dir = f"runs/methodology/{test_name}/MAP"
+        output_root_dir  = f"runs/methodology/{test_name}/MAP"
+        random_start_dir = f"runs/methodology/data/multinest_start/{test_name}/"
         run_name_root = "MAP"
         MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
 
@@ -92,12 +93,10 @@ if __name__ == "__main__":
                               os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
 
             # Multinest start
-            output_dir = f"runs/methodology/data/multinest_start/main_chain/"
-            random_start_file = f'{output_dir}start{i}.npy'
+            random_start_file = f'{random_start_dir}start{i}.npy'
             starting_point_settings = np.load(random_start_file)
-            run_name = f"{run_name_root}_{i}_{run_type}"
             
-
+            run_name = f"{run_name_root}_{i}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
                     "--run-name", run_name,
                     "--run-type", run_type,
