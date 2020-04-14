@@ -1253,15 +1253,43 @@ matrix COSEBIs::calCovForSigma_m_from_m_cov(matrix m_cov)
 	matrix CMT(nMaximum*nPairs,nMaximum*nPairs);
 	setWns(nMaximum);
 	matrix En_mat=calEn();
-	for(int i=0;i<nMaximum*(nPairs);i++)
+	// C^ij,kl_nm=(C_m^ik+C_m^jl+C_m^il+C_m^jk)*E_n^ij*E_n^kl
+	for(int n=1; n<nMaximum+1; n++)
 	{
-		int pair_i=ceil(i/nMaximum);
-		for(int j=0; j<nMaximum*(nPairs); j++)
+		for(int m=n; m<nMaximum+1;m++)
 		{
-			int pair_j=ceil(j/nMaximum);
-			CMT.load(i,j,En_mat.get(i)*En_mat.get(j)*m_cov.get(pair_i,pair_j));
+			// clog.precision(10);
+			for(int bin1=0; bin1<nBins; bin1++)
+			{
+				for(int bin2=bin1; bin2<nBins; bin2++)
+				{
+					for(int bin3=bin1; bin3<nBins; bin3++)
+					{
+						for(int bin4=(bin3==bin1) ? bin2:bin3; bin4<nBins;bin4++)
+						{
+							number Cm_1 = m_cov.get(bin1,bin3);
+							number Cm_2 = m_cov.get(bin2,bin4);
+							number Cm_3 = m_cov.get(bin1,bin4);
+							number Cm_4 = m_cov.get(bin2,bin3);
+
+							//the pair considered for the Eparam_vec
+							int p1=calP(nBins,bin1,bin2);
+							int p2=calP(nBins,bin3,bin4);
+							int i=nMaximum*p1+n-1;
+							int j=nMaximum*p2+m-1;
+							number CovNM=En_mat.get(i)*En_mat.get(j);
+							number Cov_sigma_m=CovNM*(Cm_1+Cm_2+Cm_3+Cm_4);
+							CMT.load(i,j,Cov_sigma_m);
+							CMT.load(j,i,CMT.get(i,j));
+							CMT.load(i+(m-1)-(n-1),j+(n-1)-(m-1),CMT.get(i,j));
+							CMT.load(j+(n-1)-(m-1),i+(m-1)-(n-1),CMT.get(i,j));
+						}
+					}
+				}
+			}
 		}
 	}
+
 	return CMT;
 }
 
@@ -1272,12 +1300,10 @@ matrix COSEBIs::calBCov()
 	clog<<"calculating the B-mode covariance in COSEBIs"<<endl;
 	matrix CMT(nMaximum*nPairs,nMaximum*nPairs);
 	setWns(nMaximum);
-	clog<<" BCov file failed"<<endl;
 	for(int n=1; n<nMaximum+1; n++)
 	{
 		for(int m=n; m<nMaximum+1;m++)
 		{
-			//clog<<"n="<<n<<"  m="<<m<<endl;
 			number CovNM=valueBCov(n,m);
 			clog.precision(10);
 			for(int bin1=0; bin1<nBins; bin1++)
@@ -1302,8 +1328,6 @@ matrix COSEBIs::calBCov()
 							int p2=calP(nBins,bin3,bin4);
 							int i=nMaximum*p1+n-1;
 							int j=nMaximum*p2+m-1;
-// 								cout<<"i="<<i<<"  j="<<j<<endl;
-// 								bool writeInteg=false;
 							number CovB=CovNM*(delta1noise*delta2noise+delta3noise*delta4noise);
 							CMT.load(i,j,CovB);
 							CMT.load(j,i,CMT.get(i,j));

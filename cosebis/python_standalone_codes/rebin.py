@@ -1,6 +1,10 @@
 import numpy as np
 
 # output is x_log_binned, x_weighted_binned, signal_weighted_binned
+# inputs: x,y,weight 
+# x_min: one value
+# x_max: one value
+# nbins: number of log-bins to make between x_min and x_max
 def rebin(x,signal,weight,x_min,x_max,nbins):
 	# print('rebinning now')
 	binned_output=np.zeros((nbins,3))
@@ -32,17 +36,4 @@ def rebin(x,signal,weight,x_min,x_max,nbins):
 # upperEdge_in=np.exp(np.log(x_min)+np.log(x_max/x_min)/(nbins_in)*(ibins+1.0))
 # lowerEdge_in=np.exp(np.log(x_min)+np.log(x_max/x_min)/(nbins_in)*(ibins))
 # Deltax_in=np.log(upperEdge_in/lowerEdge_in)
-
-# ibins=np.linspace(0,nbins-1,nbins)
-# x_binned=np.exp(np.log(x_min)+np.log(x_max/x_min)/(nbins)*(ibins+0.5))
-# # Deltax=np.ones(nbins_in)
-# for ibins in range(nbins):
-# 	upperEdge=np.exp(np.log(x_min)+np.log(x_max/x_min)/(nbins)*(ibins+1.0))
-# 	lowerEdge=np.exp(np.log(x_min)+np.log(x_max/x_min)/(nbins)*(ibins))
-# 	Deltax=np.log(upperEdge/lowerEdge)
-# 	good=((x<upperEdge) & (x>lowerEdge))
-# 	x_binned_log=np.exp(np.log(x[good]).sum()/len(x[good]))
-# 	x_binned_weighted=(x[good]*weight[good]).sum()/weight[good].sum()
-# 	# x_binned=np.exp(np.log(x[good]).sum()/float(len(x[good])))
-# 	print(x_binned[ibins],x_binned_log,x_binned_weighted)
 
