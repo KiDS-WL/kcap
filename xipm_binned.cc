@@ -111,6 +111,7 @@ extern "C" {
 		//now lets see what is given in the ini file:
 		// clog<<endl<<endl;
 		// clog<<"*********in xipm_binned interface setup*********"<<endl;
+		// clog<<"section name is:"<<sectionName<<endl;
 		// clog<<endl;
 
 		
@@ -559,6 +560,8 @@ extern "C" {
 		else
 		{
 			clog<<"Not going to do weighted binning"<<endl;
+			config->weight_theta_bins_from_input=false;
+			config->weight_theta_bins_by_theta=false;
 		}
 
 		return (void *) config;
@@ -577,7 +580,7 @@ extern "C" {
 		const DATABLOCK_STATUS failure = (DATABLOCK_STATUS)1;
 
 		// clog<<endl<<endl;
-		// clog<<"*********in xipm_binned interface execute*********"<<endl;
+		// clog<<"*********in 2pt_binned interface execute*********"<<endl;
 		// clog<<endl;
 
 		//shear_xi_plus or shear_xi_minus are the the default names of the input section name. 
@@ -620,9 +623,18 @@ extern "C" {
 		// make vectors for logtheta used for interpolation
 		vector<number> logtheta(nTheta_in);
 		// change units from radians to arcmin
-		for (int itheta=0; itheta<nTheta_in; itheta++)
-			logtheta[itheta]=log(theta_in[itheta]/arcmin);
+		if(config->x_name=="theta")
+		{
+			for (int itheta=0; itheta<nTheta_in; itheta++)
+				logtheta[itheta]=log(theta_in[itheta]/arcmin);
+		}
+		else
+		{
+			for (int itheta=0; itheta<nTheta_in; itheta++)
+				logtheta[itheta]=log(theta_in[itheta]);
+		}
 
+		//clog<<"x_name="<<config->x_name<<endl;
 		//read in c-term modelling parameters
 		number delta_c=0.;
 		number c1=0.;
@@ -743,7 +755,7 @@ extern "C" {
 					//no weighted binning just use the single theta values for the theory vector
 					else
 					{
-						
+						//clog<<"interpolating for each bin centre"<<endl;
 						for(int itheta=0; itheta<config->nTheta; itheta++)
 							xi_binned.load(0,itheta, pcfs_table.value(config->theta_mat.get(itheta)));
 					}
@@ -840,7 +852,7 @@ extern "C" {
 					} //end of add 2D cterm
 
 					//could add the cuts here if need be
-					
+					//clog<<"now to convert the matrices to vectors"<<endl;
 					vector<number> xi_vec(xi_binned.rows),theta_vec(config->theta_mat.rows);
 					for(int m=0 ;m<xi_binned.rows ;m++)
 					{
@@ -848,7 +860,7 @@ extern "C" {
 						theta_vec[m]=config->theta_mat.get(m);
 					}
 
-
+					//clog<<"converted"<<endl;
 					status = block->put_val<vector<number> >(config->output_section_name, name_in, xi_vec);
 					status = block->put_val<vector<number> >(config->output_section_name, theta_name_in, theta_vec);
 					

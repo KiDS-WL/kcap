@@ -2,7 +2,7 @@
 #not done yet
 name: "xipm_binned"
 version: "1"
-purpose: "Measure cosebis from cls"
+purpose: "Bin 2pts"
 url: " "
 interface: 
 attribution: 
