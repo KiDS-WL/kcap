@@ -17,5 +17,8 @@ example_files/inputs/XI*
 modules/*.o
 build/
 
+__pycache__
+*.pdf
+
 *.*~
 .DS_Store
