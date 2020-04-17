@@ -76,7 +76,7 @@ class K1000Pipeline:
         nofz_modules = ["correlated_dz_priors", "source_photoz_bias",]
         nofz_values = [("nofz_shifts",)]
 
-        c_term_values = [("shear_c_bias")]
+        c_term_values = [("shear_c_bias",)]
 
         bias_values = [("bias_parameters",)]
 
@@ -186,7 +186,7 @@ class K1000Pipeline:
             l = config.get("min", l)
             m = config.get("fiducial", m)
             u = config.get("max", u)
-            if not all([l,m,u]):
+            if not all([v is not None for v in [l,m,u]]):
                 raise ValueError(f"min, fiducial, and max need to be specified but got {[l,m,u]}.")
             return [l,m,u]
         else:
