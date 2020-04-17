@@ -1,6 +1,6 @@
 # Add any directories, files, or patterns you don't want to be tracked by version control
 WnLog/
-BandPower_outputs/
+BandPower*/
 !modules/
 !TLogsRootsAndNorms/
 Tplut_minus/
@@ -16,6 +16,9 @@ example_files/inputs/XI*
 
 modules/*.o
 build/
+
+__pycache__
+*.pdf
 
 *.*~
 .DS_Store

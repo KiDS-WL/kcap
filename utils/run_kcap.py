@@ -64,7 +64,10 @@ class K1000Pipeline:
 
         cosmic_shear_modules = ["linear_alignment", "bandpower_shear_e"]
         cosmic_shear_keys = [("projection", "fast-shear-shear-ia")]
-        cosmic_shear_stats = [("scale_cuts", "use_stats", ["PeeE"])]
+        
+        EE_stats = [("scale_cuts", "use_stats", ["PeeE"])]
+        xipm_stats = [("scale_cuts", "use_stats", ["xiP", "xiM"])]
+        cosebis_stats = [("scale_cuts", "use_stats", ["En"])]
 
         IA_values = [("intrinsic_alignment_parameters", "A")]
         baryon_values = [("halo_model_parameters", "A")]
@@ -73,15 +76,17 @@ class K1000Pipeline:
         nofz_modules = ["correlated_dz_priors", "source_photoz_bias",]
         nofz_values = [("nofz_shifts",)]
 
+        c_term_values = [("shear_c_bias")]
+
         bias_values = [("bias_parameters",)]
 
-        self.default_config_cuts =            {"cut_modules"   : ["sample_S8", "sample_S8_squared", "sigma8toAs",
+        self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
                                                                   "magnification_alphas",
                                                                   "add_magnification",
-                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl"],
+                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",],
                                                "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
                                                                   ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
                                                                   ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
@@ -89,37 +94,51 @@ class K1000Pipeline:
 
         self.pipelines = {"EE_nE_w" :         {"cut_modules"    : [],
                                                "cut_keys"       : [],
-                                               "set_parameters" : wedges_param_range},
+                                               "set_parameters" : wedges_param_range,
+                                               "fix_values"     : c_term_values,},
 
                           "EE_nE" :           {"cut_modules"    : wedges_modules,
-                                               "fix_values"     : RSD_values,},
+                                               "fix_values"     : RSD_values + c_term_values,},
  
                           "EE_w" :            {"cut_modules"    : ggl_modules,
                                                "cut_keys"       : ggl_keys,
-                                               "set_keys"       : cosmic_shear_stats,
-                                               "set_parameters" : wedges_param_range,},
+                                               "set_keys"       : EE_stats,
+                                               "set_parameters" : wedges_param_range,
+                                               "fix_values"     : c_term_values,},
                            
                           "nE_w" :            {"cut_modules"    : cosmic_shear_modules,
                                                "cut_keys"       : cosmic_shear_keys,
                                                "set_keys"       : ggl_stats,
                                                "set_parameters" : wedges_param_range,
-                                               "fix_values"     : IA_values,},
+                                               "fix_values"     : IA_values + c_term_values,},
  
                           "EE" :              {"cut_modules"    : wedges_modules + ggl_modules,
                                                "cut_keys"       : ggl_keys,
-                                               "set_keys"       : cosmic_shear_stats,
-                                               "fix_values"     : bias_values,},
+                                               "set_keys"       : EE_stats,
+                                               "fix_values"     : bias_values + c_term_values,},
 
                           "nE" :              {"cut_modules"    : wedges_modules + cosmic_shear_modules,
                                                "cut_keys"       : cosmic_shear_keys,
                                                "set_keys"       : ggl_stats,
-                                               "fix_values"     : IA_values + RSD_values,},
+                                               "fix_values"     : IA_values + RSD_values + c_term_values,},
 
                           "w" :               {"cut_modules"    : cosmic_shear_modules + ggl_modules \
                                                                   + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "projection", "scale_cuts", "2x2pt_like"],
                                                "cut_keys"       : cosmic_shear_keys + ggl_keys,
                                                "set_parameters" : wedges_param_range,
-                                               "fix_values"     : IA_values + baryon_values + nofz_values},
+                                               "fix_values"     : IA_values + baryon_values + nofz_values + c_term_values},
+
+                          "xipm" :            {"cut_modules"    : wedges_modules + ggl_modules + ["bandpower_shear_e"],
+                                               "uncut_modules"  : ["cl2xi_shear", "bin_xi_plus", "bin_xi_minus"],
+                                               "cut_keys"       : ggl_keys,
+                                               "set_keys"       : xipm_stats,
+                                               "fix_values"     : bias_values,},
+
+                         "cosebis" :          {"cut_modules"    : wedges_modules + ggl_modules + ["bandpower_shear_e"],
+                                               "uncut_modules"  : ["cosebis"],
+                                               "cut_keys"       : ggl_keys,
+                                               "set_keys"       : cosebis_stats,
+                                               "fix_values"     : bias_values,},
                             }
 
         self.pipelines["nE_magnification"] = {**self.pipelines["nE"],
@@ -259,7 +278,7 @@ class K1000Pipeline:
         if params is None:
             params = self.values
 
-        pipeline = cosmosis_utils.create_pipeline(self.config)
+        pipeline = cosmosis_utils.create_pipeline(self.flatten_config(self.config, only_list_conversion=True))
 
         block = cosmosis_utils.dict_to_datablock(params)
         pipeline(block)
@@ -321,6 +340,12 @@ class K1000Pipeline:
                             xi_theta_min,
                             xi_theta_max,
                             xi_n_theta,
+                            use_c_term,
+                            use_2D_c_term,
+                            xip_2D_c_term_file,
+                            xim_2D_c_term_file,
+                            xim_cos4phi_file,
+                            xim_sin4phi_file,
                             bandpower_ell_min,
                             bandpower_ell_max,
                             bandpower_n_bin,
@@ -328,10 +353,18 @@ class K1000Pipeline:
                             bandpower_theta_max,
                             bandpower_apodise,
                             bandpower_Delta_x,
+                            cosebis_theta_min,
+                            cosebis_theta_max,
+                            cosebis_n_max,
+                            cosebis_2D_c_term_file,
+                            cosebis_cos4phi_file,
+                            cosebis_sin4phi_file,
                             used_stats,
                             cut_bin_nE,
                             ell_range_EE,
                             ell_range_nE,
+                            theta_range_xiP,
+                            theta_range_xiM,
                             halofit_version,
                             create_mocks,
                             noisy_mocks):
@@ -340,7 +373,8 @@ class K1000Pipeline:
                                                             "utils/sample_ln_As.py"),},
                                                 
                     "sample_S8"       : {"file" : os.path.join(KCAP_PATH,
-                                                            "utils/sample_S8.py"),},
+                                                            "utils/sample_S8.py"),
+                                         "S8_name"    : "S_8_input"},
                     "sample_S8_squared" : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sample_S8.py"),
                                            "S8_squared" : "T",
@@ -448,7 +482,9 @@ class K1000Pipeline:
                                             "mode" : "additive",
                                             "sample" : f"nz_{source_nz_sample}",
                                             "bias_section" : "nofz_shifts",
-                                            "interpolation" : "linear"},
+                                            "interpolation" : "linear",
+                                            "output_deltaz" : True,
+                                            "output_section_name" :  "delta_z_out"},
 
                     "linear_alignment" :   {"file" : os.path.join(CSL_PATH, 
                                                         "intrinsic_alignments/la_model/linear_alignments_interface.py"),
@@ -460,7 +496,7 @@ class K1000Pipeline:
 
                     "projection" :         {"file" : os.path.join(CSL_PATH, 
                                                         "structure/projection/project_2d.py"),
-                                            "ell_min" : 10.0,
+                                            "ell_min" : 1.0,
                                             "ell_max" : 3.0e4,
                                             "n_ell"  : 400,
                                             "shear-shear" : f"{source_nz_sample}-{source_nz_sample}",
@@ -498,14 +534,16 @@ class K1000Pipeline:
                                             "theta_max"           : xi_theta_min,
                                             "nTheta"              : xi_n_theta,
 
-                                            #"theta_min_max_filename" : "theta_bin_edges_file.ascii", # (optional) these are the edges of the theta plus bins,
+                                            "weighted_binning"    : 1, # set to zero for no binning
 
-                                            # InputNpair = InputNpair; (optional) a file containing the number of npair per finely binned thetas.
-                                            # InputNpair_suffix = .ascii ; (optional) DEFAULT is empty
-                                            # Column_theta = 0 ; (optional) which column in the file is theta? DEFAULT is 0
-                                            # Column_Npair = 7 ; which column in the file is npair? DEFAULT is 7
-                                            # nBins_in = 5 ; number of redshift bins, this needs to be given, otherwise will set weighted binning to just theta
+
+                                            "add_2D_cterm"        : use_2D_c_term,  
+                                            "InputXipm_2D_cterm"  : xip_2D_c_term_file, # (optional) if not given and add_2D_cterm>0 then look in the block
+                                            "input_2D_section_name" : "xi_2D",          # (optional) where to look in the block for xi_2D, it has to be the same format as other cosmosis outputs
+                                                                                        # the full value of this depends on type: input_2D_section_name+= "_"+type
+
                                             },
+
                     "bin_xi_minus" :       {"file" : os.path.join(COSEBIS_PATH, "libxipm_binned.so"),
                                             "output_section_name" : "shear_xi_minus_binned", # (optional) the DEFAULT is xi_binned
                                             "input_section_name"  : "shear_xi_minus", # (optional) the DEFAULT depends on type
@@ -513,7 +551,22 @@ class K1000Pipeline:
 
                                             "theta_min"           : xi_theta_min,
                                             "theta_max"           : xi_theta_min,
-                                            "nTheta"              : xi_n_theta,},
+                                            "nTheta"              : xi_n_theta,
+                                            
+                                            "weighted_binning"    : 1, # set to zero for no binning
+
+
+                                            "add_2D_cterm"        : use_2D_c_term,  
+                                            "InputXipm_2D_cterm"  : xim_2D_c_term_file, # (optional) if not given and add_2D_cterm>0 then look in the block
+                                            "input_2D_section_name" : "xi_2D",          # (optional) where to look in the block for xi_2D, it has to be the same format as other cosmosis outputs
+                                                                                        # the full value of this depends on type: input_2D_section_name+= "_"+type
+                                            "add_c_term"          : use_c_term,
+                                            "InputCos4phi"        : xim_cos4phi_file, # (optional) for xi_minus these are needed, either read from file or block
+                                            "InputSin4phi"        : xim_sin4phi_file, # (optional) for xi_minus these are needed, either read from file or block
+                                            # section names for sin and cos 4 phi in the block. The data has to be the same format as all other cosmosis outputs
+                                            "input_sin4phi_section_name" : "xim_sin4phi", # (optional) only relevant for xim DEFAULT value is xim_sin4phi, will look in tis section for the xim_sin4phi values
+                                            "input_cos4phi_section_name" : "xim_cos4phi", # (optional) only relevant for xim DEFAULT value is xim_cos4phi, will look in tis section for the xim_cos4phi values
+                                            },
 
                     "bin_xi_ggl" :         {"file" : os.path.join(COSEBIS_PATH, "libxipm_binned.so"),
                                             "output_section_name" : "galaxy_shear_xi_binned", # (optional) the DEFAULT is xi_binned
@@ -565,6 +618,34 @@ class K1000Pipeline:
 
                                             "Output_FolderName"      : os.path.join(COSEBIS_OUTPUTS, "BandPower_outputs/"),
                                             },
+                                    
+                    "cosebis" :             {"file" : os.path.join(COSEBIS_PATH, "libcosebis.so"),
+                                            "theta_min"              : cosebis_theta_min,
+                                            "theta_max"              : cosebis_theta_max,
+                                            "n_max"                  : cosebis_n_max,
+                                            "input_section_name"     : "shear_cl",
+                                            "output_section_name"    : "cosebis",
+
+                                            # c-term modelling
+                                            # contant c-term
+                                            "add_c_term"             : use_c_term,
+                                            "inputCos4phi"           : cosebis_cos4phi_file,
+                                            "inputSin4phi"           : cosebis_sin4phi_file,
+                                            # section names for sin and cos 4 phi in the block. The data has to be the same format as all other cosmosis outputs
+                                            "input_sin4phi_section_name" : "cosebis_sin4phi",
+                                            "input_cos4phi_section_name" : "cosebis_cos4phi",
+
+
+                                            # 2D c-term
+                                            "add_2D_cterm"           : use_2D_c_term,
+                                            "input_2Dcterm_filename" : cosebis_2D_c_term_file,
+                                            "input_2D_section_name"  : "cosebis_2D", 
+
+
+                                            "Wn_Output_FolderName"   : os.path.join(COSEBIS_PATH, "Wnlog/"),
+                                            "Roots_n_Norms_FolderName" : os.path.join(COSEBIS_PATH, "TLogsRootsAndNorms/"),
+                                            "Tn_Output_FolderName"   : os.path.join(COSEBIS_PATH, "Tn_Output_Folder/"),
+                                            },
 
                     "scale_cuts"  :         {"file" : os.path.join(SCALE_CUT_PATH, "scale_cuts.py"),
                                             "output_section_name" : "theory_data_covariance",
@@ -579,6 +660,8 @@ class K1000Pipeline:
                                             "keep_ang_PeeE" : ell_range_EE,
                                             "keep_ang_PneE" : ell_range_nE,
 
+                                            "keep_ang_xiP" : theta_range_xiP,
+                                            "keep_ang_xiM" : theta_range_xiM,
     
                                             # Section names for data
                                             "xi_plus_extension_name" : "xiP",
@@ -691,7 +774,8 @@ class K1000Pipeline:
                                                     "ombh2"       : [ 0.019,  0.0225,    0.026],
                                                     "h0"          : [ 0.64,   0.7,       0.82],
                                                     "n_s"         : [ 0.84,   0.97,      1.1],
-                                                    "ln_1e10_A_s" : [ 1.5,    2.72,      4.0],
+                                                    "S_8_input"   : [ 0.1,    0.7458,    1.3],
+                                                    #"ln_1e10_A_s" : [ 1.5,    2.72,      4.0],
                                                     "omega_k"     :           0.0,
                                                     "w"           :          -1.0,
                                                     "mnu"         :           0.06,             #normal hierarchy
@@ -706,13 +790,17 @@ class K1000Pipeline:
                                                     "p_4"         : [-5.0,    0.0,       5.0],
                                                     "p_5"         : [-5.0,    0.0,       5.0],},
 
+                "shear_c_bias"                   : {"c1"         : [-6e-4,    0.0,       6e-4],
+                                                    "c2"         : [-6e-4,    0.0,       6e-4],
+                                                    "Ac"         : [0.62,     1.13,      1.4],},
+
                 "bias_parameters"         :        {"b1_bin_1"    : [0.5,     2.1,       9.0],
                                                     "b2_bin_1"    : [-4.0,    0.2,       8.0],
                                                     "gamma3_bin_1": [-8.0,    0.9,       8.0],
                                                     "a_vir_bin_1" : [0.0,     3.8,      12.0],
 
                                                     "b1_bin_2"    : [0.5,     2.3,       9.0],
-                                                    "b2_bin_2"    : [-1.0,    0.5,       8.0], # Double-check
+                                                    "b2_bin_2"    : [-4.0,    0.5,       8.0], # Double-check
                                                     "gamma3_bin_2": [-8.0,    0.1,       8.0], # Double-check
                                                     "a_vir_bin_2" : [0.0,     3.0,      12.0],}}
 
@@ -725,16 +813,17 @@ class K1000Pipeline:
         return values, priors
         
     @staticmethod
-    def flatten_config(values):
+    def flatten_config(values, only_list_conversion=False):
         values = {**values}
         for section, d in values.items():
             for key, value in d.items():
                 if isinstance(value, (list, tuple)):
                     d[key] = " ".join([str(v) for v in value])
-                elif value is True:
-                    d[key] = "T"
-                elif value is False:
-                    d[key] = "F"
+                if not only_list_conversion:
+                    if value is True:
+                        d[key] = "T"
+                    elif value is False:
+                        d[key] = "F"
         return values
     
     
@@ -798,6 +887,18 @@ if __name__ == "__main__":
 
     parser.add_argument("--halofit-version", default="mead")
     parser.add_argument("--magnification-alpha", default="3.0")
+
+    parser.add_argument("--no-c-term", action="store_true")
+    parser.add_argument("--no-2d-c-term", action="store_true")
+
+    parser.add_argument("--xip-2d-c-term-file")
+    parser.add_argument("--xim-2d-c-term-file")
+    parser.add_argument("--xim-cos4phi-file")
+    parser.add_argument("--xim-sin4phi-file")
+
+    parser.add_argument("--cosebis-2d-c-term-file")
+    parser.add_argument("--cosebis-cos4phi-file")
+    parser.add_argument("--cosebis-sin4phi-file")
 
     parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
@@ -912,6 +1013,14 @@ if __name__ == "__main__":
     xi_theta_max = 300.0 # arcmin
     xi_n_theta = 9
 
+    use_c_term = int(not args.no_c_term)
+    use_2D_c_term = int(not args.no_2d_c_term)
+
+    xip_2D_c_term_file = args.xip_2d_c_term_file or ""
+    xim_2D_c_term_file = args.xim_2d_c_term_file or ""
+    xim_cos4phi_file = args.xim_cos4phi_file or ""
+    xim_sin4phi_file = args.xim_sin4phi_file or ""
+
     bandpower_ell_min = 100.0
     bandpower_ell_max = 1500.0
     bandpower_n_bin = 8
@@ -920,17 +1029,61 @@ if __name__ == "__main__":
     bandpower_apodise = 1
     bandpower_Delta_x = 0.5
 
+    cosebis_theta_min = 0.5
+    cosebis_theta_max = 300.0
+    cosebis_n_max = 5
+
+    cosebis_2D_c_term_file = args.cosebis_2d_c_term_file or ""
+    cosebis_cos4phi_file = args.cosebis_cos4phi_file or ""
+    cosebis_sin4phi_file = args.cosebis_sin4phi_file or ""
+
+    # Check if we're working with c-terms and if so, that the files are provided.
+    # Finally, copy them to the other data files in the data dir.
+    if "xipm" in pipeline_name:
+        if use_2D_c_term:
+            if xip_2D_c_term_file == "" or xip_2D_c_term_file == "":
+                raise ValueError("The 2D c-term files for xipm are required be default.")
+            if not create_mocks:
+                # Copy c-term files to data dir
+                xip_2D_c_term_file, xim_2D_c_term_file = stage_data_files(KiDS_data_dir, xip_2D_c_term_file, xim_2D_c_term_file)
+
+        if use_c_term:
+            if xim_cos4phi_file == "" or xim_sin4phi_file == "":
+                raise ValueError("The cos4phi/sin4phi c-term files for xim are required be default.")
+            if not create_mocks:
+                xim_cos4phi_file, xim_sin4phi_file = stage_data_files(KiDS_data_dir, xim_cos4phi_file, xim_sin4phi_file)
+
+    # Ditto for COSEBIs
+    if "cosebis" in pipeline_name:
+        if use_2D_c_term:
+            if cosebis_2D_c_term_file == "":
+                raise ValueError("The 2D c-term files for cosebis are required be default.")
+            if not create_mocks:
+                cosebis_2D_c_term_file = stage_data_files(KiDS_data_dir, cosebis_2D_c_term_file)
+
+        if use_c_term:
+            if cosebis_cos4phi_file == "" or cosebis_sin4phi_file == "":
+                raise ValueError("The cos4phi/sin4phi c-term files for cosebis are required be default.")
+            if not create_mocks:
+                cosebis_cos4phi_file, cosebis_sin4phi_file = stage_data_files(KiDS_data_dir, cosebis_cos4phi_file, cosebis_sin4phi_file)
+
+
     used_stats = ["PneE", "PeeE"]
     if create_mocks:
         cut_bin_nE = []
         ell_range_EE = [100, 1500]
         ell_range_nE = [100, 1500]
+        theta_range_xiP = [0.5, 300]
+        theta_range_xiM = [0.5, 300]
     else:
         # For GGL, remove bins 1-1, 2-1, 2-2, 2-3 (lens-source)
         cut_bin_nE = ["1+1", "2+1",  "2+2", "2+3"]
         ell_range_EE = [100, 1500]
         # For GGL, remove the last ell bin
         ell_range_nE = [100, 1070]
+        # Need to restrict theta range?
+        theta_range_xiP = [0.5, 300]
+        theta_range_xiM = [0.5, 300]
 
     halofit_version = args.halofit_version
     magnification_alphas = [str(args.magnification_alpha)]*2
@@ -956,6 +1109,12 @@ if __name__ == "__main__":
                         xi_theta_min=xi_theta_min,
                         xi_theta_max=xi_theta_max,
                         xi_n_theta=xi_n_theta,
+                        use_c_term=use_c_term,
+                        use_2D_c_term=use_2D_c_term,
+                        xip_2D_c_term_file=xip_2D_c_term_file,
+                        xim_2D_c_term_file=xim_2D_c_term_file,
+                        xim_cos4phi_file=xim_cos4phi_file,
+                        xim_sin4phi_file=xim_sin4phi_file,
                         bandpower_ell_min=bandpower_ell_min,
                         bandpower_ell_max=bandpower_ell_max,
                         bandpower_n_bin=bandpower_n_bin,
@@ -963,10 +1122,18 @@ if __name__ == "__main__":
                         bandpower_theta_max=bandpower_theta_max,
                         bandpower_apodise=bandpower_apodise,
                         bandpower_Delta_x=bandpower_Delta_x,
+                        cosebis_theta_min=cosebis_theta_min,
+                        cosebis_theta_max=cosebis_theta_max,
+                        cosebis_n_max=cosebis_n_max,
+                        cosebis_2D_c_term_file=cosebis_2D_c_term_file,
+                        cosebis_cos4phi_file=cosebis_cos4phi_file,
+                        cosebis_sin4phi_file=cosebis_sin4phi_file,
                         used_stats=used_stats,
                         cut_bin_nE=cut_bin_nE,
                         ell_range_EE=ell_range_EE,
                         ell_range_nE=ell_range_nE,
+                        theta_range_xiP=theta_range_xiP,
+                        theta_range_xiM=theta_range_xiM,
                         halofit_version=halofit_version,
                         create_mocks=create_mocks,
                         noisy_mocks=noisy_mocks)
@@ -995,6 +1162,15 @@ if __name__ == "__main__":
     fix_values = args.fix_values
     cut_modules = [m[0] for m in args.cut_modules] if args.cut_modules else None
     uncut_modules = [m[0] for m in args.enable_modules] if args.enable_modules else None
+
+
+    if not use_c_term:
+        fix_values = fix_values or []
+        if ("shear_c_bias", "c1") not in fix_values: fix_values += [("shear_c_bias", "c1")]
+        if ("shear_c_bias", "c2") not in fix_values: fix_values += [("shear_c_bias", "c2")]
+    if not use_2D_c_term:
+        fix_values = fix_values or []
+        if ("shear_c_bias", "Ac") not in fix_values: fix_values += [("shear_c_bias", "Ac")]
 
     if create_mocks:
         p.choose_pipeline(pipeline_name, sample=False, 
@@ -1057,6 +1233,11 @@ if __name__ == "__main__":
         if "correlated_dz_priors" in p.config:
             # nofz/bias_* values
             derived_parameters += p.config["correlated_dz_priors"]["output_parameters"].split(" ")
+        if "source_photoz_bias" in p.config and p.config["source_photoz_bias"]["output_deltaz"]:
+            # Get the mean n(z) shifts
+            n_source_bin = len(p.config["correlated_dz_priors"]["output_parameters"].split(" "))
+            sec = p.config["source_photoz_bias"]["output_section_name"]
+            derived_parameters += [f"{sec}/bias_{i+1}" for i in range(n_source_bin)]
         
         if "sample_bsigma8S8_bin_1" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_1"]

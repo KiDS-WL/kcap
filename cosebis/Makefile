@@ -17,8 +17,7 @@ COLIB     = libcolib.a
 #-----------------------------------
 #--- rules
 #-----------------------------------
-all: $(MODULE)/$(COLIB) libcosebis_2pcfs.so libcosebis.so libcosebis_cov.so\
- libbandpower.so libxipm_binned.so 
+all: $(MODULE)/$(COLIB) libcosebis_2pcfs.so libcosebis.so libcosebis_cov.so libbandpower.so libxipm_binned.so 
 
 # tells how to make my library (another makefile)
 
@@ -31,7 +30,6 @@ libcosebis_2pcfs.so: COSEBIs_2PCFs_cosmosis_interface.cc
 
 libcosebis.so: COSEBIs_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_cosmosis_interface.cc -shared -o libcosebis.so $(LDFLAGS) $(USER_LDFLAGS)
-
 
 libcosebis_cov.so: COSEBIs_covariance_cosmosis_interface.cc
 	$(CXX) $(CXXFLAGS) COSEBIs_covariance_cosmosis_interface.cc -shared -o libcosebis_cov.so $(LDFLAGS) $(USER_LDFLAGS)
