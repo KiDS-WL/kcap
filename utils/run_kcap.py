@@ -278,7 +278,7 @@ class K1000Pipeline:
         if params is None:
             params = self.values
 
-        pipeline = cosmosis_utils.create_pipeline(self.flatten_config(self.config, only_list_conversion=True))
+        pipeline = cosmosis_utils.create_pipeline(self.flatten_config(self.config, only_str_list_conversion=True))
 
         block = cosmosis_utils.dict_to_datablock(params)
         pipeline(block)
@@ -813,13 +813,17 @@ class K1000Pipeline:
         return values, priors
         
     @staticmethod
-    def flatten_config(values, only_list_conversion=False):
+    def flatten_config(values, only_str_list_conversion=False):
         values = {**values}
         for section, d in values.items():
             for key, value in d.items():
-                if isinstance(value, (list, tuple)):
-                    d[key] = " ".join([str(v) for v in value])
-                if not only_list_conversion:
+                if isinstance(value, (list, tuple)) and all(isinstance(l, str) for l in value):
+                    # Join list of strings
+                    d[key] = " ".join([v for v in value])
+                if not only_str_list_conversion:
+                    if isinstance(value, (list, tuple)) and not all(isinstance(l, str) for l in value):
+                        # Join other lists as well
+                        d[key] = " ".join([str(v) for v in value])
                     if value is True:
                         d[key] = "T"
                     elif value is False:
