@@ -15,16 +15,16 @@
 ## DATA LOCATION ##
 
 # set the path to the main data-folder:
-K1K_BandPowers.data_directory = '/your/path/to/KiDS-1000_DATA_RELEASE/'
+K1K_BandPowers.data_directory = 'modules/scale_cuts/test_files/'
 
 # set the path to the main folder of KCAP:
 # (this is required for importing the cosebis and scale_cuts modules )
-K1K_BandPowers.kcap_directory = '/your/path/to/KCAP/'
+K1K_BandPowers.kcap_directory = './'
 
 # for loading of files:
 
 # set name of FITS file containing all data (within data_directory):
-K1K_BandPowers.data_file = 'twoPoint_PeeE_mean_theoryNoise1_cov_theoryVultur_nOfZ_milvus.fits'
+K1K_BandPowers.data_file = 'twoPoint_PneE+PeeE.fits'
 
 ## BandPowers PARAMETERS ##
 
@@ -59,13 +59,16 @@ K1K_BandPowers.delta_x = 0.5
 # write out the PeeE theory vector (including all calibrations) in the same
 # format as the legacy data vector
 # you might want to increase 'nbins' for a higher resolution
-K1K_BandPowers.write_out_theory = False
+K1K_BandPowers.write_out_theory = True
 # the file will be saved to:
 K1K_BandPowers.theory_file = 'PeeE_theory.ascii'
 # the likelihood will terminate after writing out the vector. Hence, for an
 # MCMC run this flag needs to be set to False!
 
 ## REDSHIFT DISTRIBUTIONS ##
+
+# number of redshift (tomographic) bins:
+K1K_BandPowers.nzbins = 5
 
 # number of discrete z-values used for all integrations, can be set to arbitrary numbers now
 # for fiducial KV450 analysis: 120
@@ -90,13 +93,13 @@ K1K_BandPowers.keep_ang_PeeE = '99.5 1500.5'
 
 # these settings set the precision for the Cl integration
 # minimum l for C_l
-K1K_BandPowers.ell_min = 1.
+K1K_BandPowers.ell_min = 0.1
 # maximum l for C_l
-K1K_BandPowers.ell_max = 2.5e5
+K1K_BandPowers.ell_max = 5e5
 # number of (log-spaced) ell-nodes between ell_min and ell_max
-K1K_BandPowers.nells = 200
+K1K_BandPowers.nells = 400
 # if you want to write-out the Cls:
-K1K_BandPowers.write_out_Cls = False
+K1K_BandPowers.write_out_Cls = True
 
 ## METHOD FOR NON-LINEAR CORRECTIONS ##
 
@@ -106,7 +109,6 @@ K1K_BandPowers.write_out_Cls = False
 # 2) 'hmcode' (Mead et al. 2015, 2016)
 # the choice between the two affects also the choice of the baryon feedback
 # modelling further below!
-# for fiducial KV450 analysis: 'hmcode'
 K1K_BandPowers.method_non_linear_Pk = 'hmcode'
 
 # scale k_max (in h/Mpc) up to which the non-linear corrections (of the matter
@@ -156,19 +158,19 @@ K1K_BandPowers.use_linear_pk_for_IA = False
 # supply name of D_z shift correlation matrix (optional):
 # if it is not supplied or cannot be loaded, we assume no correlations between
 # the D_z shift parameters!
-K1K_BandPowers.filename_corrmat_D_z = 'DIR_cov.asc'
+K1K_BandPowers.filename_corrmat_D_z = ''
 
 ## FULL LIST OF ALL NUISANCES ##
 
 # combine all nuisance parameters in one list for marginalization:
-K1K_BandPowers.use_nuisance = ['A_IA', 'D_z1', 'D_z2', 'D_z3', 'D_z4', 'D_z5']
+#K1K_BandPowers.use_nuisance = ['A_IA', 'D_z1', 'D_z2', 'D_z3', 'D_z4', 'D_z5']
 
 
 ### GAUSSIAN PRIORS (FOR NUISANCES) ###
 
 # if you want to enforce Gaussian priors on some/all NUISANCE parameters, set flag to True
 # if set to False lists below are ignored!
-K1K_BandPowers.use_gaussian_prior_for_nuisance = True
+K1K_BandPowers.use_gaussian_prior_for_nuisance = False
 
 # add here all NUISANCE parameters for which you would like to define Gaussian priors:
 # names must match exactly to the nusiances defined above!

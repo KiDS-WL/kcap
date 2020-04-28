@@ -1,34 +1,20 @@
-####################################################################
-# '2cosmos' likelihood for the KiDS-1000 COSEBIs                   #
-# that allows to split the KiDS1000 data set into two mutually     #
-# exclusive subsets with independent cosmological parameters and   #
-# calculations. The subsets are still coupled through the joint    #
-# covariance matrix.                                               #
-####################################################################
+##############################################################
+# Likelihood for the KiDS-1000 COSEBIs                       #
+##############################################################
 #
-# To be used with the KCAP likelihood package for the fiducial 
-# KiDS-1000 COSEBIs analysis from XXXX et al. 2020 (arXiv:20XX.YYYY).
+# To be used with the KCAP likelihood package for the fiducial
+# KiDS1000 COSEBIs analysis from XXXX et al. 2020
+# (arXiv:20XX.YYYY).
 # Modified to work with Monte Python by Fabian Koehlinger.
-# Extended to account for mutually exclusive but
-# correlated data splits by Fabian Koehlinger.
-#
-# Please refer to Koehlinger et al. 2019 (MNRAS, 484, 3126) and
-# Section 7.4 in Hildebrandt et al. 2018 (arXiv:1812.06076) for the
-# application of this likelihood.
 #
 # Data available from:
 #
 # http://kids.strw.leidenuniv.nl/sciencedata.php
 #
 # ATTENTION:
-# 1) This likelihood does NOT work with the standard Monte Python
-# but requires the modified '2cosmos' version from:
-#
-# https://github.com/fkoehlin/montepython_2cosmos_public
-#
-# 2) This likelihood only produces valid results for \Omega_k = 0,
+# This likelihood only produces valid results for \Omega_k = 0,
 # i.e. flat cosmologies!
-####################################################################
+##############################################################
 
 from __future__ import print_function
 from montepython.likelihood_class import Likelihood
@@ -40,7 +26,6 @@ import numpy as np
 from scipy import interpolate as itp
 from scipy.linalg import cholesky, solve_triangular
 from astropy.io import fits
-#import scale_cuts as sc
 # check explicitly for CosmoSIS install:
 try:
     import cosmosis.runtime.module
@@ -80,7 +65,7 @@ def dict_to_datablock(d={}):
 
     return b
 
-class K1K_COSEBIs_2cosmos(Likelihood):
+class K1K_COSEBIs(Likelihood):
 
     def __init__(self, path, data, command_line):
 
@@ -88,17 +73,16 @@ class K1K_COSEBIs_2cosmos(Likelihood):
 
         # Force the cosmological module to store Pk for redshifts up to
         # max(self.z) and for k up to k_max
-        self.need_cosmo1_arguments(data, {'output': 'mPk', 'P_k_max_h/Mpc': self.k_max_h_by_Mpc})
-        self.need_cosmo2_arguments(data, {'output': 'mPk', 'P_k_max_h/Mpc': self.k_max_h_by_Mpc})
-        
+        self.need_cosmo_arguments(data, {'output': 'mPk'})
+        self.need_cosmo_arguments(data, {'P_k_max_h/Mpc': self.k_max_h_by_Mpc})
+
         ## Compute non-linear power spectrum if requested
         # it seems like HMcode needs the full argument to work...
         if self.method_non_linear_Pk in ['halofit', 'HALOFIT', 'Halofit', 'hmcode', 'Hmcode', 'HMcode', 'HMCODE']:
-            self.need_cosmo1_arguments(data, {'non linear': self.method_non_linear_Pk})
-            self.need_cosmo2_arguments(data, {'non linear': self.method_non_linear_Pk})
-            print('Using {:} to obtain the non-linear P(k, z)!'.format(self.method_non_linear_Pk))
+            self.need_cosmo_arguments(data, {'non linear': self.method_non_linear_Pk})
+            print('Using {:} to obtain the non-linear P(k, z)! \n'.format(self.method_non_linear_Pk))
         else:
-            print('Only using the linear P(k, z) for ALL calculations \n (check keywords for "method_non_linear_Pk").')
+            print('Only using the linear P(k, z) for ALL calculations \n (check keywords for "method_non_linear_Pk"). \n')
 
         # TODO: move min_kmax_hmc to data-file?!
         # might not be really necessary; I didn't see a difference in the P(k, z) ratios between
@@ -109,137 +93,75 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             if self.k_max_h_by_Mpc < min_kmax_hmc:
                 self.need_cosmo_arguments(data, {'P_k_max_h/Mpc': min_kmax_hmc})
                 #print "Your choice of k_max_h_by_Mpc is too small for HMcode. \n Requested P_k_max_h/Mpc now up to k = {:.2f} h/Mpc \n This does NOT influence the scale above".format(min_kmax_hmc)
-        
+
         # set up array of ells for Cl integrations:
         self.ells = np.logspace(np.log10(self.ell_min), np.log10(self.ell_max), self.nells)
-
+        
         # set up KCAP's scale cuts module here:
         # Initialize the scale cuts module from CosmoSIS:
-        self.config_scale_cuts1 = {'scale_cuts1': {'data_and_covariance_fits_filename': os.path.join(self.data_directory, self.data_file),
-                                                  #'scale_cuts_option': self.scale_cuts_option1,
-                                                  'use_stats': 'En',
-                                                  'output_section_name': 'likelihood_en',
-                                                  'cosebis_extension_name': 'En',
-                                                  'cosebis_section_name': 'cosebis'}}
+        self.config_scale_cuts = {'scale_cuts': {'data_and_covariance_fits_filename': os.path.join(self.data_directory, self.data_file),
+                                                 #'scale_cuts_option': self.scale_cuts_option1,
+                                                 'use_stats': 'En',
+                                                 'output_section_name': 'likelihood_en',
+                                                 'cosebis_extension_name': 'En',
+                                                 'cosebis_section_name': 'cosebis'}}
         
         # for now we only look for these two keywords:
-        if hasattr(self, 'keep_ang_En1'):
-            self.config_scale_cuts1['scale_cuts1'].update({'keep_ang_En': self.keep_ang_En1})
-        if hasattr(self, 'cut_pair_En1'):
-            self.config_scale_cuts1['scale_cuts1'].update({'cut_pair_En': self.cut_pair_En1})
+        if hasattr(self, 'keep_ang_En'):
+            self.config_scale_cuts['scale_cuts'].update({'keep_ang_En': self.keep_ang_En})
+        if hasattr(self, 'cut_pair_En'):
+            self.config_scale_cuts['scale_cuts'].update({'cut_pair_En': self.cut_pair_En})
             
-        self.config_scale_cuts2 = {'scale_cuts2': {'data_and_covariance_fits_filename': os.path.join(self.data_directory, self.data_file),
-                                                  #'scale_cuts_option': self.scale_cuts_option1,
-                                                  'use_stats': 'En',
-                                                  'output_section_name': 'likelihood_en',
-                                                  'cosebis_extension_name': 'En',
-                                                  'cosebis_section_name': 'cosebis'}}
-
-        # for now we only look for these two keywords:
-        if hasattr(self, 'keep_ang_En2'):
-            self.config_scale_cuts2['scale_cuts2'].update({'keep_ang_En': self.keep_ang_En2})
-        if hasattr(self, 'cut_pair_En2'):
-            self.config_scale_cuts2['scale_cuts2'].update({'cut_pair_En': self.cut_pair_En2})
-
         # import scale_cuts as CosmoSIS module
-        # I need two instances of that module for the 2cosmos setup:
-        self.scale_cuts_module1 = cosmosis.runtime.module.Module(module_name='scale_cuts1', 
-                                            file_path=os.path.join(self.kcap_directory, 
-                                            'modules/scale_cuts/scale_cuts.py'))
-        
-        self.scale_cuts_module2 = cosmosis.runtime.module.Module(module_name='scale_cuts2', 
+        self.scale_cuts_module = cosmosis.runtime.module.Module(module_name='scale_cuts', 
                                             file_path=os.path.join(self.kcap_directory, 
                                             'modules/scale_cuts/scale_cuts.py'))
         
         # during set up the module stores the cut data vec and covmat in its data
         # attribute
-        self.scale_cuts_module1.setup(dict_to_datablock(self.config_scale_cuts1))
-        self.scale_cuts_module2.setup(dict_to_datablock(self.config_scale_cuts2))
+        self.scale_cuts_module.setup(dict_to_datablock(self.config_scale_cuts))
         
         # this works now:
-        self.data_vec1 = self.scale_cuts_module1.data['data']
-        #print(self.cosebis_obs1.shape)
-        # we don't need the covmat_block
-        #covmat_block1 = self.scale_cuts_module1.data['covariance']
-        #print(covmat_block1.shape)
-        
-        self.data_vec2 = self.scale_cuts_module2.data['data']
-        #print(self.cosebis_obs2.shape)
-        # we don't need the covmat_block
-        #covmat_block2 = self.scale_cuts_module2.data['covariance']
-        #print(covmat_block2.shape)
-        
-        # concatenate to one data vector:
-        self.data_vec = np.concatenate((self.data_vec1, self.data_vec2))
+        self.data_vec = self.scale_cuts_module.data['data']
         #print(self.cosebis_obs.shape)
-
-        # the approach below does NOT work, as we would be missing the cross blocks!!!
-        # build a combined covmat, for that to work we assume, that the cov-mat dimension fits
-        # to the size of the *uncut*, single data-vector and is ordered in the same way as the
-        # *final* data-vector created here!
-        
-        # bmat can't deal with empty blocks...
-        '''
-        if covmat_block2.size != 0:
-            covmat = np.asarray(np.bmat('covmat_block1, covmat_block2; covmat_block1, covmat_block2'))
-        else:
-            covmat = covmat_block1
-        '''
-        
-        # Read dn_dz from data FITS file:
-        #z_samples, hist_samples = self.__load_legacy_nofz()
-        # in the process we also set self.nzbins!
-        data_vec_uncut, covmat_uncut, self.z_samples, self.hist_samples = self.load_data_file()
-
-        # instead we infer a masking array by comparing the uncut data vector
-        # to the cut data vectors and apply the mask then to a stacked block
-        # matrix for which each block consists of an uncut covmat
-        mask1 = self.get_mask(data_vec_uncut, self.data_vec1)
-        mask2 = self.get_mask(data_vec_uncut, self.data_vec2)
-        mask_indices = np.where(np.concatenate((mask1, mask2)) == 1)[0]
-        
-        covmat = np.bmat([[covmat_uncut, covmat_uncut],[covmat_uncut, covmat_uncut]])
-        covmat = covmat[np.ix_(mask_indices, mask_indices)]
+        covmat = self.scale_cuts_module.data['covariance']
         #print(covmat.shape)
+        
+        # Read measurements E_n COSEBIs:
+        #self.data_vec = self.__load_legacy_vec_obs()
+
+        # Read covariance matrix
+        #covmat = self.__load_legacy_covmat()
 
         # precompute Cholesky transform for chi^2 calculation:
         self.cholesky_transform = cholesky(covmat, lower=True)
 
+        # Read dn_dz from data FITS file:
+        # z_samples, hist_samples = self.__load_legacy_nofz()
+        # in the process we also set self.nzbins!
+        self.z_samples, self.hist_samples = self.load_data_file()
+
         # Check if any of the n(z) needs to be shifted in loglkl by D_z{1...n}:
-        self.shift_n_z_by_D_z = np.zeros((2, self.nzbins), 'bool')
+        self.shift_n_z_by_D_z = np.zeros(self.nzbins, 'bool')
         for zbin in xrange(self.nzbins):
-            param_name = 'D_z{:}_1'.format(zbin + 1)
+            param_name = 'D_z{:}'.format(zbin + 1)
             if param_name in data.mcmc_parameters:
-                self.shift_n_z_by_D_z[0, zbin] = True
-            param_name = 'D_z{:}_2'.format(zbin + 1)
-            if param_name in data.mcmc_parameters:
-                self.shift_n_z_by_D_z[1, zbin] = True
-        
-        if self.shift_n_z_by_D_z[0, :].any():
+                self.shift_n_z_by_D_z[zbin] = True
+
+        if self.shift_n_z_by_D_z.any():
             # load the correlation matrix of the D_z shifts:
             try:
-                fname = os.path.join(self.data_directory, self.filename_corrmat_D_z_1)
-                corrmat_D_z_1 = np.loadtxt(fname)
-                print('Loaded correlation matrix for D_z<i>_1 shifts from: \n {:} \n'.format(fname))
-                self.L_matrix_D_z_1 = np.linalg.cholesky(corrmat_D_z_1)
+                fname = os.path.join(self.data_directory, self.filename_corrmat_D_z)
+                corrmat_D_z = np.loadtxt(fname)
+                print('Loaded correlation matrix for D_z shifts from: \n {:} \n'.format(fname))
+                self.L_matrix_D_z = np.linalg.cholesky(corrmat_D_z)
             except:
-                print('Could not load correlation matrix of D_z<i>_1 shifts, hence treating them as independent! \n')
-                self.L_matrix_D_z_1 = np.eye(self.nzbins)
-        
-        if self.shift_n_z_by_D_z[1, :].any():
-            # load the correlation matrix of the D_z shifts:
-            try:
-                fname = os.path.join(self.data_directory, self.filename_corrmat_D_z_2)
-                corrmat_D_z_2 = np.loadtxt(fname)
-                print('Loaded correlation matrix for D_z<i>_2 shifts from: \n {:} \n'.format(fname))
-                self.L_matrix_D_z_2 = np.linalg.cholesky(corrmat_D_z_2)
-            except:
-                print('Could not load correlation matrix of D_z<i>_2 shifts, hence treating them as independent! \n')
-                self.L_matrix_D_z_2 = np.eye(self.nzbins)
+                print('Could not load correlation matrix of D_z shifts, hence treating them as independent! \n')
+                self.L_matrix_D_z = np.eye(self.nzbins)
         
         # prevent undersampling of histograms!
         if self.nzmax < len(self.z_samples) - 1:
-            print("You're trying to integrate at lower resolution than supplied by the n(z) histograms. \n Increase nzmax! Aborting now...")
+            print("You're trying to integrate at lower resolution than supplied by the n(z) histograms. \n Increase nzmax>={:}! Aborting now...".format(len(self.z_samples) - 1))
             exit()
         # if that's the case, we want to integrate at histogram resolution and need to account for
         # the extra zero entry added
@@ -247,12 +169,12 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             self.nzmax = self.z_samples.shape[1]
             # requires that z-spacing is always the same for all bins...
             self.z_p = self.z_samples[0, :]
-            print('Integrations performed at resolution of histogram!')
+            print('Integrations performed at resolution of histogram! \n')
         # if we interpolate anyway at arbitrary resolution the extra 0 doesn't matter
         else:
             self.nzmax += 1
             self.z_p = np.linspace(self.z_samples.min(), self.z_samples.max(), self.nzmax)
-            print('Integration performed at set nzmax resolution!')
+            print('Integration performed at set nzmax={:} resolution! \n'.format(self.nzmax - 1))
 
         self.pz = np.zeros((self.nzmax, self.nzbins))
         self.pz_norm = np.zeros(self.nzbins, 'float64')
@@ -272,9 +194,8 @@ class K1K_COSEBIs_2cosmos(Likelihood):
                 self.pz_norm[zbin] = np.sum(0.5 * (self.pz[1:, zbin] + self.pz[:-1, zbin]) * dz)
 
         self.zmax = self.z_p.max()
-        self.need_cosmo1_arguments(data, {'z_max_pk': self.zmax})
-        self.need_cosmo2_arguments(data, {'z_max_pk': self.zmax})
-
+        self.need_cosmo_arguments(data, {'z_max_pk': self.zmax})
+        
         # Initialize the COSEBIs module from CosmoSIS:
         config_theory = {'cosebis': {'theta_min': self.theta_min,
                                      'theta_max': self.theta_max,
@@ -283,16 +204,16 @@ class K1K_COSEBIs_2cosmos(Likelihood):
                                      'Wn_Output_FolderName': os.path.join(self.data_directory, 'weight_functions'),
                                      'Tn_Output_FolderName': os.path.join(self.kcap_directory, 'cosebis/TnLog'),
                                      'input_section_name': 'shear_cl'
-                                      }}
+                                     }}
         
         '''
         # 2D c-term is not anymore in latest COSEBIs release
-        if 'Ac_1' in data.mcmc_parameters or 'Ac_2' in data.mcmc_parameters:
+        if 'Ac' in data.mcmc_parameters:
             config_theory['cosebis'].update({'add_2D_cterm': 1})
             config_theory['cosebis'].update({'input_2Dcterm_filename': os.path.join(self.data_directory, self.cterm_file)})
         '''
         
-        # needs to point down to one of the '.so' files in COSEBIs folder:
+        # needs to point down to one of the '.so' files in 'cosebis_cosmosis':
         self.theory_module = cosmosis.runtime.module.Module(module_name='cosebis', 
                                             file_path=os.path.join(self.kcap_directory, 
                                             'cosebis/libcosebis.so'))
@@ -301,30 +222,22 @@ class K1K_COSEBIs_2cosmos(Likelihood):
 
         return
 
-    def loglkl(self, cosmo1, cosmo2, data):
+    def loglkl(self, cosmo, data):
 
-        theory_vec1 = self.cosmo_calculations(cosmo1, data, cosmo_index=1)
-        theory_vec2 = self.cosmo_calculations(cosmo2, data, cosmo_index=2)
-        
-        #print(cosebis_theory1.shape, cosebis_theory2.shape)
-        
-        theory_vec = np.concatenate((theory_vec1, theory_vec2))
-        
+        theory_vec = self.cosmo_calculations(cosmo, data)
+
         if self.write_out_theory:
+            fname = os.path.join(self.data_directory, self.theory_file)
             # for now we just dump the theory vector with no further details,
-            fname = os.path.join(self.data_directory, self.theory_file_prefix + '_comb.txt')
+            # ASCII style...
             np.savetxt(fname, theory_vec)
-            print('Saved cut and combined theory vector to: \n {:}'.format(fname))
-            fname = os.path.join(self.data_directory, self.theory_file_prefix + '_cosmo1.txt')
-            np.savetxt(fname, theory_vec1)
-            print('Saved cut theory vector for cosmo1 to: \n {:}'.format(fname))
-            fname = os.path.join(self.data_directory, self.theory_file_prefix + '_cosmo2.txt')
-            np.savetxt(fname, theory_vec2)
-            print('Saved cut theory vector for cosmo2 to: \n {:}'.format(fname))
+            print('Saved theory vector to: \n {:} \n'.format(fname))
             print('Aborting run now. \n Set flag "write_out_theory = False" for likelihood evaluations \n and double-check your data vector!')
             exit()
-        
+
         diff_vec = self.data_vec - theory_vec
+        # apply mask:
+        diff_vec = diff_vec
 
         # Don't invert that matrix!
         #chi2 = difference_vector.T.dot(inv_cov_sliced.dot(difference_vector))
@@ -350,24 +263,25 @@ class K1K_COSEBIs_2cosmos(Likelihood):
         #print('Time for one likelihood evaluation: {:.6f}s.'.format(dt))
 
         return -0.5 * chi2
-
+    
     def load_data_file(self):
         """
         Function to load and process the data FITS file
         """
         
+        # we really only need to load the n(z) data explicitly, the rest 
+        # is handled by the scale_cuts module
         data_tables = fits.open(os.path.join(self.data_directory, self.data_file))
-        
-        # we need this to construct a mask:
-        estimator = data_tables['En'].data
-        data_vec = np.asarray(estimator['VALUE'])
+        '''
+        # this is only needed in the 2cosmos likelihood (for creating a mask):
+        cosebis = data_tables['En'].data
+        cosebis_obs = np.asarray(cosebis['VALUE'])
         covmat = np.asarray(data_tables['COVMAT'].data)
-        
-        # and we need to load the n(z) data explicitly, the rest is handled 
-        # by the scale_cuts module:
+        '''
         
         # read number of NZ_SOURCE bins from HEADER
-        self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
+        # This does not seem to work and was a lucky hit...
+        #self.nzbins = int(data_tables[2].header['N_ZBIN_1'])
         # define also number of unique z-bin correlations:
         self.nzcorrs = self.nzbins * (self.nzbins + 1) // 2
         
@@ -381,22 +295,7 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             z_samples += [np.concatenate((np.zeros(1), zptemp))]
             hist_samples += [np.concatenate((np.zeros(1), hist_pz))]
                 
-        return data_vec, covmat, np.asarray(z_samples), np.asarray(hist_samples)
-    
-    def get_mask(self, theory_uncut, theory_cut):
-        """
-        Function to infer a masking array by comparing cut and uncut data
-        vectors.
-        """
-        
-        mask = np.zeros(len(theory_uncut))
-        for idx, val in enumerate(theory_uncut):
-            if val in theory_cut:
-                mask[idx] = 1
-                
-        #print(mask)
-        
-        return mask
+        return np.asarray(z_samples), np.asarray(hist_samples)
 
     def baryon_feedback_bias_sqr(self, k, z, A_bary=1.):
         """
@@ -470,7 +369,7 @@ class K1K_COSEBIs_2cosmos(Likelihood):
 
         return rho_crit_0
 
-    def get_matter_power_spectrum(self, r, z, cosmo, data, cosmo_index=1):
+    def get_matter_power_spectrum(self, r, z, cosmo, data):
 
         # Get power spectrum P(k=l/r,z(r)) from cosmological module
         pk = np.zeros((self.nells, self.nzmax), 'float64')
@@ -490,9 +389,8 @@ class K1K_COSEBIs_2cosmos(Likelihood):
                     pk_dm = cosmo.pk(k_in_inv_Mpc, z[idx_z])
                     pk_lin_dm = cosmo.pk_lin(k_in_inv_Mpc, z[idx_z])
 
-                param_name = 'A_bary_{:}'.format(cosmo_index)
-                if param_name in data.mcmc_parameters:
-                    A_bary = data.mcmc_parameters[param_name]['current'] * data.mcmc_parameters[param_name]['scale']
+                if 'A_bary' in data.mcmc_parameters:
+                    A_bary = data.mcmc_parameters['A_bary']['current'] * data.mcmc_parameters['A_bary']['scale']
                     pk[idx_ell, idx_z] = pk_dm * self.baryon_feedback_bias_sqr(k_in_inv_Mpc / cosmo.h(), z[idx_z], A_bary=A_bary)
                     # don't apply the baryon feedback model to the linear Pk!
                     #pk_lin[idx_ell, idx_z] = pk_lin_dm * self.baryon_feedback_bias_sqr(k_in_inv_Mpc / cosmo.h(), z[idx_z], A_bary=A_bary)
@@ -519,9 +417,9 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             
         return g
 
-    def get_shear_power_spectrum(self, cosmo, data, cosmo_index=1):
+    def get_shear_power_spectrum(self, cosmo, data):
         """
-        Function to calculate the shear-shear power spectra, Cls.
+        Function to calculate angular shear-shear power spectra, Cls.
         """
         
         # Omega_m contains all species!
@@ -529,14 +427,12 @@ class K1K_COSEBIs_2cosmos(Likelihood):
         small_h = cosmo.h()
 
         # needed for IA modelling:
-        param_name1 = 'A_IA_{:}'.format(cosmo_index)
-        param_name2 = 'exp_IA_{:}'.format(cosmo_index)
-        if (param_name1 in data.mcmc_parameters) and (param_name2 in data.mcmc_parameters):
-            amp_IA = data.mcmc_parameters[param_name1]['current'] * data.mcmc_parameters[param_name1]['scale']
-            exp_IA = data.mcmc_parameters[param_name2]['current'] * data.mcmc_parameters[param_name2]['scale']
+        if ('A_IA' in data.mcmc_parameters) and ('exp_IA' in data.mcmc_parameters):
+            amp_IA = data.mcmc_parameters['A_IA']['current'] * data.mcmc_parameters['A_IA']['scale']
+            exp_IA = data.mcmc_parameters['exp_IA']['current'] * data.mcmc_parameters['exp_IA']['scale']
             intrinsic_alignment = True
-        elif (param_name1 in data.mcmc_parameters) and (param_name2 not in data.mcmc_parameters):
-            amp_IA = data.mcmc_parameters[param_name1]['current'] * data.mcmc_parameters[param_name1]['scale']
+        elif ('A_IA' in data.mcmc_parameters) and ('exp_IA' not in data.mcmc_parameters):
+            amp_IA = data.mcmc_parameters['A_IA']['current'] * data.mcmc_parameters['A_IA']['scale']
             # redshift-scaling is turned off:
             exp_IA = 0.
 
@@ -558,22 +454,18 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             D_z = np.zeros(self.nzbins)
             for zbin in xrange(self.nzbins):
                 
-                param_name = 'D_z{:}_{:}'.format(zbin + 1, cosmo_index)
+                param_name = 'D_z{:}'.format(zbin + 1)
                 if param_name in data.mcmc_parameters:
                     D_z[zbin] = data.mcmc_parameters[param_name]['current'] * data.mcmc_parameters[param_name]['scale']
-            
-            # a bit ugly...
-            if cosmo_index == 1:
-                D_z_corr = self.L_matrix_D_z_1.dot(D_z)
-                
-            if cosmo_index == 2:
-                D_z_corr = self.L_matrix_D_z_2.dot(D_z)
+
+            D_z_corr = self.L_matrix_D_z.dot(D_z)
 
             pz = np.zeros((self.nzmax, self.nzbins), 'float64')
             pz_norm = np.zeros(self.nzbins, 'float64')
             for zbin in xrange(self.nzbins):
+
                 '''
-                param_name = 'D_z{:}_{:}'.format(zbin + 1, cosmo_index)
+                param_name = 'D_z{:}'.format(zbin + 1)
                 if param_name in data.mcmc_parameters:
                     z_mod = self.z_p + data.mcmc_parameters[param_name]['current'] * data.mcmc_parameters[param_name]['scale']
                 else:
@@ -619,7 +511,7 @@ class K1K_COSEBIs_2cosmos(Likelihood):
                 linear_growth_rate /= cosmo.growth_factor_at_z(0.)
 
         g = self.get_lensing_kernel(r, pr)
-        pk, pk_lin = self.get_matter_power_spectrum(r, self.z_p, cosmo, data, cosmo_index=cosmo_index)
+        pk, pk_lin = self.get_matter_power_spectrum(r, self.z_p, cosmo, data)
         
         Cl_integrand = np.zeros((self.nzmax, self.nzcorrs), 'float64')
         Cl = np.zeros((self.nzcorrs, self.nells), 'float64')
@@ -684,18 +576,18 @@ class K1K_COSEBIs_2cosmos(Likelihood):
         if self.write_out_Cls:
             #Cls_out = np.zeros((self.nzcorrs + 1, self.nells), 'float64')
             Cls_out = self.ells
-            fname = os.path.join(self.data_directory, 'Cls_tot_cosmo{:}.txt'.format(cosmo_index))
+            fname = os.path.join(self.data_directory, 'Cls_tot.txt')
             header = 'ells, '
             for idx in xrange(self.nzcorrs):
                 header += list_cl_keys[idx] + ', '
                 Cls_out = np.column_stack((Cls_out, Cl_GG[idx, :]))
             header = header[:-2]
             np.savetxt(fname, Cls_out, header=header)
-            print('Saved Cls to: \n {:}'.format(fname))
+            print('Saved Cls to: \n {:} \n'.format(fname))
             
         return Cl, list_cl_keys
     
-    def get_theory_vec(self, Cls, Cl_keys, data, cosmo_index=1):
+    def get_theory_vec(self, Cls, Cl_keys, data):
         
         # create input dict for datablock:
         input_theory = {}
@@ -709,36 +601,23 @@ class K1K_COSEBIs_2cosmos(Likelihood):
         input_theory['shear_cl'].update(dict(zip(Cl_keys, Cls[:, :])))
         
         '''
-        param_name = 'Ac_{:}'.format(cosmo_index)
-        if param_name in data.mcmc_parameters:
-            value_Ac = data.mcmc_parameters[param_name]['current'] * data.mcmc_parameters[param_name]['scale']
+        if 'Ac' in data.mcmc_parameters:
+            value_Ac = data.mcmc_parameters['Ac']['current'] * data.mcmc_parameters['Ac']['scale']
             input_theory['shear_cl'].update({'shear_c_bias': value_Ac})
         '''
         
         datablock = dict_to_datablock(input_theory)
-        #print(block_cosebis.keys())
-        self.theory_module.execute(datablock)
         #print(datablock.keys())
+        self.theory_module.execute(datablock)
         
-        # TODO: this is not the most elegant way...
-        if cosmo_index == 1:
-            # silence the scale_cuts module
-            block_print()
-            self.scale_cuts_module1.execute(datablock)
-            enable_print()
-            theory_vec = np.asarray(datablock['likelihood_en', 'theory'])
-        # catch exception of second vector being empty (e.g. when reducing 2cosmos to 1cosmo)
-        elif cosmo_index == 2 and len(self.data_vec2) != 0:
-            # silence the scale_cuts module
-            block_print()
-            self.scale_cuts_module2.execute(datablock)
-            enable_print()
-            theory_vec = np.asarray(datablock['likelihood_en', 'theory'])
-        else:
-            theory_vec = np.zeros(0)
-        
-        #print('cosmo_index: {:}'.format(cosmo_index), cosebis_theory.shape)
-        
+        # silence the scale_cuts module during likelihood evaluations:
+        block_print()
+        self.scale_cuts_module.execute(datablock)
+        # re-enable print-statements again:
+        enable_print()
+
+        theory_vec = np.asarray(datablock['likelihood_en', 'theory'])
+
         '''
         theory_vec = np.zeros((self.nzcorrs, self.nbins))
         idx_unique = 0
@@ -747,16 +626,16 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             
                 theory_vec[idx_unique, :] = datablock['cosebis', 'bin_{:}_{:}'.format(idx_j + 1, idx_i + 1)]
                 idx_unique += 1
-                
+        
         theory_vec = theory_vec.flatten()
         '''
         
         return theory_vec
 
-    def cosmo_calculations(self, cosmo, data, cosmo_index=1):
+    def cosmo_calculations(self, cosmo, data):
 
-        Cls, Cl_keys = self.get_shear_power_spectrum(cosmo, data, cosmo_index=cosmo_index)
-        theory_vec = self.get_theory_vec(Cls, Cl_keys, data, cosmo_index=cosmo_index)
+        Cls, Cl_keys = self.get_shear_power_spectrum(cosmo, data)
+        theory_vec = self.get_theory_vec(Cls, Cl_keys, data)
 
         return theory_vec
 
@@ -771,3 +650,70 @@ class K1K_COSEBIs_2cosmos(Likelihood):
             return Bin2 + self.nzbins * Bin1 - (Bin1 * (Bin1 + 1)) // 2
         else:
             return Bin1 + self.nzbins * Bin2 - (Bin2 * (Bin2 + 1)) // 2
+
+    '''
+    def __load_legacy_nofz(self):
+        
+        # Create labels for loading of dn/dz-files:
+        self.zbin_labels = []
+        for idx in xrange(self.nzbins):
+            self.zbin_labels += ['{:.1f}t{:.1f}'.format(self.z_bins_min[idx], self.z_bins_max[idx])]
+        
+        z_samples = []
+        hist_samples = []
+        for zbin in xrange(self.nzbins):
+            window_file_path = os.path.join(
+                self.data_directory, 'Nz_DIR/Nz_DIR_Mean/Nz_DIR_z{:}.asc'.format(self.zbin_labels[zbin]))
+            if os.path.exists(window_file_path):
+                zptemp, hist_pz = np.loadtxt(window_file_path, usecols=[0, 1], unpack=True)
+                shift_to_midpoint = np.diff(zptemp)[0] / 2.
+                if zbin > 0:
+                    zpcheck = zptemp
+                    if np.sum((zptemp - zpcheck)**2) > 1e-6:
+                        raise io_mp.LikelihoodError('The redshift values for the window files at different bins do not match.')
+                print('Loaded n(zbin{:}) from: \n'.format(zbin + 1), window_file_path)
+                # we add a zero as first element because we want to integrate down to z = 0!
+                z_samples += [np.concatenate((np.zeros(1), zptemp + shift_to_midpoint))]
+                hist_samples += [np.concatenate((np.zeros(1), hist_pz))]
+            else:
+                raise io_mp.LikelihoodError("File not found:\n %s"%window_file_path)
+
+        z_samples = np.asarray(z_samples)
+        hist_samples = np.asarray(hist_samples)
+
+        return z_samples, hist_samples
+    '''
+    
+    '''
+    def __load_legacy_vec_obs(self):
+        """
+        Convenience function to load legacy data vector (from KV450 COSEBIs).
+        """
+
+        # Read measured E-mode COSEBIs
+        en_file_path = os.path.join(
+            self.data_directory, self.en_obs_file)
+        if os.path.exists(en_file_path):
+            vec_obs = np.loadtxt(en_file_path)
+            print('Loaded E_n values from: \n', en_file_path)
+        else:
+            raise io_mp.LikelihoodError('File not found:\n {:}'.format(en_file_path))
+
+        return vec_obs
+    '''
+    
+    '''
+    def __load_legacy_covmat(self):
+        """
+        Convenience function to load legacy covariance matrix (from KV450 COSEBIs).
+        """
+        
+        covmat_file_path = os.path.join(self.data_directory, self.covmat_file)
+        if os.path.exists(covmat_file_path):
+            covmat = np.loadtxt(covmat_file_path)
+            print('Loaded covariance matrix from: \n', covmat_file_path)
+        else:
+            raise io_mp.LikelihoodError('File not found:\n {:}'.format(covmat_file_path))
+        
+        return covmat
+    '''
