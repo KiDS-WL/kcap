@@ -118,7 +118,7 @@ if __name__ == "__main__":
             run_name_root = "MAP"
             run_name = f"{run_name_root}_{i}_{run_type}"
             
-            output_root_dir = f"runs/methodology/{test_name}/base_multiStart{j}/MAP"
+            output_root_dir = f"runs/methodology/{test_name}/base_multi{j}/MAP"
             MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"] ## Original settings from the main chains
 
             cmd = ["--root-dir", output_root_dir,
