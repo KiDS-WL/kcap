@@ -6,6 +6,7 @@ dependencies:
   - numpy
   - scipy
   - astropy
+  - pip>=20.0
   - pip:
     - emcee
     - mpi4py
