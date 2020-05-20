@@ -174,7 +174,7 @@ class K1000Pipeline:
 
     @staticmethod
     def set_parameter_range(value, config):
-        if isinstance(value, collections.Iterable):
+        if isinstance(value, collections.abc.Iterable):
             l, m, u = value
         else:
             m = value
