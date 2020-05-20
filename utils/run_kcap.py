@@ -482,7 +482,7 @@ class K1000Pipeline:
                                             "mode" : "additive",
                                             "sample" : f"nz_{source_nz_sample}",
                                             "bias_section" : "nofz_shifts",
-                                            "interpolation" : "linear",
+                                            "interpolation" : "cubic",
                                             "output_deltaz" : True,
                                             "output_section_name" :  "delta_z_out"},
 
@@ -1241,7 +1241,7 @@ if __name__ == "__main__":
             # Get the mean n(z) shifts
             n_source_bin = len(p.config["correlated_dz_priors"]["output_parameters"].split(" "))
             sec = p.config["source_photoz_bias"]["output_section_name"]
-            derived_parameters += [f"{sec}/bias_{i+1}" for i in range(n_source_bin)]
+            derived_parameters += [f"{sec}/bin_{i+1}" for i in range(n_source_bin)]
         
         if "sample_bsigma8S8_bin_1" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_1"]
