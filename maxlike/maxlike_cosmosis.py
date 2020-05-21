@@ -125,10 +125,16 @@ def run(normalised_values):
     like = post - prior
     if(args.ouput_steps):
       for p in params_values:
-        file.write('%.5f' % p)
+        if(p>0.01):
+          file.write('%.5f' % p)
+        else:
+          file.write('%.5e' % p)
         file.write(" ")
       for p in extra:
-        file.write('%.5f' % p)
+        if(p>0.01):
+          file.write('%.5f' % p)
+        else:
+          file.write('%.5e' % p)
         file.write(" ")
       # 
       file.write('%.5f' % like)
@@ -224,11 +230,17 @@ post, extra   = pipeline.posterior(output_params)
 prior         = pipeline.prior(output_params)
 like          = post - prior
 for p in output_params:
-  file.write('%.5f' % p)
+  if(p>0.01):
+    file.write('%.5f' % p)
+  else:
+    file.write('%.5e' % p)
   file.write(" ")
 
 for p in extra:
-  file.write('%.5f' % p)
+  if(p>0.01):
+    file.write('%.5f' % p)
+  else:
+    file.write('%.5e' % p)
   file.write(" ")
 
 file.write('%.5f' % like)
