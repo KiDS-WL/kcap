@@ -357,7 +357,7 @@ if __name__ == "__main__":
 
     # Noisy multinest runs; loop over noise realizations; EE_nE_w only
     # Loop over different run_type
-    for run_type in ['EE_nE']:
+    for run_type in ['EE_nE_w']:
         output_root_dir  = f"runs/methodology/{test_name}/multinest_noisy"
         run_name_root = "multinest"
         multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
