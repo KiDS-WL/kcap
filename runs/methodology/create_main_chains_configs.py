@@ -246,6 +246,7 @@ if __name__ == "__main__":
     parser.add_argument('--noise-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noisy configs indexed by i with BEGIN <= i < END')
     parser.add_argument('--m-noise-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noisy configs for multinest indexed by i with BEGIN <= i < END')
     parser.add_argument('--ma-noise-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noisy configs for Marika indexed by i with BEGIN <= i < END')
+    parser.add_argument('--MFMS-start-range', nargs=2, default=[0, 0], type=int, metavar=('BEGIN', 'END'), help='create noise-free configs w/ multinest start indexed by i with BEGIN <= i < END')
     args = parser.parse_args()
 
     script = "utils/run_kcap.py"
@@ -322,7 +323,7 @@ if __name__ == "__main__":
                     *starting_point_settings]
             subprocess.run(["python", script] + cmd, check=True)
 
-    # Noisy MAP runs; loop over noise realizations; EE_nE_w only
+    # Noisy MAP runs; loop over noise realizations
     # Loop over different run_type
     for run_type in ['EE_nE_w', 'EE_nE']:
         output_root_dir  = f"runs/methodology/{test_name}/MAP"
@@ -402,6 +403,40 @@ if __name__ == "__main__":
             data = np.load(f'{multi_max_dir}multinest_main_{run_type}_{i}_samples.npy')
             post = np.load(f'{multi_max_dir}multinest_main_{run_type}_{i}_post.npy')
             starting_point_settings = get_multinest_max_as_start(data, post, run_type)
+
+            run_name = f"{run_name_root}_{i}_{run_type}"
+            cmd = ["--root-dir", output_root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--BOSS-data-files", *boss_data_files,
+                    "--BOSS-covariance-files", *boss_cov_files,
+                    "--sampler", "maxlike",
+                    *MAP_settings,
+                    *starting_point_settings]
+            subprocess.run(["python", script] + cmd, check=True)
+
+    # Noise-free MAP runs with multinest-sampled start; loop over noise realizations; EE_nE_w only
+    # Loop over different run_type
+    for run_type in ['EE_nE_w']:
+        root_data_dir = "runs/methodology/data/noisefree_fiducial/base_EE_nE_w/data/"
+        twopoint_file = os.path.join(root_data_dir, "KiDS/twoPoint_PneE+PeeE_mean_None_cov_theoryEgrettaMCorr_nOfZ_bucerosBroad_mock_noiseless.fits")
+        boss_data_files = [os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_1.txt"),
+                          os.path.join(root_data_dir, "BOSS/BOSS_mock_noiseless_bin_2.txt")]
+        boss_cov_files =  [os.path.join(root_data_dir, "BOSS/BOSS.DR12.lowz.3xiwedges_covmat.txt"),
+                          os.path.join(root_data_dir, "BOSS/BOSS.DR12.highz.3xiwedges_covmat.txt")]
+        
+        output_root_dir  = f"runs/methodology/{test_name}/MAP_FMS"
+        random_start_dir = f"runs/methodology/data/multinest_start/{test_name}/{run_type}/"
+        run_name_root = "MAP_FMS"
+        MAP_settings = ["--sampler-config", "maxlike_tolerance", "0.01"]
+        
+        for i in range(args.MFMS_start_range[0], args.MFMS_start_range[1]):
+
+            # Multinest start
+            random_start_file = f'{random_start_dir}start{i}.npy'
+            starting_point_settings = np.load(random_start_file)
 
             run_name = f"{run_name_root}_{i}_{run_type}"
             cmd = ["--root-dir", output_root_dir,
