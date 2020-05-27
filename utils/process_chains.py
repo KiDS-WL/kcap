@@ -81,7 +81,7 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
         warnings.warn(f"Could not match 1D covarage of {coverage_1d_threshold}. Got coverage of {coverage_1d_this:.2f} for CI ({l_this:.3f}, {u_this:.3f}).")
         return (l_this, u_this), coverage_1d_this, coverage_nd_this, i
 
-def plot_CI(plot, chains, params, MAP=None, CI=None):
+def plot_CI(plot, chains, params, MAP=None, CI=None, colors=None, MAP_kwargs=None, CI_kwargs=None):
     """Plot CI bands on a getdist corner plot.
     
     Arguments
@@ -105,17 +105,35 @@ def plot_CI(plot, chains, params, MAP=None, CI=None):
         if CI is not None:
             HPD_range = {p : None if p not in CI[chain.name_tag] else CI[chain.name_tag][p] for p in params}
         
+        if colors is None:
+            color = plot.settings.solid_colors[chain_idx]
+        else:
+            color = colors[chain.name_tag]
+        
+        if MAP_kwargs is not None:
+            MAP_plot_kwargs = MAP_kwargs[chain.name_tag]
+        else:
+            MAP_plot_kwargs = {}
+            
+        if CI_kwargs is not None:
+            CI_plot_kwargs = CI_kwargs[chain.name_tag]
+        else:
+            CI_plot_kwargs = {}
         for i in range(plot.subplots.shape[0]):
             for j in range(i+1):
                 ax = plot.subplots[i,j]
                 param_x, param_y = params[j], params[i]
                 if MAP is not None and markers[param_x] is not None:
-                    plot.add_x_marker(markers[param_x], ax=ax, c=plot.settings.solid_colors[chain_idx], ls="-")
+                    plot.add_x_marker(markers[param_x], ax=ax, c=color, **MAP_plot_kwargs)
                 if MAP is not None and j < i and markers[param_y] is not None:
-                    plot.add_y_marker(markers[param_y], ax=ax, c=plot.settings.solid_colors[chain_idx], ls="-")
+                    plot.add_y_marker(markers[param_y], ax=ax, c=color, **MAP_plot_kwargs)
                 
                 if CI is not None and HPD_range[param_x] is not None and i == j:
-                    ax.axvspan(*HPD_range[param_x], alpha=0.5, facecolor=plot.settings.solid_colors[chain_idx])
+                    density = chain.get1DDensity(param_x)
+                    mask = (HPD_range[param_x][0] <= density.x) & (density.x <= HPD_range[param_x][1])
+                    ax.fill_between(density.x[mask], 0, density.P[mask],
+                                    alpha=0.5, facecolor=color, **CI_plot_kwargs)
+                    #ax.axvspan(*HPD_range[param_x], alpha=0.5, facecolor=plot.settings.solid_colors[chain_idx])
 
 
 parameter_dictionary = {
@@ -175,6 +193,9 @@ parameter_dictionary = {
         "omega_nu" :                 {"cosmosis" :    "cosmological_parameters--omega_nu",
                                       "cosmomc" :     "omeganu",
                                       "latex" :       "\\Omega_\\nu"},
+        "fR0" :                      {"cosmosis" :    "cosmological_parameters--fr0",
+                                      "cosmomc" :     "fr0",
+                                      "latex" :       "fR_0"},
         "b_1 sigma_8 S_8 lowz" :     {"cosmosis" :    "cosmological_parameters--bsigma8S8_bin_1",
                                       "cosmomc" :     "b1l_sigma8_s8",
                                       "latex" :       "b_1^{\\rm lowz}\\sigma_8 S_8"},
@@ -251,6 +272,21 @@ parameter_dictionary = {
                                       "montepython" : "D_z5",
                                       "cosmomc" :     "delta_z5",
                                       "latex" :       "\\delta z_5"},
+        "shift z_1" :                {"cosmosis" :    "delta_z_out--bin_1",
+                                      "cosmomc" :     "shift_z1",
+                                      "latex" :       "\\delta \\bar{z_1}"},
+        "shift z_2" :                {"cosmosis" :    "delta_z_out--bin_2",
+                                      "cosmomc" :     "shift_z2",
+                                      "latex" :       "\\delta \\bar{z_2}"},
+        "shift z_3" :                {"cosmosis" :    "delta_z_out--bin_3",
+                                      "cosmomc" :     "shift_z3",
+                                      "latex" :       "\\delta \\bar{z_3}"},
+        "shift z_4" :                {"cosmosis" :    "delta_z_out--bin_4",
+                                      "cosmomc" :     "shift_z4",
+                                      "latex" :       "\\delta \\bar{z_4}"},
+        "shift z_5" :                {"cosmosis" :    "delta_z_out--bin_5",
+                                      "cosmomc" :     "shift_z5",
+                                      "latex" :       "\\delta \\bar{z_5}"},
         "A_Planck" :                 {"cosmosis" :    "planck--a_planck",
                                       "cosmomc" :     "calPlanck",
                                       "latex" :       "A_{\\rm Planck}"},
@@ -424,7 +460,7 @@ def load_chain(chain_file, parameters=None, run_name=None,
         chain, log_Z, log_Z_err = load_nested_sampling_file(chain_file)
         nested_sampling = True
     except:
-        chain = np.loadtxt(chain_file)
+        chain = np.atleast_2d(np.loadtxt(chain_file))
         n_sample = chain.shape[0]
         if isinstance(burn_in, float) and burn_in > 0.0 and burn_in < 1.0:
             chain = chain[int(n_sample*burn_in):]

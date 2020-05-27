@@ -21,6 +21,7 @@ BOSS_PATH = os.path.join(KCAP_PATH, "../kcap_boss_module")
 CSL_PATH = os.path.join(KCAP_PATH, "cosmosis-standard-library")
 COSEBIS_PATH = os.path.join(KCAP_PATH, "cosebis")
 COSEBIS_OUTPUTS = COSEBIS_PATH
+REACT_PATH = os.path.join(KCAP_PATH, "../ReACT")
 
 SCALE_CUT_PATH = os.path.join(KCAP_PATH, "modules/scale_cuts")
 MOCK_DIR = os.path.join(KCAP_PATH, "data/gaussian_mocks/KV450/")
@@ -82,6 +83,7 @@ class K1000Pipeline:
 
         self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
+                                                                  "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
                                                                   "magnification_alphas",
@@ -146,9 +148,15 @@ class K1000Pipeline:
                                                                          "add_magnification"],
                                               "uncut_keys"            : [("projection", "magnification-shear")]}
         self.pipelines["EE_nE_w_magnification"] = {**self.pipelines["EE_nE_w"],
-                                              "uncut_modules"         : ["magnification_alphas",
-                                                                         "add_magnification"],
-                                              "uncut_keys"            : [("projection", "magnification-shear")]}  
+                                                   "uncut_modules"         : ["magnification_alphas",
+                                                                              "add_magnification"],
+                                                   "uncut_keys"            : [("projection", "magnification-shear")]} 
+
+        self.pipelines["EE_fR"] = {**self.pipelines["EE"],
+                                    "uncut_modules"       : ["reaction",
+                                                             "hmcode_csl", 
+                                                             "multiply_reaction"],
+                                    "set_keys"            : EE_stats + [("camb", "nonlinear", "none")]} 
 
                         #   # Old settings, will get removed soon:
                         #   # 3x2pt w/ magnification
@@ -430,6 +438,18 @@ class K1000Pipeline:
                                             "background_zmin"    : 0.0,
                                             "background_nz"      : 6000,
                                             },
+
+                    "reaction"           : {"file" : os.path.join(REACT_PATH, 
+                                                                  "cosmosis/cosmosis_reaction_module.py"),
+                                            "verbose" : 1,
+                                            "massloop" : 20,
+                                            "z_max"    : 1.5},
+                    "hmcode_csl"         : {"file" : os.path.join(CSL_PATH, 
+                                                                  "structure/meadcb/mead_interface.so"),
+                                            "one_baryon_parameter" : False,
+                                            "feedback" : False},
+                    "multiply_reaction"  : {"file" : os.path.join(REACT_PATH, 
+                                                                  "cosmosis/cosmosis_multiply_reaction_module.py")},
 
                     "wedges"     :         {"file" : os.path.join(BOSS_PATH, 
                                                                 "python_interface/cosmosis_module.py"),
