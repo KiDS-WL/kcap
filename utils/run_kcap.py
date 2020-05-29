@@ -87,6 +87,7 @@ class K1000Pipeline:
 
         self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
+                                                                  "sample_negative_mnu",
                                                                   "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "add_intrinsic",
@@ -412,7 +413,8 @@ class K1000Pipeline:
                                            "bsigma8S8_name" : "bsigma8S8_bin_2_input",
                                            "b_name"         : "b1_bin_2"},
 
-                    
+                    "sample_negative_mnu" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_negative_mnu.py"),},
 
                     "sigma8toAs"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sigma8toAs.py"),},
@@ -1276,6 +1278,7 @@ if __name__ == "__main__":
 
         derived_parameters=["cosmological_parameters/S_8",
                             "cosmological_parameters/sigma_8",
+                            "cosmological_parameters/sigma_12",
                             "cosmological_parameters/A_s",
                             "cosmological_parameters/omega_m",
                             "cosmological_parameters/omega_nu",
@@ -1294,6 +1297,8 @@ if __name__ == "__main__":
             derived_parameters += ["bias_parameters/b1_bin_1"]
         if "sample_bsigma8S8_bin_2" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_2"]
+        if "sample_negative_mnu" in p.config:
+            derived_parameters += ["cosmological_parameters/mnu"]
 
         sampler_config = {"derived_parameters"  : derived_parameters,
                           "parameter_file"      : values_file,

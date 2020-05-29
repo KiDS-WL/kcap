@@ -22,14 +22,16 @@ if __name__ == "__main__":
 
     for sampler in ["test", "multinest"]:
 
-        for run_type in ["EE", "EE_nE_w"]:
+        for run_type in ["EE"]:#, "EE_nE_w", "w"]:
             run_name_root = "fast" if sampler == "multinest" else "test"
 
-            for name, extra_parameter in {"kCDM"   : [("cosmological_parameters", "omega_k", "-0.2 0.0 0.2")],
-                                          "nuCDM"  : [("cosmological_parameters", "mnu", "0.0 0.06 1.0")],
-                                          "wCDM"   : [("cosmological_parameters", "w", "0.0 -1.0 -3.0")],
-                                          "waCDM"  : [("cosmological_parameters", "w", "0.0 -1.0 -3.0"),
-                                                      ("cosmological_parameters", "wa", "-0.5 0.0 0.5")],}.items():
+            for name, extra_parameter in {#"LCDM_re"   : [],
+                                          # "kCDM"   : [("cosmological_parameters", "omega_k", "-0.3 0.0 0.3")],
+                                           "nuCDM_sym_prior"  : [("cosmological_parameters", "mnu_proxy", "-3.0 0.06 3.0")],
+                                           #"wCDM"   : [("cosmological_parameters", "w", "-3.0 -1.0 -0.33")],
+                                           #"waCDM"  : [("cosmological_parameters", "w", "-3.0 -1.0 -0.33"),
+                                           #            ("cosmological_parameters", "wa", "-3.0 0.0 3.0")],
+                                          }.items():
                 run_name = f"{run_name_root}_{name}_{run_type}"
                 cmd = ["--root-dir", root_dir,
                         "--run-name", run_name,
@@ -38,12 +40,22 @@ if __name__ == "__main__":
                         "--dz-covariance-file", dz_cov_file,
                         "--BOSS-data-files", *boss_data_files,
                         "--sampler", sampler,]
+
                 for p in extra_parameter:
                     cmd += ["--set-parameters", *p]
+                    if p[1] == "mnu_proxy":
+                        cmd += ["--set-parameters", "cosmological_parameters", "mnu", "none"]
+                        cmd += ["--enable-modules", "sample_negative_mnu"]
+
+                    if p[1] == "wa":
+                        cmd += ["--set-keys", "camb", "use_ppf_w", "T"]
 
                 if sampler == "multinest":
                     cmd += ["--sampler-config", "multinest_efficiency", "0.3",
-                            "--sampler-config", "nested_sampling_tolerance", "1.0e-2",]
+                            "--sampler-config", "nested_sampling_tolerance", "1.0e-2",
+                            #"--sampler-config", "live_points", "500",
+                            #"--sampler-config", "multinest_wrapped_params", "cosmological_parameters--mnu",
+                           ]
 
                 cmd += ["--overwrite"]
 
