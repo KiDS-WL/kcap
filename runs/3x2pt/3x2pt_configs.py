@@ -38,6 +38,17 @@ if __name__ == "__main__":
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_4", "100 300",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_5", "100 300",]
 
+    Planck_settings = ["--enable-modules", "planck_like",
+                       "--set-keys", "camb", "mode", "cmb",
+                       "--set-keys", "camb", "lmax", "2650",
+                       "--set-keys", "camb", "nonlinear", "both",
+                       "--set-keys", "camb", "do_lensing", "T",
+                       "--set-keys", "camb", "do_reionization", "T",
+                       "--set-parameters", "cosmological_parameters", "tau", "0.015070795999054837    0.0543     0.09381939280201967",
+                       "--set-parameters", "planck", "a_planck", "0.9879083109867925 1.000610 1.0130810744845216",
+                       "--set-priors", "planck", "a_planck", "gaussian 1.0 0.0025",]
+
+
     blinds = ["A",]                       # For final setup: ["A", "B", "C"]
     run_types = ["EE", "EE_w", "EE_nE_w", "w"] # For final setup: ["EE", "nE", "w", "EE_nE", "EE_w", "nE_w", "EE_nE_w"]
 
@@ -48,34 +59,43 @@ if __name__ == "__main__":
         for run_type in run_types:
             print(f"  Run type: {run_type}")
 
-            for sampler in ["test", "multinest"]:
-                run_name_root = sampler
+            for with_Planck in [False, True]:
+                print(f"    Include Planck: {with_Planck}")
 
-                run_name = f"{run_name_root}_blind{blind}_{run_type}"
+                for sampler in ["test", "multinest"]:
+                    run_name_root = sampler
 
-                # Base setup
-                cmd = ["--root-dir", root_dir,
-                        "--run-name", run_name,
-                        "--run-type", run_type,
-                        "--KiDS-data-file", twopoint_file,
-                        "--dz-covariance-file", dz_cov_file,
-                        "--BOSS-data-files", *boss_data_files,
-                        "--BOSS-covariance-files", *boss_cov_files,
-                        "--sampler", sampler,]
+                    run_name = f"{run_name_root}_blind{blind}_{run_type}"
+                    if with_Planck:
+                        run_name += "_Planck"
 
-                # dz prior means
-                for i, m in enumerate(dx_mean):
-                    cmd += ["--set-parameters", "nofz_shifts", f"p_{i+1}", f"-5.0 {m} 5.0"]
-                    cmd += ["--set-priors", "nofz_shifts", f"p_{i+1}", f"gaussian {m} 1.0"]
+                    # Base setup
+                    cmd = ["--root-dir", root_dir,
+                            "--run-name", run_name,
+                            "--run-type", run_type,
+                            "--KiDS-data-file", twopoint_file,
+                            "--dz-covariance-file", dz_cov_file,
+                            "--BOSS-data-files", *boss_data_files,
+                            "--BOSS-covariance-files", *boss_cov_files,
+                            "--sampler", sampler,]
 
-                # GGL scale cuts
-                if "nE" in run_type:
-                    cmd += nE_scale_cuts
+                    # dz prior means
+                    for i, m in enumerate(dx_mean):
+                        cmd += ["--set-parameters", "nofz_shifts", f"p_{i+1}", f"-5.0 {m} 5.0"]
+                        cmd += ["--set-priors", "nofz_shifts", f"p_{i+1}", f"gaussian {m} 1.0"]
 
-                # sampler settings
-                if sampler == "multinest":
-                    cmd += multinest_settings
+                    # GGL scale cuts
+                    if "nE" in run_type:
+                        cmd += nE_scale_cuts
 
-                cmd += ["--overwrite"]
+                    # Add Planck likelihood
+                    if with_Planck:
+                        cmd += Planck_settings
 
-                subprocess.run(["python", script] + cmd, check=True)
+                    # sampler settings
+                    if sampler == "multinest":
+                        cmd += multinest_settings
+
+                    cmd += ["--overwrite"]
+
+                    subprocess.run(["python", script] + cmd, check=True)

@@ -92,7 +92,8 @@ class K1000Pipeline:
                                                                   "add_intrinsic",
                                                                   "magnification_alphas",
                                                                   "add_magnification",
-                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",],
+                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
+                                                                  "planck_like"],
                                                "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
                                                                   ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
                                                                   ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
@@ -248,6 +249,8 @@ class K1000Pipeline:
         # Set parameters/parameter ranges
         set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
         for section, parameter, vals in set_range:
+            if section not in values:
+                values[section] = {}
             if not vals:
                 del values[section][parameter]
             else:
@@ -274,6 +277,8 @@ class K1000Pipeline:
         # Set parameter priors
         set_priors = pipeline.get("set_priors", []) + (set_priors or [])
         for sec, parameter, val in set_priors:
+            if sec not in priors:
+                priors[sec] = {}
             priors[sec][parameter] = val
 
         # If we're creating mocks, i.e., not sampling, fix all parameters to 
@@ -712,7 +717,6 @@ class K1000Pipeline:
                                             "mock_filename" : KiDS_mock_output_file,
                                             },
 
-
                     "BOSS_like"  : {"file" :  os.path.join(KCAP_PATH,
                                                         "utils/mini_BOSS_like.py"),
                                     "data_vector_file" : " ".join(BOSS_data_files),
@@ -724,6 +728,13 @@ class K1000Pipeline:
                     "2x2pt_like" : {"file" : os.path.join(KCAP_PATH, "utils/mini_like.py"),
                                     "input_section_name" : "theory_data_covariance",
                                     "like_name"          : "2x2pt_like"},
+
+                    "planck_like": {"file" : os.path.join(CSL_PATH, "likelihood/planck2018/planck_interface.so"),
+                                    "save_separate_likelihoods" : True,
+                                    "data_1" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/low_l/commander/commander_dx12_v3_2_29.clik"),
+                                    "data_2" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/low_l/simall/simall_100x143_offlike5_EE_Aplanck_B.clik"),
+                                    "data_3" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/hi_l/plik_lite/plik_lite_v22_TTTEEE.clik"),
+                                    "like_name" : "PLANCK2018"},
         }
         return config
 
