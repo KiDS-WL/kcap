@@ -23,10 +23,11 @@ if __name__ == "__main__":
     for sampler in ["test", "multinest"]:
 
         run_type = "EE_fR"
-        run_name_root = "medium" if sampler == "multinest" else "test"
+        run_name_root = "fast" if sampler == "multinest" else "test"
 
-        for name, extra_parameter in {"LCDM"   : [],
-                                      "fRCDM"   : [("cosmological_parameters", "fR0", "1e-8 1e-7 1e-4")],
+        for name, extra_parameter in {#"LCDM"   : [],
+                                      #"fRCDM"   : [("cosmological_parameters", "fR0", "1e-8 1e-7 1e-4")],
+                                      "fRCDM_logfR0"   : [("cosmological_parameters", "log10_fR0", "-8.0 -7.0 -4.0")],
                                         }.items():
             run_name = f"{run_name_root}_{name}_{run_type}"
             cmd = ["--root-dir", root_dir,
@@ -38,6 +39,14 @@ if __name__ == "__main__":
                     "--sampler", sampler,]
             for p in extra_parameter:
                 cmd += ["--set-parameters", *p]
+
+            # Adjust priors
+            cmd += ["--set-parameters", "cosmological_parameters", "S_8_input", "0.45 0.7458 1.3"]
+
+            # Speed things up
+            cmd += ["--set-keys", "camb", "z_mid", "2.0"]
+            cmd += ["--set-keys", "camb", "nz_mid", "50"]
+            cmd += ["--set-keys", "camb", "nz", "100"]
 
             if sampler == "multinest":
                 cmd += ["--sampler-config", "multinest_efficiency", "0.3",
