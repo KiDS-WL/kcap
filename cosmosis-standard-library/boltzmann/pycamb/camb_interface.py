@@ -40,7 +40,7 @@ def get_choice(options, name, valid, default=None, prefix=''):
     return prefix + choice
 
 def setup(options):
-    M, m, v = camb.__version__.split(".")
+    M, m, v = camb.__version__.split(".")[:3]
     if not int(M) > 1 and not int(m) > 0 and not int(v) > 9:
         warnings.warn(f"CAMB version < 1.0.10 (found: {camb.__version__}). Massless neutrino handling not accounted for properly.")
 
@@ -399,7 +399,14 @@ def execute(block, config):
         block[names.growth_parameters, "fsigma_8"] = fsigma_8
         
         block[names.cosmological_parameters, "sigma_8"] = sigma_8[0]
+
+        # Compute sigma12: the variance of matter fluctuations in spheres
+        # of 12 Mpc (note the lack of h). Inspired by https://arxiv.org/abs/2002.07829
+        sigma12 = r.get_sigmaR(R=12.0, z_indices=-1, hubble_units=False)
+        block[names.cosmological_parameters, "sigma_12"] = sigma12
+
         block[names.cosmological_parameters, "S_8"] = sigma_8[0]*np.sqrt(p.omegam/0.3)
+        
     if p.WantCls:
         # Get total (scalar + tensor) lensed CMB Cls (is that what we want?)
         cl = r.get_total_cls(raw_cl=False, CMB_unit="muK")
