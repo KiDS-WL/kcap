@@ -26,11 +26,15 @@ REACT_PATH = os.path.join(KCAP_PATH, "../ReACT")
 SCALE_CUT_PATH = os.path.join(KCAP_PATH, "modules/scale_cuts")
 MOCK_DIR = os.path.join(KCAP_PATH, "data/gaussian_mocks/KV450/")
 
-def create_git_status_file(filename):
+def create_git_status_file(filename, cwd="."):
     """Get current status of git repository, write to a file (filename) and 
     return the file content as a string."""
 
-    commands = [{"cmd"     : ["git", "describe", "--always"],
+    commands = [{"cmd"     : ["git", "rev-parse", "--show-toplevel"],
+                 "comment" : "Name of the repository"},
+                {"cmd"     : ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                 "comment" : "Name of the branch"},    
+                {"cmd"     : ["git", "describe", "--always"],
                  "comment" :  "Current version/revision of repository"},
                 {"cmd"     : ["git", "rev-parse", "HEAD"],
                  "comment" :  "Current revision of repository"},
@@ -40,7 +44,7 @@ def create_git_status_file(filename):
     s = ""
     for command in commands:
         s += f"# {command['comment']} ({' '.join(command['cmd'])}):\n"
-        s += subprocess.check_output(command["cmd"]).strip().decode("ascii")
+        s += subprocess.check_output(command["cmd"], cwd=cwd).strip().decode("ascii")
         s += "\n\n"
 
     with open(filename, "w") as f:
@@ -212,7 +216,8 @@ class K1000Pipeline:
                 values[section][k] = K1000Pipeline.set_parameter_range(v, {})
 
     def choose_pipeline(self, name=None, pipeline=None, sample=True, 
-                        set_parameters=None, fix_values=None, set_keys=None,
+                        set_parameters=None, fix_values=None, set_priors=None,
+                        set_keys=None,
                         cut_modules=None, uncut_modules=None):
         if name is not None:
             pipeline = self.pipelines[name]
@@ -266,7 +271,11 @@ class K1000Pipeline:
                 del values[sec][key]
                 priors[sec].pop(key, None)
 
-        
+        # Set parameter priors
+        set_priors = pipeline.get("set_priors", []) + (set_priors or [])
+        for sec, parameter, val in set_priors:
+            priors[sec][parameter] = val
+
         # If we're creating mocks, i.e., not sampling, fix all parameters to 
         # their fiducial values
         if not sample:
@@ -443,6 +452,7 @@ class K1000Pipeline:
                                                                   "cosmosis/cosmosis_reaction_module.py"),
                                             "verbose" : 1,
                                             "massloop" : 20,
+                                            "log10_fR0" : True,
                                             "z_max"    : 1.5},
                     "hmcode_csl"         : {"file" : os.path.join(CSL_PATH, 
                                                                   "structure/meadcb/mead_interface.so"),
@@ -927,6 +937,7 @@ if __name__ == "__main__":
     parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
     parser.add_argument("--set-parameters", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set parameters in the values file.")
+    parser.add_argument("--set-priors", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set priors in the values file.")
 
     parser.add_argument("--cut-modules", nargs=1, action="append", metavar="MODULE", help="Remove a module from the pipeline.")
     parser.add_argument("--enable-modules", nargs=1, action="append", metavar="MODULE", help="Enable a module in the pipeline.")
@@ -1184,6 +1195,7 @@ if __name__ == "__main__":
     
     set_keys = args.set_keys
     fix_values = args.fix_values
+    set_priors = args.set_priors
     cut_modules = [m[0] for m in args.cut_modules] if args.cut_modules else None
     uncut_modules = [m[0] for m in args.enable_modules] if args.enable_modules else None
 
@@ -1198,7 +1210,9 @@ if __name__ == "__main__":
 
     if create_mocks:
         p.choose_pipeline(pipeline_name, sample=False, 
-                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          set_parameters=set_parameters, fix_values=fix_values, 
+                          set_priors=set_priors,
+                          set_keys=args.set_keys,
                           cut_modules=cut_modules, uncut_modules=uncut_modules)
         block = p.run_pipeline()
 
@@ -1231,7 +1245,9 @@ if __name__ == "__main__":
 
     else:
         p.choose_pipeline(pipeline_name, 
-                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          set_parameters=set_parameters, fix_values=fix_values, 
+                          set_priors=set_priors,
+                          set_keys=args.set_keys,
                           cut_modules=cut_modules, uncut_modules=uncut_modules)
 
 
@@ -1303,3 +1319,12 @@ if __name__ == "__main__":
             f.write(" ".join(sys.argv))
 
         create_git_status_file(os.path.join(config_dir, "git_status.txt"))
+
+        if args.KiDS_data_file is not None:
+            create_git_status_file(os.path.join(data_dir, "KiDS_twopoint_file_git_status.txt"), os.path.dirname(args.KiDS_data_file))
+        if args.dz_covariance_file is not None:
+            create_git_status_file(os.path.join(data_dir, "dz_covariance_file_git_status.txt"), os.path.dirname(args.dz_covariance_file))
+        if args.BOSS_data_files is not None:
+            create_git_status_file(os.path.join(data_dir, "BOSS_data_file_git_status.txt"), os.path.dirname(args.BOSS_data_files[0]))
+        if args.BOSS_covariance_files is not None:
+            create_git_status_file(os.path.join(data_dir, "BOSS_covariance_file_git_status.txt"), os.path.dirname(args.BOSS_covariance_files[0]))
