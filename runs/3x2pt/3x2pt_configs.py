@@ -3,7 +3,6 @@ import numpy as np
 
 if __name__ == "__main__":
     script = "utils/run_kcap.py"
-    root_dir = "runs/3x2pt/data_w_dz_prior_means/"
     
     # Cosmic shear + GGL twopoint file
     twopoint_file_template = "../Cat_to_Obs_K1000_P1/data/kids/fits/bp_KIDS1000_Blind{blind}_with_m_bias_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_goldclasses_Flag_SOM_Fid.fits"
@@ -31,10 +30,10 @@ if __name__ == "__main__":
                           "--sampler-config", "live_points", "250", # For final setup we probably want something higher than this
                          ]
 
-    nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_2", "100 700",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_3", "100 700",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_4", "100 700",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_5", "100 700",
+    nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_2", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_3", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_4", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_5", "100 600",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_4", "100 300",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_5", "100 300",]
 
@@ -48,6 +47,9 @@ if __name__ == "__main__":
                        "--set-parameters", "planck", "a_planck", "0.9879083109867925 1.000610 1.0130810744845216",
                        "--set-priors", "planck", "a_planck", "gaussian 1.0 0.0025",]
 
+
+    # Cosmology chains
+    root_dir = "runs/3x2pt/data/cosmology/"
 
     blinds = ["A",]                       # For final setup: ["A", "B", "C"]
     run_types = ["EE", "EE_w", "EE_nE_w", "w"] # For final setup: ["EE", "nE", "w", "EE_nE", "EE_w", "nE_w", "EE_nE_w"]
@@ -99,3 +101,92 @@ if __name__ == "__main__":
                     cmd += ["--overwrite"]
 
                     subprocess.run(["python", script] + cmd, check=True)
+
+
+    # Systematics chains
+    root_dir = "runs/3x2pt/data/systematics/"
+
+    # Configs for tomographic bin cuts
+    tomographic_bin_cut_configs = []
+    for cut_bin in [[0], [1], [2], [3], [4], [0,1]]:
+        cut_tomographic_EE = [f"{i+1}+{j+1}" for i in range(5) for j in range(i,5) if i in cut_bin or j in cut_bin]
+        cut_tomographic_nE = [f"{i+1}+{j+1}" for i in range(2) for j in range(5) if j in cut_bin]
+
+        for extra_GGL_cut in ["1+1", "2+1", "2+2", "2+3"]:
+            if extra_GGL_cut not in cut_tomographic_nE:
+                cut_tomographic_nE.append(extra_GGL_cut)
+
+        parameter_settings = []
+        for i, m in enumerate(dx_mean):
+            if i in cut_bin:
+                continue
+            parameter_settings += ["--set-parameters", "nofz_shifts", f"p_{i+1}", f"-5.0 {m} 5.0"]
+            parameter_settings += ["--set-priors", "nofz_shifts", f"p_{i+1}", f"gaussian {m} 1.0"]
+
+        config = ["--set-keys", "scale_cuts", "cut_pair_PeeE", " ".join(cut_tomographic_EE),
+                  "--set-keys", "scale_cuts", "cut_pair_PneE", " ".join(cut_tomographic_nE)]
+        for c in cut_bin:
+             config += ["--set-parameters", "nofz_shifts", f"p_{c+1}", f"{dx_mean[c]}"]
+        config += parameter_settings
+
+        tomographic_bin_cut_configs.append((f"cut_z_bin_{''.join([str(c+1) for c in cut_bin])}", config))
+
+
+    blind = "A"
+    print(f"Blind {blind}")
+    twopoint_file = twopoint_file_template.format(blind=blind)
+
+    run_type = "EE_nE_w"
+    print(f"  Run type: {run_type}")
+
+    for config_name, config in [("no_baryon",   ["--set-parameters", "halo_model_parameters", "A", "3.13"]),
+                                ("fix_ho_bias", ["--set-parameters", "bias_parameters", "b2_bin_1", "0.2",
+                                                 "--set-parameters", "bias_parameters", "gamma3_bin_1", "0.9",
+                                                 "--set-parameters", "bias_parameters", "a_vir_bin_1", "3.8",
+                                                 "--set-parameters", "bias_parameters", "b2_bin_2", "0.5",
+                                                 "--set-parameters", "bias_parameters", "gamma3_bin_2", "0.1",
+                                                 "--set-parameters", "bias_parameters", "a_vir_bin_2", "3.0",]),
+                                ("zero_ho_bias", ["--set-parameters", "bias_parameters", "b2_bin_1", "0.0",
+                                                  "--set-parameters", "bias_parameters", "gamma3_bin_1", "0.0",
+                                                  "--set-parameters", "bias_parameters", "a_vir_bin_1", "0.0",
+                                                  "--set-parameters", "bias_parameters", "b2_bin_2", "0.0",
+                                                  "--set-parameters", "bias_parameters", "gamma3_bin_2", "0.0",
+                                                  "--set-parameters", "bias_parameters", "a_vir_bin_2", "0.0",])] \
+                              + tomographic_bin_cut_configs:
+        print(f"    Config: {config_name}")
+        for sampler in ["test", "multinest"]:
+            run_name_root = sampler
+
+            run_name = f"{run_name_root}_blind{blind}_{run_type}_{config_name}"
+
+            # Base setup
+            cmd = ["--root-dir", root_dir,
+                    "--run-name", run_name,
+                    "--run-type", run_type,
+                    "--KiDS-data-file", twopoint_file,
+                    "--dz-covariance-file", dz_cov_file,
+                    "--BOSS-data-files", *boss_data_files,
+                    "--BOSS-covariance-files", *boss_cov_files,
+                    "--sampler", sampler,]            
+
+            # GGL scale cuts
+            if "nE" in run_type:
+                cmd += nE_scale_cuts
+
+            if not "cut_z_bin" in config_name:
+                # dz prior means
+                for i, m in enumerate(dx_mean):
+                    cmd += ["--set-parameters", "nofz_shifts", f"p_{i+1}", f"-5.0 {m} 5.0"]
+                    cmd += ["--set-priors", "nofz_shifts", f"p_{i+1}", f"gaussian {m} 1.0"]
+
+
+
+            cmd += config
+
+            # sampler settings
+            if sampler == "multinest":
+                cmd += multinest_settings
+
+            cmd += ["--overwrite"]
+
+        subprocess.run(["python", script] + cmd, check=True)
