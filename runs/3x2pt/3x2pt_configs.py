@@ -30,12 +30,16 @@ if __name__ == "__main__":
                           "--sampler-config", "live_points", "250", # For final setup we probably want something higher than this
                          ]
 
-    nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_2", "100 600",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_3", "100 600",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_4", "100 600",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_5", "100 600",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_4", "100 300",
-                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_5", "100 300",]
+    nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_1", "100 300",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_2", "100 300",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_3", "100 300",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_4", "100 300",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_1_5", "100 300",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_1", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_2", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_3", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_4", "100 600",
+                     "--set-keys", "scale_cuts", "keep_ang_PneE_2_5", "100 600",]
 
     Planck_settings = ["--enable-modules", "planck_like",
                        "--set-keys", "camb", "mode", "cmb",
