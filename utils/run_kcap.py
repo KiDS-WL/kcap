@@ -63,11 +63,19 @@ class K1000Pipeline:
         wedges_param_range = [("cosmological_parameters", "omch2", {"max" : 0.2}),
                               ("cosmological_parameters", "n_s", {"max" : 1.1})]
 
-        ggl_modules = ["approximate_P_gm", "bandpower_ggl"]
-        ggl_keys = [("projection", "position-shear")]
+        ggl_modules = ["approximate_P_gm", 
+                       "magnification_alphas",
+                       "add_magnification", 
+                       "add_intrinsic", 
+                       "bandpower_ggl"]
+        ggl_keys = [#("extrapolate_power", "sections"),
+                    ("linear_alignment", "do_galaxy_intrinsic"),
+                    ("projection", "magnification-shear"),
+                    ("projection", "position-shear"), 
+                    ("projection", "position-intrinsic")]
         ggl_stats = [("scale_cuts", "use_stats", ["PneE"])]
 
-        cosmic_shear_modules = ["linear_alignment", "bandpower_shear_e"]
+        cosmic_shear_modules = ["bandpower_shear_e"]
         cosmic_shear_keys = [("projection", "fast-shear-shear-ia")]
         
         EE_stats = [("scale_cuts", "use_stats", ["PeeE"])]
@@ -90,15 +98,12 @@ class K1000Pipeline:
                                                                   "sample_negative_mnu",
                                                                   "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
-                                                                  "add_intrinsic",
-                                                                  "magnification_alphas",
-                                                                  "add_magnification",
                                                                   "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
                                                                   "planck_like"],
                                                "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
                                                                   ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
                                                                   ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
-                                                                  ("projection", "magnification-shear")] }
+                                                                  ] }
 
         self.pipelines = {"EE_nE_w" :         {"cut_modules"    : [],
                                                "cut_keys"       : [],
@@ -131,7 +136,7 @@ class K1000Pipeline:
                                                "fix_values"     : IA_values + RSD_values + c_term_values,},
 
                           "w" :               {"cut_modules"    : cosmic_shear_modules + ggl_modules \
-                                                                  + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "projection", "scale_cuts", "2x2pt_like"],
+                                                                  + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "linear_alignment", "projection", "scale_cuts", "2x2pt_like"],
                                                "cut_keys"       : cosmic_shear_keys + ggl_keys,
                                                "set_parameters" : wedges_param_range,
                                                "fix_values"     : IA_values + baryon_values + nofz_values + c_term_values},
@@ -495,7 +500,9 @@ class K1000Pipeline:
 
                     "extrapolate_power" :  {"file" : os.path.join(CSL_PATH, 
                                                         "boltzmann/extrapolate/extrapolate_power.py"),
-                                            "kmax" : 500.0},
+                                            "kmax" : 500.0,
+                                            #"sections" : "matter_galaxy_power"
+                                            },
 
                     "load_nz_fits" :       {"file" : os.path.join(CSL_PATH, 
                                                             "number_density/load_nz_fits/load_nz_fits.py"),
@@ -525,7 +532,8 @@ class K1000Pipeline:
 
                     "linear_alignment" :   {"file" : os.path.join(CSL_PATH, 
                                                         "intrinsic_alignments/la_model/linear_alignments_interface.py"),
-                                            "method" : "bk_corrected"},
+                                            "method" : "bk_corrected",
+                                            "do_galaxy_intrinsic" : True},
 
                     "magnification_alphas":{"file" : os.path.join(KCAP_PATH, 
                                                         "utils/magnification_alphas.py"),
@@ -539,7 +547,7 @@ class K1000Pipeline:
                                             "shear-shear" : f"{source_nz_sample}-{source_nz_sample}",
                                             "position-shear" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "shear-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
-                                            #"position-intrinsic" : f"{lens_nz_sample}-{source_nz_sample}",
+                                            "position-intrinsic" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "intrinsic-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
                                             "fast-shear-shear-ia" : f"{source_nz_sample}-{source_nz_sample}",
                                             "magnification-shear" : f"{lens_nz_sample}-{source_nz_sample}",
@@ -549,7 +557,8 @@ class K1000Pipeline:
 
                     "add_intrinsic" :      {"file" : os.path.join(CSL_PATH, 
                                                         "shear/add_intrinsic/add_intrinsic.py"),
-                                            "position-shear" : False},
+                                            "shear-shear" : False,
+                                            "position-shear" : True},
 
                     "add_magnification" :  {"file" : os.path.join(KCAP_PATH, 
                                                         "utils/add_magnification.py"),
@@ -933,7 +942,7 @@ if __name__ == "__main__":
     parser.add_argument("--run-name")
 
     parser.add_argument("--halofit-version", default="mead")
-    parser.add_argument("--magnification-alpha", default="3.0")
+    parser.add_argument("--magnification-alphas", nargs=2, default=["1.8", "2.62"])
 
     parser.add_argument("--no-c-term", action="store_true")
     parser.add_argument("--no-2d-c-term", action="store_true")
@@ -1134,7 +1143,7 @@ if __name__ == "__main__":
         theta_range_xiM = [0.5, 300]
 
     halofit_version = args.halofit_version
-    magnification_alphas = [str(args.magnification_alpha)]*2
+    magnification_alphas = args.magnification_alphas
 
     sampler = args.sampler
 
