@@ -537,7 +537,7 @@ class K1000Pipeline:
 
                     "magnification_alphas":{"file" : os.path.join(KCAP_PATH, 
                                                         "utils/magnification_alphas.py"),
-                                            "alpha_binned" : " ".join(magnification_alphas)},
+                                            "alpha_binned" : magnification_alphas},
 
                     "projection" :         {"file" : os.path.join(CSL_PATH, 
                                                         "structure/projection/project_2d.py"),
@@ -942,7 +942,7 @@ if __name__ == "__main__":
     parser.add_argument("--run-name")
 
     parser.add_argument("--halofit-version", default="mead")
-    parser.add_argument("--magnification-alphas", nargs=2, default=["1.8", "2.62"])
+    parser.add_argument("--magnification-alphas", nargs=2, default=[1.8, 2.62])
 
     parser.add_argument("--no-c-term", action="store_true")
     parser.add_argument("--no-2d-c-term", action="store_true")
