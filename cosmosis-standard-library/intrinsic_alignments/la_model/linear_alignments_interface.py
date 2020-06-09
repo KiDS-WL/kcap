@@ -35,7 +35,7 @@ def execute(block, config):
     ia_ii = names.intrinsic_power + suffix
     ia_gi = names.galaxy_intrinsic_power + suffix
     ia_mi = names.matter_intrinsic_power + suffix
-    gm = "matter_galaxy_power" + suffix
+    gm = names.matter_galaxy_power + suffix
     cosmo = names.cosmological_parameters
 
     z_lin, k_lin, p_lin = block.get_grid(lin, "z", "k_h", "p_k")
@@ -69,8 +69,12 @@ def execute(block, config):
     # power spectrum) by P_gal_matter/P_delta_delta
     if gal_intrinsic_power:
         z, k, p_gm = block.get_grid(gm, "z", "k_h", "p_k")
-        P_gI = P_GI * p_gm / p_nl
-        block.put_grid(ia_gi, "z", z, "k_h", k, "p_k", P_gI)
+        # Make sure k ranges match in case P_gm wasn't extrapolated
+        gm_k_max = k[-1]*0.999
+        #assert np.allclose(k_I[k_I <= gm_k_max], k[k <= gm_k_max])
+        #assert np.allclose(k_nl[k_nl <= gm_k_max], k[k <= gm_k_max])
+        P_gI = P_GI[:,k_I <= gm_k_max] * p_gm[:,k <= gm_k_max] / p_nl[:,k_nl <= gm_k_max]
+        block.put_grid(ia_gi, "z", z, "k_h", k[k <= gm_k_max], "p_k", P_gI)
     return 0
 
 
