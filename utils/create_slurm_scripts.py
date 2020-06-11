@@ -54,9 +54,12 @@ if __name__ == "__main__":
     if args.root_dir:
         print(f"Generating sbatch files for all sub directories of root dir {args.root_dir}")
         path = pathlib.Path(args.root_dir)
-        config_files = path.glob("*/config/pipeline.ini")
-        if not config_files:
-            print("No config files found.")
+        config_files = list(path.glob("*/config/pipeline.ini"))
+        if len(config_files) == 0:
+            print("Found no pipeline files in subdirectories. Looking in root dir.")
+            config_files = [path/"config/pipeline.ini"]
+            if len(config_files) == 0:
+                raise RuntimeError("Could not find pipeline files.")
 
         for config_file in config_files:
             run_name = config_file.parts[-3]
@@ -65,10 +68,10 @@ if __name__ == "__main__":
             create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, print_config=False)
             print(f"Processed {run_name}.")
 
-        sbatch_files = path.glob("*/config/sbatch_command.sh")
-        with open(path.joinpath("sbatch_all.sh"), "w") as f:
-            f.write("#!/bin/sh\n")
-            f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
+        # sbatch_files = path.glob("*/config/sbatch_command.sh")
+        # with open(path.joinpath("sbatch_all.sh"), "w") as f:
+        #     f.write("#!/bin/sh\n")
+        #     f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
         
     else:
         create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name)
