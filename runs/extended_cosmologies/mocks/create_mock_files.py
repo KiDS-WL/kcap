@@ -2,7 +2,7 @@ import subprocess
 
 if __name__ == "__main__":
     script = "utils/run_kcap.py"
-    output_dir = "runs/extended_cosmologies/mocks/data/noisefree/"
+    output_dir = "runs/extended_cosmologies/mocks/data/noisefree_GGL_IA/"
     
     # Create LCDM mocks
 
