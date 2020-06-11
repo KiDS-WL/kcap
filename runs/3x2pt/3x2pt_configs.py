@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                           "--sampler-config", "nested_sampling_tolerance", "1.0e-2",
-                          "--sampler-config", "live_points", "250", # For final setup we probably want something higher than this
+                          "--sampler-config", "live_points", "500", # For final setup we probably want something higher than this
                          ]
 
     nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_1", "100 300",
@@ -53,10 +53,12 @@ if __name__ == "__main__":
 
 
     # Cosmology chains
-    root_dir = "runs/3x2pt/data/cosmology/"
+    root_dir = "runs/3x2pt/data_initial_cov/cosmology/"
 
-    blinds = ["A",]                       # For final setup: ["A", "B", "C"]
-    run_types = ["EE", "EE_w", "EE_nE_w", "w"] # For final setup: ["EE", "nE", "w", "EE_nE", "EE_w", "nE_w", "EE_nE_w"]
+    blinds = ["B", "C"]                       # For final setup: ["A", "B", "C"]
+    run_types = ["EE", "EE_w", "EE_nE", "EE_nE_w"] # For final setup: ["EE", "nE", "w", "EE_nE", "EE_w", "nE_w", "EE_nE_w"]
+
+    use_Planck = [False]
 
     for blind in blinds:
         print(f"Blind {blind}")
@@ -65,7 +67,7 @@ if __name__ == "__main__":
         for run_type in run_types:
             print(f"  Run type: {run_type}")
 
-            for with_Planck in [False, True]:
+            for with_Planck in use_Planck:
                 print(f"    Include Planck: {with_Planck}")
 
                 for sampler in ["test", "multinest"]:
@@ -102,13 +104,13 @@ if __name__ == "__main__":
                     if sampler == "multinest":
                         cmd += multinest_settings
 
-                    cmd += ["--overwrite"]
+                    # cmd += ["--overwrite"]
 
                     subprocess.run(["python", script] + cmd, check=True)
 
 
     # Systematics chains
-    root_dir = "runs/3x2pt/data/systematics/"
+    root_dir = "runs/3x2pt/data_initial_cov/systematics/"
 
     # Configs for tomographic bin cuts
     tomographic_bin_cut_configs = []
@@ -136,7 +138,7 @@ if __name__ == "__main__":
         tomographic_bin_cut_configs.append((f"cut_z_bin_{''.join([str(c+1) for c in cut_bin])}", config))
 
 
-    blind = "A"
+    blind = "C"
     print(f"Blind {blind}")
     twopoint_file = twopoint_file_template.format(blind=blind)
 
@@ -144,12 +146,12 @@ if __name__ == "__main__":
     print(f"  Run type: {run_type}")
 
     for config_name, config in [("no_baryon",   ["--set-parameters", "halo_model_parameters", "A", "3.13"]),
-                                ("fix_ho_bias", ["--set-parameters", "bias_parameters", "b2_bin_1", "0.2",
-                                                 "--set-parameters", "bias_parameters", "gamma3_bin_1", "0.9",
-                                                 "--set-parameters", "bias_parameters", "a_vir_bin_1", "3.8",
-                                                 "--set-parameters", "bias_parameters", "b2_bin_2", "0.5",
-                                                 "--set-parameters", "bias_parameters", "gamma3_bin_2", "0.1",
-                                                 "--set-parameters", "bias_parameters", "a_vir_bin_2", "3.0",]),
+                                # ("fix_ho_bias", ["--set-parameters", "bias_parameters", "b2_bin_1", "0.2",
+                                #                  "--set-parameters", "bias_parameters", "gamma3_bin_1", "0.9",
+                                #                  "--set-parameters", "bias_parameters", "a_vir_bin_1", "3.8",
+                                #                  "--set-parameters", "bias_parameters", "b2_bin_2", "0.5",
+                                #                  "--set-parameters", "bias_parameters", "gamma3_bin_2", "0.1",
+                                #                  "--set-parameters", "bias_parameters", "a_vir_bin_2", "3.0",]),
                                 ("zero_ho_bias", ["--set-parameters", "bias_parameters", "b2_bin_1", "0.0",
                                                   "--set-parameters", "bias_parameters", "gamma3_bin_1", "0.0",
                                                   "--set-parameters", "bias_parameters", "a_vir_bin_1", "0.0",
@@ -191,6 +193,6 @@ if __name__ == "__main__":
             if sampler == "multinest":
                 cmd += multinest_settings
 
-            cmd += ["--overwrite"]
+            # cmd += ["--overwrite"]
 
         subprocess.run(["python", script] + cmd, check=True)
