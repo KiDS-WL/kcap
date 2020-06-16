@@ -96,6 +96,7 @@ class K1000Pipeline:
         self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
                                                                   "sample_negative_mnu",
+                                                                  "cosmicemu",
                                                                   "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
@@ -202,9 +203,13 @@ class K1000Pipeline:
 
         if "min" in config or "max" in config:
             # Set (or  change) the range
-            l = config.get("min", l)
-            m = config.get("fiducial", m)
-            u = config.get("max", u)
+            if "min" in config and not np.isnan(config["min"]):
+                l = config["min"]
+            if "fiducial" in config and not np.isnan(config["fiducial"]):
+                m = config["fiducial"]
+            if "max" in config and not np.isnan(config["max"]):
+                u = config["max"]
+                
             if not all([v is not None for v in [l,m,u]]):
                 raise ValueError(f"min, fiducial, and max need to be specified but got {[l,m,u]}.")
             return [l,m,u]
@@ -458,6 +463,11 @@ class K1000Pipeline:
                                             "background_zmax"    : 6.0,
                                             "background_zmin"    : 0.0,
                                             "background_nz"      : 6000,
+                                            },
+
+                    "cosmicemu"          : {"file" : os.path.join(CSL_PATH, "structure/cosmic_emu/interface.so"),
+                                            "zmax" : 2.0,
+                                            "nz"   : 100,
                                             },
 
                     "reaction"           : {"file" : os.path.join(REACT_PATH, 
@@ -814,7 +824,8 @@ class K1000Pipeline:
                     "maxlike" :    {"method"          : maxlike_method,
                                     "tolerance"       : maxlike_tolerance,
                                     "maxiter"         : max_iterations,
-                                    "max_posterior"   : "T" if max_posterior else "F"},
+                                    "max_posterior"   : "T" if max_posterior else "F",
+                                    "output_steps"    : "T",},
                     }
 
         config[sampler_name] = samplers[sampler_name]
