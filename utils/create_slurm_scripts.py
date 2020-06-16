@@ -4,7 +4,7 @@ import argparse
 import sys
 import pathlib
 
-def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_name=None, print_config=True):
+def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_name=None, use_mpi=True, print_config=True):
     jobname = job_name or run_name
     template = f"""#!/bin/bash
 #SBATCH --ntasks {args.n_task}
@@ -22,9 +22,12 @@ module load openmpi/4.0.0/intel
 source ${{HOME}}/Codes/miniconda/bin/activate kcap_env
 
 export OMP_NUM_THREADS={args.n_thread}
+"""
+    if use_mpi:
+        template += f"mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib cosmosis --mpi {config_file}"
+    else:
+        template += f"cosmosis {config_file}"
 
-mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib cosmosis --mpi {config_file}
-    """
     if print_config: print(template)
 
     if not args.root_dir:
@@ -44,6 +47,8 @@ if __name__ == "__main__":
     parser.add_argument("--job-name")
     parser.add_argument("--output-dir")
     parser.add_argument("--log-dir", default="runs/logs")
+
+    parser.add_argument("--no-mpi", action="store_true", default=False)
 
     parser.add_argument("--n-task", default=32)
     parser.add_argument("--partition", default="all")
@@ -65,7 +70,7 @@ if __name__ == "__main__":
             run_name = config_file.parts[-3]
             job_name = run_name
             output_dir = config_file.parent
-            create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, print_config=False)
+            create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, use_mpi=not args.no_mpi, print_config=False)
             print(f"Processed {run_name}.")
 
         # sbatch_files = path.glob("*/config/sbatch_command.sh")
@@ -74,6 +79,6 @@ if __name__ == "__main__":
         #     f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
         
     else:
-        create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name)
+        create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name, use_mpi=not args.no_mpi, )
 
 
