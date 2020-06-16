@@ -4,6 +4,7 @@ import os
 import configparser
 
 import numpy as np
+import scipy.optimize
 
 try:
     import getdist
@@ -18,7 +19,7 @@ def compute_sample_range_and_coverage(samples, weights, idx):
     return (l,u), coverage_1d, coverage_nd
 
 def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68, 
-            sort_idx=None, log_posterior=None, verbose=False):
+            sort_idx=None, log_posterior=None, method="interpolate", twosided=False, verbose=False):
     """Find the highest posterior density credible interval.
     
     Finds the HPD CI of samples, using the posterior masses given my weights. 
@@ -55,31 +56,183 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
     n_sample : int
         Number of samples in CI.
     """
+    if np.any(~np.isfinite(samples)):
+        return (np.nan, np.nan), np.nan, np.nan, 0
+
     if weights is None:
         weights = np.ones_like(samples)/samples.size
     if sort_idx is None:
         if log_posterior is None:
             raise ValueError("If sorting indicies are not provided, the log posterior must be given.")
         sort_idx = np.argsort(log_posterior)[::-1]        
-        
+    
+    l_outer = l_inner = u_inner = u_outer = samples[sort_idx[0]]
+    coverage_1d_inner = 0
+
     for i in range(3, len(sort_idx)):
         (l_this, u_this), coverage_1d_this, coverage_nd_this = compute_sample_range_and_coverage(samples, weights, sort_idx[:i])
+        
+        if coverage_1d_this < coverage_1d_threshold:
+            # Still under the target coverage
+            l_inner = l_outer = l_this
+            u_inner = u_outer = u_this
+            coverage_1d_inner = coverage_1d_this
+        else:
+            # Over the target coverage. Only update outer limits
+            if l_this < l_inner:
+                l_outer = l_this
+            if u_this > u_inner:
+                u_outer = u_this
+        
+        if method == "interpolate":
+            if (twosided and (l_inner != l_outer and u_inner != u_outer)) \
+            or (not twosided and (l_inner != l_outer or u_inner != u_outer)):
+                # Got two estimates for both sides
+                def coverage(t):
+                    l = l_outer*(1-t) + l_inner*t
+                    u = u_outer*(1-t) + u_inner*t
+                    return np.sum(weights[(l <= samples) & (samples <= u)])
 
-        if coverage_1d_this > coverage_1d_threshold:
-            (l_last, u_last), coverage_1d_last, coverage_nd_last = compute_sample_range_and_coverage(samples, weights, sort_idx[:i-1])
+                print(l_outer, l_inner, u_inner, u_outer)
+                res = scipy.optimize.root_scalar(f=lambda t: coverage(t)-coverage_1d_threshold, bracket=(0,1))
+                t = res.root
+                l = l_outer*(1-t) + l_inner*t
+                u = u_outer*(1-t) + u_inner*t
+                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
 
-            # Interpolate between this sample and the last at the target coverage
-            t = (coverage_1d_this - coverage_1d_threshold)/(coverage_1d_this-coverage_1d_last)
-            l = l_this*(1-t) + l_last*t
-            u = u_this*(1-t) + u_last*t
-            coverage_1d = coverage_1d_this*(1-t) + coverage_1d_last*t
-            coverage_nd = coverage_nd_this*(1-t) + coverage_nd_last*t
+                return (l,u), coverage_1d, coverage_nd_this, i
+        elif method == "expand symmetric":
+            if(l_inner != l_outer or u_inner != u_outer):
+                delta_init = max(l_inner-l_outer, u_outer-u_inner)
+                def coverage(d):
+                    l = l_inner - d
+                    u = u_inner + d
+                    return np.sum(weights[(l <= samples) & (samples <= u)])
+
+                res = scipy.optimize.root_scalar(f=lambda d: coverage(d)-coverage_1d_threshold, bracket=(0,delta_init))
+                d = res.root
+                l = l_inner - d
+                u = u_inner + d
+                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
+
+                return (l,u), coverage_1d, coverage_nd_this, i
+                
+        elif method == "expand":
+            if(l_inner != l_outer or u_inner != u_outer):
+                # Only need two estimates for one side.
+                delta_init = max(l_inner-l_outer, u_outer-u_inner)/4
+                
+#                 print(f"l: {l_outer:.3f}->{l_inner:.3f} u: {u_inner:.3f}->{u_outer:.3f}")
+                
+#                 def fun(x):
+#                     l, u = x
+#                     # Constraint for total coverage: coverage(l,u) = 0.68
+#                     a = np.sum(weights[(l <= samples) & (samples <= u)]) - coverage_1d_threshold
+#                     # Constraint for symmetric expandsion: coverage(l-dl,l) = coverage(u,u+du)
+#                     b = np.sum(weights[(l <= samples) & (samples <= l_inner)]) - np.sum(weights[(u_inner <= samples) & (samples <= u)])
+#                     return [a,b]
+#                 res = scipy.optimize.root(fun=fun, x0=[l_inner-delta_init/10, u_inner+delta_init/10], 
+#                                           method="hybr", options={"factor" : 100,
+#                                                                   "diag" : [1,1/delta_init]})
+#                 print([l_inner-delta_init, u_inner+delta_init])
+#                 print(res)
+#                 return res.x, res.fun[0] + coverage_1d_threshold
+
+                delta_coverage = (coverage_1d_threshold-coverage_1d_inner)/2
+                sample_sort_idx = np.argsort(samples[samples < l_inner])[::-1]
+                l_idx = np.searchsorted(np.cumsum(weights[samples < l_inner][sample_sort_idx]), delta_coverage)
+                #print(samples.shape, weights.shape, samples[samples < l_inner].size, sample_sort_idx.size, np.cumsum(weights[samples < l_inner][sample_sort_idx]).size, l_idx )
+                if l_idx == samples[samples < l_inner].size:
+                    l_idx -= 1
+                l = samples[samples < l_inner][sample_sort_idx][l_idx]
+#                 print(l)
+#                 print(np.sum(weights[samples < l_inner][sample_sort_idx][:l_idx]))
+                sample_sort_idx = np.argsort(samples[samples > u_inner])
+                u_idx = np.searchsorted(np.cumsum(weights[samples > u_inner][sample_sort_idx]), delta_coverage)
+                if u_idx == samples[samples > u_inner].size:
+                    u_idx -= 1
+                u = samples[samples > u_inner][sample_sort_idx][u_idx]
+#                 print(u)
+#                 print(np.sum(weights[samples > u_inner][sample_sort_idx][:u_idx]))
+#                 print(coverage_1d_inner)
+                
+        
+                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
+                return (l,u), coverage_1d, coverage_nd_this, i
             
-            if verbose: print(f"1D coverage change in last sample: {coverage_1d_last:.2f}->{coverage_1d_this:.2f}")
-            return (l,u), coverage_1d, coverage_nd, i
+        elif method == "expand_minimal":
+            if(l_inner != l_outer and u_inner != u_outer):
+                # Initial guess
+                l_delta = l_inner-l_outer
+                u_delta = u_outer-u_inner
+                
+                sample_sort_idx = np.argsort(samples[samples <= l_inner])[::-1]
+                l_cdf = np.cumsum(weights[samples <= l_inner][sample_sort_idx])
+                l_cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[samples <= l_inner][sample_sort_idx][::-1],
+                                                                            y=l_cdf[::-1]-l_cdf[0], ext=3)
+                sample_sort_idx = np.argsort(samples[samples >= u_inner])
+                u_cdf = np.cumsum(weights[samples >= u_inner][sample_sort_idx])
+                u_cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[samples >= u_inner][sample_sort_idx],
+                                                                            y=u_cdf-u_cdf[0], ext=3)
+                
+                def constraint(x):
+                    l, u = x
+#                     if l < l_outer-0.1 or u > u_outer+0.1:
+#                         raise ValueError(f"l, u outside outer bounds: {l, u} vs {l_outer, u_outer}")
+#                     if l < samples.min() or u > samples.max():
+#                         raise ValueError(f"l, u outside outer bounds: {l, u} vs {l_outer, u_outer}")
+                    coverage = coverage_1d_inner + l_cdf_func(l) + u_cdf_func(u)
+                    return coverage - coverage_1d_threshold
+                
+                def constraint_jac(x):
+                    l, u = x
+                    return l_cdf_func(l, nu=1), u_cdf_func(u, nu=1)
+                
+                def fun(x):
+                    l, u = x
+                    return u-l
+                
+                def fun_jac(x):
+                    l, u = x
+                    return -1.0, 1.0
+                
+#                 print(l_inner-l_delta/2, u_inner+u_delta/2)
+                res = scipy.optimize.minimize(fun=fun, x0=[l_inner-l_delta/2, u_inner+u_delta/2],
+                                              jac=fun_jac,
+                                              bounds=[(l_outer, l_inner), (u_inner, u_outer)],
+                                              constraints=[{"type" : "eq", "fun" : constraint, "jac" : constraint_jac},
+#                                                            {"type" : "ineq", "fun" : lambda x: l_inner-x[0], "jac" : lambda x: (-1.0, 0.0)},
+#                                                            {"type" : "ineq", "fun" : lambda x: x[1]-u_inner, "jac" : lambda x: (0.0, 1.0)},
+#                                                            {"type" : "ineq", "fun" : lambda x: x[0] - l_outer, "jac" : lambda x: (1.0, 0.0)},
+#                                                            {"type" : "ineq", "fun" : lambda x: u_outer - x[1], "jac" : lambda x: (0.0, -1.0)},
+                                                          ],
+                                              options={"ftol" : 0.05},
+#                                               constraints=scipy.optimize.NonlinearConstraint(constraint, lb=-0.05, ub=0.05, jac=constraint_jac),
+                                              method="SLSQP")
+#                 print(res)
+                if not res.success:
+                    if res.message != "Positive directional derivative for linesearch":
+                        print(res)
+
+                l, u = res.x
+                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
+                return (l,u), coverage_1d, coverage_nd_this, i
+        
+        elif method == "gaussian":
+            if(l_inner != l_outer or u_inner != u_outer):
+                var = np.cov(samples[sort_idx[:i]], aweights=weights[sort_idx[:i]])
+                mean = np.average(samples[sort_idx[:i]], weights=weights[sort_idx[:i]])
+                l, u = scipy.stats.norm(loc=mean, scale=np.sqrt(var)).ppf([(1-coverage_1d_threshold)/2, (1+coverage_1d_threshold)/2])
+                
+                print(mean, np.sqrt(var))
+                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
+                return (l, u), coverage_1d
+                
+
     else:
         warnings.warn(f"Could not match 1D covarage of {coverage_1d_threshold}. Got coverage of {coverage_1d_this:.2f} for CI ({l_this:.3f}, {u_this:.3f}).")
         return (l_this, u_this), coverage_1d_this, coverage_nd_this, i
+    
 
 def plot_CI(plot, chains, params, MAP=None, CI=None, colors=None, MAP_kwargs=None, CI_kwargs=None):
     """Plot CI bands on a getdist corner plot.
@@ -181,6 +334,10 @@ parameter_dictionary = {
                                       "montepython" : "S8",
                                       "cosmomc" :     "s8",
                                       "latex" :       "S_8"},
+        # For compatibility
+        "S8" :                      {"cosmosis" :    "cosmological_parameters--s8",
+                                      "cosmomc" :     "s8",
+                                      "latex" :       "S_8"},
         "m_nu" :                     {"cosmosis" :    "cosmological_parameters--mnu",
                                       "cosmomc" :     "mnu",
                                       "latex" :       "M_\\nu"},
@@ -196,6 +353,9 @@ parameter_dictionary = {
         "fR0" :                      {"cosmosis" :    "cosmological_parameters--fr0",
                                       "cosmomc" :     "fr0",
                                       "latex" :       "fR_0"},
+        "logfR0" :                   {"cosmosis" :    "cosmological_parameters--log10_fr0",
+                                      "cosmomc" :     "logfr0",
+                                      "latex" :       "\\log_{10}fR_0"},
         "b_1 sigma_8 S_8 lowz" :     {"cosmosis" :    "cosmological_parameters--bsigma8S8_bin_1",
                                       "cosmomc" :     "b1l_sigma8_s8",
                                       "latex" :       "b_1^{\\rm lowz}\\sigma_8 S_8"},
@@ -287,6 +447,21 @@ parameter_dictionary = {
         "shift z_5" :                {"cosmosis" :    "delta_z_out--bin_5",
                                       "cosmomc" :     "shift_z5",
                                       "latex" :       "\\delta \\bar{z_5}"},
+        "p z_1" :                    {"cosmosis" :    "nofz_shifts--p_1",
+                                      "cosmomc" :     "p_z1",
+                                      "latex" :       "p {z_1}"},
+        "p z_2" :                    {"cosmosis" :    "nofz_shifts--p_2",
+                                      "cosmomc" :     "p_z2",
+                                      "latex" :       "p {z_2}"},
+        "p z_3" :                    {"cosmosis" :    "nofz_shifts--p_3",
+                                      "cosmomc" :     "p_z3",
+                                      "latex" :       "p {z_3}"},
+        "p z_4" :                    {"cosmosis" :    "nofz_shifts--p_4",
+                                      "cosmomc" :     "p_z4",
+                                      "latex" :       "p {z_4}"},
+        "p z_5" :                    {"cosmosis" :    "nofz_shifts--p_5",
+                                      "cosmomc" :     "p_z5",
+                                      "latex" :       "p {z_5}"},
         "A_Planck" :                 {"cosmosis" :    "planck--a_planck",
                                       "cosmomc" :     "calPlanck",
                                       "latex" :       "A_{\\rm Planck}"},
@@ -419,6 +594,8 @@ def load_chain(chain_file, parameters=None, run_name=None,
     
     if chain_format == "cosmosis":
         chain_params = [p.strip().lower() for p in params.split("\t")]
+        if len(chain_params) == 1:
+            chain_params = [p.strip().lower() for p in params.split(" ")]        
     elif chain_format == "montepython":
         chain_params = [p.strip() for p in params.split(",")]
     else:
