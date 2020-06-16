@@ -337,6 +337,7 @@ def execute(block, config):
     
     # Calculate Omega_Lambda. Doesn't include radiation!
     p.omegal = 1 - p.omegam - p.omk
+    p.ommh2 = p.omegam * p.h**2
     for cosmosis_name, CAMB_name, scaling in [("h0"               , "h",               1),
                                               ("hubble"           , "h",             100),
                                               ("omnuh2"           , "omnuh2",          1),
@@ -349,7 +350,8 @@ def execute(block, config):
                                               ("omega_c"          , "omegac",          1),
                                               ("omega_nu"         , "omeganu",         1),
                                               ("omega_m"          , "omegam",          1),
-                                              ("omega_lambda"     , "omegal",          1)]:
+                                              ("omega_lambda"     , "omegal",          1),
+                                              ("ommh2"            , "ommh2",           1),]:
         CAMB_value = getattr(p, CAMB_name)*scaling
         if block.has_value(names.cosmological_parameters, cosmosis_name):
             input_value = block[names.cosmological_parameters, cosmosis_name]
