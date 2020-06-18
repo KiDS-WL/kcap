@@ -101,7 +101,10 @@ else:
   params_fiducial = pipeline.start_vector()
   str_start = 'fiducial start taken from the values file: '+ini.get("pipeline","values")
   start_point_str = 'start values:'
-  for param in best_fit:
+  post, extra   = pipeline.posterior(params_fiducial)
+  for param in params_fiducial:
+    start_point_str+=' '+'%.5f' % param
+  for param in extra:
     start_point_str+=' '+'%.5f' % param
 
 
@@ -124,6 +127,7 @@ def run(normalised_values):
     prior         = pipeline.prior(params_values)
     like = post - prior
     if(args.ouput_steps):
+      file = open(output_name, 'a')
       for p in params_values:
         if(p>0.01):
           file.write('%.5f' % p)
@@ -141,6 +145,7 @@ def run(normalised_values):
       file.write(" ")
       file.write('%.5f' % post)
       file.write("\n")
+      file.close()
     if (args.max_post):
       return -2.*post
     else:
@@ -220,7 +225,7 @@ try:
 except:
   print("no prior file given")
 
-
+file.close()
 
 res_nelder_mead = minimize(run, start_vector, method='Nelder-Mead', 
           options={'maxiter':maxiter,'xatol':1e-3, 'fatol':1e-2,'adaptive':True, 'disp':True})
@@ -229,6 +234,8 @@ output_params = pipeline.denormalize_vector(res_nelder_mead.x)
 post, extra   = pipeline.posterior(output_params)
 prior         = pipeline.prior(output_params)
 like          = post - prior
+
+file = open(output_name, 'a')
 for p in output_params:
   if(p>0.01):
     file.write('%.5f' % p)
