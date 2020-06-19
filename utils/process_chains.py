@@ -18,8 +18,30 @@ def compute_sample_range_and_coverage(samples, weights, idx):
     coverage_nd = np.sum(weights[idx])
     return (l,u), coverage_1d, coverage_nd
 
-def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68, 
-            sort_idx=None, log_posterior=None, method="interpolate", twosided=False, verbose=False):
+def create_interpolated_cdf(samples, weights, threshold, reverse=False):
+    unique_samples, unique_inverse_idx = np.unique(samples, return_inverse=True)
+    if len(unique_samples) != len(samples):
+        unique_weights = np.zeros_like(unique_samples)
+        np.add.at(unique_weights, unique_inverse_idx, weights)
+        samples = unique_samples
+        weights = unique_weights
+
+    selection = samples <= threshold if reverse else samples >= threshold
+    if reverse:
+        sample_sort_idx = np.argsort(samples[selection])
+        cdf = np.cumsum(weights[selection][sample_sort_idx])
+        cdf = cdf[-1] - cdf
+    else:
+        sample_sort_idx = np.argsort(samples[selection])
+        cdf = np.cumsum(weights[selection][sample_sort_idx])
+        cdf -= cdf[0]
+    cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[selection][sample_sort_idx],
+                                                              y=cdf, k=1, ext=3)
+    return cdf_func
+
+def find_MHPD_CI(samples, weights=None, coverage_1d_threshold=0.683, 
+                 sort_idx=None, log_posterior=None, 
+                 method="interpolate", twosided=True, verbose=False, strict=False):
     """Find the highest posterior density credible interval.
     
     Finds the HPD CI of samples, using the posterior masses given my weights. 
@@ -42,8 +64,14 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
         If not provided, this will be computed internally from log_posterior.
     log_posterior : numpy.array
         Array of the log posterior values of the samples.
+    method : str
+        How to interplate the MHPD CI for finite number of samples. Options are 'interpolate', 'expand', 'expand symmetric', 'expand minimal'. Default 'interpolate'
+    twosided: bool
+        Whether to keep search samples until both the lower and upper bounds extend beyond the threshold coverage. Default: True.
     verbose : bool
         Print extra outputs.
+    strict : bool
+        Whether to raise an exception of no CI can be found. Default: False.
         
     Returns
     -------
@@ -56,9 +84,6 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
     n_sample : int
         Number of samples in CI.
     """
-    if np.any(~np.isfinite(samples)):
-        return (np.nan, np.nan), np.nan, np.nan, 0
-
     if weights is None:
         weights = np.ones_like(samples)/samples.size
     if sort_idx is None:
@@ -67,8 +92,8 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
         sort_idx = np.argsort(log_posterior)[::-1]        
     
     l_outer = l_inner = u_inner = u_outer = samples[sort_idx[0]]
-    coverage_1d_inner = 0
-
+    coverage_1d_inner = coverage_nd_inner = 0
+    n_inner = 0
     for i in range(3, len(sort_idx)):
         (l_this, u_this), coverage_1d_this, coverage_nd_this = compute_sample_range_and_coverage(samples, weights, sort_idx[:i])
         
@@ -77,37 +102,47 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
             l_inner = l_outer = l_this
             u_inner = u_outer = u_this
             coverage_1d_inner = coverage_1d_this
+            coverage_nd_inner = coverage_nd_this
+            n_inner = i
         else:
             # Over the target coverage. Only update outer limits
             if l_this < l_inner:
                 l_outer = l_this
             if u_this > u_inner:
                 u_outer = u_this
-        
+            
         if method == "interpolate":
             if (twosided and (l_inner != l_outer and u_inner != u_outer)) \
             or (not twosided and (l_inner != l_outer or u_inner != u_outer)):
                 # Got two estimates for both sides
+                
+                l_cdf_func = create_interpolated_cdf(samples, weights, l_inner, reverse=True)
+                u_cdf_func = create_interpolated_cdf(samples, weights, u_inner, reverse=False)
+                
                 def coverage(t):
                     l = l_outer*(1-t) + l_inner*t
                     u = u_outer*(1-t) + u_inner*t
-                    return np.sum(weights[(l <= samples) & (samples <= u)])
+                    return coverage_1d_inner + l_cdf_func(l) + u_cdf_func(u)
 
-                print(l_outer, l_inner, u_inner, u_outer)
                 res = scipy.optimize.root_scalar(f=lambda t: coverage(t)-coverage_1d_threshold, bracket=(0,1))
                 t = res.root
                 l = l_outer*(1-t) + l_inner*t
                 u = u_outer*(1-t) + u_inner*t
                 coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
 
-                return (l,u), coverage_1d, coverage_nd_this, i
+                return (l,u), coverage_1d, coverage_nd_inner, n_inner
+        
         elif method == "expand symmetric":
             if(l_inner != l_outer or u_inner != u_outer):
                 delta_init = max(l_inner-l_outer, u_outer-u_inner)
+                
+                l_cdf_func = create_interpolated_cdf(samples, weights, l_inner, reverse=True)
+                u_cdf_func = create_interpolated_cdf(samples, weights, u_inner, reverse=False)
+                
                 def coverage(d):
                     l = l_inner - d
                     u = u_inner + d
-                    return np.sum(weights[(l <= samples) & (samples <= u)])
+                    return coverage_1d_inner + l_cdf_func(l) + u_cdf_func(u)
 
                 res = scipy.optimize.root_scalar(f=lambda d: coverage(d)-coverage_1d_threshold, bracket=(0,delta_init))
                 d = res.root
@@ -115,65 +150,37 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
                 u = u_inner + d
                 coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
 
-                return (l,u), coverage_1d, coverage_nd_this, i
+                return (l,u), coverage_1d, coverage_nd_inner, n_inner
                 
         elif method == "expand":
             if(l_inner != l_outer or u_inner != u_outer):
                 # Only need two estimates for one side.
-                delta_init = max(l_inner-l_outer, u_outer-u_inner)/4
-                
-#                 print(f"l: {l_outer:.3f}->{l_inner:.3f} u: {u_inner:.3f}->{u_outer:.3f}")
-                
-#                 def fun(x):
-#                     l, u = x
-#                     # Constraint for total coverage: coverage(l,u) = 0.68
-#                     a = np.sum(weights[(l <= samples) & (samples <= u)]) - coverage_1d_threshold
-#                     # Constraint for symmetric expandsion: coverage(l-dl,l) = coverage(u,u+du)
-#                     b = np.sum(weights[(l <= samples) & (samples <= l_inner)]) - np.sum(weights[(u_inner <= samples) & (samples <= u)])
-#                     return [a,b]
-#                 res = scipy.optimize.root(fun=fun, x0=[l_inner-delta_init/10, u_inner+delta_init/10], 
-#                                           method="hybr", options={"factor" : 100,
-#                                                                   "diag" : [1,1/delta_init]})
-#                 print([l_inner-delta_init, u_inner+delta_init])
-#                 print(res)
-#                 return res.x, res.fun[0] + coverage_1d_threshold
 
                 delta_coverage = (coverage_1d_threshold-coverage_1d_inner)/2
                 sample_sort_idx = np.argsort(samples[samples < l_inner])[::-1]
                 l_idx = np.searchsorted(np.cumsum(weights[samples < l_inner][sample_sort_idx]), delta_coverage)
-                #print(samples.shape, weights.shape, samples[samples < l_inner].size, sample_sort_idx.size, np.cumsum(weights[samples < l_inner][sample_sort_idx]).size, l_idx )
+                
                 if l_idx == samples[samples < l_inner].size:
                     l_idx -= 1
                 l = samples[samples < l_inner][sample_sort_idx][l_idx]
-#                 print(l)
-#                 print(np.sum(weights[samples < l_inner][sample_sort_idx][:l_idx]))
+
                 sample_sort_idx = np.argsort(samples[samples > u_inner])
                 u_idx = np.searchsorted(np.cumsum(weights[samples > u_inner][sample_sort_idx]), delta_coverage)
                 if u_idx == samples[samples > u_inner].size:
                     u_idx -= 1
                 u = samples[samples > u_inner][sample_sort_idx][u_idx]
-#                 print(u)
-#                 print(np.sum(weights[samples > u_inner][sample_sort_idx][:u_idx]))
-#                 print(coverage_1d_inner)
                 
-        
                 coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
-                return (l,u), coverage_1d, coverage_nd_this, i
+                return (l,u), coverage_1d, coverage_nd_inner, n_inner
             
-        elif method == "expand_minimal":
+        elif method == "expand minimal":
             if(l_inner != l_outer and u_inner != u_outer):
                 # Initial guess
                 l_delta = l_inner-l_outer
                 u_delta = u_outer-u_inner
                 
-                sample_sort_idx = np.argsort(samples[samples <= l_inner])[::-1]
-                l_cdf = np.cumsum(weights[samples <= l_inner][sample_sort_idx])
-                l_cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[samples <= l_inner][sample_sort_idx][::-1],
-                                                                            y=l_cdf[::-1]-l_cdf[0], ext=3)
-                sample_sort_idx = np.argsort(samples[samples >= u_inner])
-                u_cdf = np.cumsum(weights[samples >= u_inner][sample_sort_idx])
-                u_cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[samples >= u_inner][sample_sort_idx],
-                                                                            y=u_cdf-u_cdf[0], ext=3)
+                l_cdf_func = create_interpolated_cdf(samples, weights, l_inner, reverse=True)
+                u_cdf_func = create_interpolated_cdf(samples, weights, u_inner, reverse=False)
                 
                 def constraint(x):
                     l, u = x
@@ -216,22 +223,15 @@ def find_HPD_CI(samples, weights=None, coverage_1d_threshold=0.68,
 
                 l, u = res.x
                 coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
-                return (l,u), coverage_1d, coverage_nd_this, i
-        
-        elif method == "gaussian":
-            if(l_inner != l_outer or u_inner != u_outer):
-                var = np.cov(samples[sort_idx[:i]], aweights=weights[sort_idx[:i]])
-                mean = np.average(samples[sort_idx[:i]], weights=weights[sort_idx[:i]])
-                l, u = scipy.stats.norm(loc=mean, scale=np.sqrt(var)).ppf([(1-coverage_1d_threshold)/2, (1+coverage_1d_threshold)/2])
-                
-                print(mean, np.sqrt(var))
-                coverage_1d = np.sum(weights[(l <= samples) & (samples <= u)])
-                return (l, u), coverage_1d
-                
-
+                return (l,u), coverage_1d, coverage_nd_inner, n_inner
+        else:
+            raise ValueError(f"Method {method} not supported.")      
     else:
-        warnings.warn(f"Could not match 1D covarage of {coverage_1d_threshold}. Got coverage of {coverage_1d_this:.2f} for CI ({l_this:.3f}, {u_this:.3f}).")
-        return (l_this, u_this), coverage_1d_this, coverage_nd_this, i
+        if strict:
+            raise RuntimeError(f"Could not match 1D covarage of {coverage_1d_threshold}. Got coverage of {coverage_1d_this:.2f} for CI ({l_this:.3f}, {u_this:.3f}).")
+        else:
+            warnings.warn(f"Could not match 1D covarage of {coverage_1d_threshold}. Got coverage of {coverage_1d_this:.2f} for CI ({l_this:.3f}, {u_this:.3f}).")
+            return (l_this, u_this), coverage_1d_this, coverage_nd_this, i
     
 
 def plot_CI(plot, chains, params, MAP=None, CI=None, colors=None, MAP_kwargs=None, CI_kwargs=None):
@@ -334,6 +334,9 @@ parameter_dictionary = {
                                       "montepython" : "S8",
                                       "cosmomc" :     "s8",
                                       "latex" :       "S_8"},
+        "S_8 proxy" :                {"cosmosis" :    "cosmological_parameters--s_8_input",
+                                      "cosmomc" :     "s8proxy",
+                                      "latex" :       "S_8 {\\rm proxy}"},
         # For compatibility
         "S8" :                      {"cosmosis" :    "cosmological_parameters--s8",
                                       "cosmomc" :     "s8",
