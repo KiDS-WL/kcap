@@ -58,19 +58,19 @@ maxiter     = args.maxiter
 
 
 if(args.best_fit_value):
-  if(args.best_fit_priors):
-    output_prior_file_name = args.best_fit_priors
-  else:
-    output_prior_file_name = "prior_"+args.best_fit_value
-
+    if(args.best_fit_priors):
+        output_prior_file_name = args.best_fit_priors
+    else:
+        output_prior_file_name = "prior_"+args.best_fit_value
+        
 
 ini = Inifile(inifile) 
 extra_params_ini=ini.get("pipeline","extra_output").split()
 
 extra_params=[]
 for param in extra_params_ini:
-  param=param.replace("/","--")
-  extra_params.append(param)
+    param=param.replace("/","--")
+    extra_params.append(param)
 
 # run setup
 pipeline = LikelihoodPipeline(ini) 
@@ -78,34 +78,34 @@ pipeline = LikelihoodPipeline(ini)
 param_names_varied = pipeline.varied_params
 
 if args.multinest_file:
-  # get the starting point from the best fit of the multinest chain if the file is given
-  multinest_file=args.multinest_file
-  print('using the multinest file:'+multinest_file+' to set the starting point for maxlike')
-  file=open(multinest_file)
-  line=file.readline()
-  parameter_list=(line.replace('#','')).split()
-  multi_chain = np.loadtxt(multinest_file,comments='#')
-  cols, param_names=find_cols_for_params(parameter_list,input_names,parameter_names,['post','like'])
-  if(args.max_post):
-    max_ind = np.argmax(multi_chain[:,cols[0]])
-  else:
-    max_ind = np.argmax(multi_chain[:,cols[1]])
-  best_fit = multi_chain[max_ind,:]
-  params_fiducial = best_fit[0:len(param_names_varied)]
-  str_start = 'best fit of multinest file: '+multinest_file
-  start_point_str = 'start values:'
-  for param in best_fit:
-    start_point_str+=' '+'%.5f' % param
+    # get the starting point from the best fit of the multinest chain if the file is given
+    multinest_file=args.multinest_file
+    print('using the multinest file:'+multinest_file+' to set the starting point for maxlike')
+    file=open(multinest_file)
+    line=file.readline()
+    parameter_list=(line.replace('#','')).split()
+    multi_chain = np.loadtxt(multinest_file,comments='#')
+    cols, param_names=find_cols_for_params(parameter_list,input_names,parameter_names,['post','like'])
+    if(args.max_post):
+        max_ind = np.argmax(multi_chain[:,cols[0]])
+    else:
+        max_ind = np.argmax(multi_chain[:,cols[1]])
+    best_fit = multi_chain[max_ind,:]
+    params_fiducial = best_fit[0:len(param_names_varied)]
+    str_start = 'best fit of multinest file: '+multinest_file
+    start_point_str = 'start values:'
+    for param in best_fit:
+        start_point_str+=' '+'%.5f' % param
 else:
-  # Otherwise use the fiducial values from the values.ini file:
-  params_fiducial = pipeline.start_vector()
-  str_start = 'fiducial start taken from the values file: '+ini.get("pipeline","values")
-  start_point_str = 'start values:'
-  post, extra   = pipeline.posterior(params_fiducial)
-  for param in params_fiducial:
-    start_point_str+=' '+'%.5f' % param
-  for param in extra:
-    start_point_str+=' '+'%.5f' % param
+    # Otherwise use the fiducial values from the values.ini file:
+    params_fiducial = pipeline.start_vector()
+    str_start = 'fiducial start taken from the values file: '+ini.get("pipeline","values")
+    start_point_str = 'start values:'
+    post, extra   = pipeline.posterior(params_fiducial)
+    for param in params_fiducial:
+        start_point_str+=' '+'%.5f' % param
+    for param in extra:
+        start_point_str+=' '+'%.5f' % param
 
 
 
@@ -119,37 +119,37 @@ start_vector  = pipeline.normalize_vector(params_fiducial)
 params_values = pipeline.denormalize_vector(start_vector)
 
 def run(normalised_values):
-  if((normalised_values>1.).any() or (normalised_values<0.).any()):
-    return np.inf
-  else:
-    params_values = pipeline.denormalize_vector(normalised_values)
-    post, extra   = pipeline.posterior(params_values)
-    prior         = pipeline.prior(params_values)
-    like = post - prior
-    if(args.ouput_steps):
-      file = open(output_name, 'a')
-      for p in params_values:
-        if(p>0.01):
-          file.write('%.5f' % p)
-        else:
-          file.write('%.5e' % p)
-        file.write(" ")
-      for p in extra:
-        if(p>0.01):
-          file.write('%.5f' % p)
-        else:
-          file.write('%.5e' % p)
-        file.write(" ")
-      # 
-      file.write('%.5f' % like)
-      file.write(" ")
-      file.write('%.5f' % post)
-      file.write("\n")
-      file.close()
-    if (args.max_post):
-      return -2.*post
+    if((normalised_values>1.).any() or (normalised_values<0.).any()):
+        return np.inf
     else:
-      return -2.*like
+        params_values = pipeline.denormalize_vector(normalised_values)
+        post, extra   = pipeline.posterior(params_values)
+        prior         = pipeline.prior(params_values)
+        like = post - prior
+        if(args.ouput_steps):
+            file = open(output_name, 'a')
+            for p in params_values:
+                if(p>0.01):
+                    file.write('%.5f' % p)
+                else:
+                    file.write('%.5e' % p)
+                file.write(" ")
+            for p in extra:
+                if(p>0.01):
+                    file.write('%.5f' % p)
+                else:
+                    file.write('%.5e' % p)
+                file.write(" ")
+            # 
+            file.write('%.5f' % like)
+            file.write(" ")
+            file.write('%.5f' % post)
+            file.write("\n")
+            file.close()
+        if (args.max_post):
+            return -2.*post
+        else:
+            return -2.*like
 
 min_bound = np.asarray([0.0 for p in pipeline.varied_params])
 max_bound = np.asarray([1.0 for p in pipeline.varied_params])
@@ -164,21 +164,21 @@ print("\n\n\n nelder mead \n\n")
 file = open(output_name, 'w')
 file.write("#")
 for param in pipeline.varied_params:
-  file.write(str(param))
-  file.write(" ")
+    file.write(str(param))
+    file.write(" ")
 
 for param in extra_params:
-  print(param)
-  file.write(str(param))
-  file.write(" ")
+    print(param)
+    file.write(str(param))
+    file.write(" ")
 
 file.write("like post\n")
 file.write("## maxlike sampler\n")
 str_max_post = "Using maximum "
 if(args.max_post):
-  str_max_post+= " posterior values"
+    str_max_post+= " posterior values"
 else:
-  str_max_post+= " likelihood values"
+    str_max_post+= " likelihood values"
 
 file.write("## "+str_max_post+"\n")
 file.write("## maxiter = "+str(maxiter)+"\n")
@@ -188,47 +188,47 @@ file.write("## START_OF_PARAMS_INI\n")
 
 # now write in the ini file configuration
 with open(inifile) as fp:
-  line = fp.readline()
-  while line:
-    if(line[0]!=";"):
-      # print('#'+line.strip())
-      file.write("## ")
-      file.write(line)
     line = fp.readline()
+    while line:
+        if(line[0]!=";"):
+            # print('#'+line.strip())
+            file.write("## ")
+            file.write(line)
+        line = fp.readline()
 
 file.write("## END_OF_PARAMS_INI\n")
 file.write("## START_OF_VALUES_INI\n")
 valuefile = ini.get("pipeline","values")
 with open(valuefile) as fp:
-  line = fp.readline()
-  while line:
-    if(line[0]!=";"):
-      # print('#'+line.strip())
-      file.write("## ")
-      file.write(line)
     line = fp.readline()
+    while line:
+        if(line[0]!=";"):
+            # print('#'+line.strip())
+            file.write("## ")
+            file.write(line)
+        line = fp.readline()
 
 file.write("## END_OF_VALUES_INI\n")
 
 try:
-  priorfile = ini.get("pipeline","priors")
-  file.write("## START_OF_PRIORS_INI\n")
-  with open(priorfile) as fp:
-    line = fp.readline()
-    while line:
-      if(line[0]!=";"):
-        # print('#'+line.strip())
-        file.write("## ")
-        file.write(line)
-      line = fp.readline()
-  file.write("## END_OF_PRIORS_INI\n")
+    priorfile = ini.get("pipeline","priors")
+    file.write("## START_OF_PRIORS_INI\n")
+    with open(priorfile) as fp:
+        line = fp.readline()
+        while line:
+            if(line[0]!=";"):
+                # print('#'+line.strip())
+                file.write("## ")
+                file.write(line)
+            line = fp.readline()
+    file.write("## END_OF_PRIORS_INI\n")
 except:
-  print("no prior file given")
+    print("no prior file given")
 
 file.close()
 
 res_nelder_mead = minimize(run, start_vector, method='Nelder-Mead', 
-          options={'maxiter':maxiter,'xatol':1e-3, 'fatol':1e-2,'adaptive':True, 'disp':True})
+                           options={'maxiter':maxiter,'xatol':1e-3, 'fatol':1e-2,'adaptive':True, 'disp':True})
 
 output_params = pipeline.denormalize_vector(res_nelder_mead.x)
 post, extra   = pipeline.posterior(output_params)
@@ -237,18 +237,18 @@ like          = post - prior
 
 file = open(output_name, 'a')
 for p in output_params:
-  if(p>0.01):
-    file.write('%.5f' % p)
-  else:
-    file.write('%.5e' % p)
-  file.write(" ")
+    if(p>0.01):
+        file.write('%.5f' % p)
+    else:
+        file.write('%.5e' % p)
+    file.write(" ")
 
 for p in extra:
-  if(p>0.01):
-    file.write('%.5f' % p)
-  else:
-    file.write('%.5e' % p)
-  file.write(" ")
+    if(p>0.01):
+        file.write('%.5f' % p)
+    else:
+        file.write('%.5e' % p)
+    file.write(" ")
 
 file.write('%.5f' % like)
 file.write(" ")
@@ -261,9 +261,9 @@ file.write("# n_eval=")
 file.write(str(res_nelder_mead.nfev))
 file.write("\n")
 if res_nelder_mead.success:
-  file.write("# Success\n")
+    file.write("# Success\n")
 else:
-  file.write("# Failure:"+str(res_nelder_mead.status)+"\n")
+    file.write("# Failure:"+str(res_nelder_mead.status)+"\n")
 
 file.write("# ")
 file.write(res_nelder_mead.message)
@@ -277,46 +277,46 @@ print("Nelder-Mead results:")
 output_params=pipeline.denormalize_vector(res_nelder_mead.x)
 p=0
 for param in pipeline.varied_params:
-  print(param)
-  print(param,output_params[p],params_fiducial[p])
-  p+=1
+    print(param)
+    print(param,output_params[p],params_fiducial[p])
+    p+=1
 
 print("min chi2=",res_nelder_mead.fun)
 
 
 # now making an output values file 
 if args.best_fit_value:
-  filename = args.best_fit_value
-  pipeline.create_ini(output_params,filename)
+    filename = args.best_fit_value
+    pipeline.create_ini(output_params,filename)
 # if there is a prior file then change the values for the mean there as well.
-  try:
-    priorfile = ini.get("pipeline","priors")
-    import collections
-    output = collections.defaultdict(list)
-    with open(priorfile) as fp:
-      line = fp.readline()
-      while line:
-        if(line[0]=='['):
-          section_name = line.strip()[1:-1]
-          print(section_name)
-          # what prior type is used? 
-        elif(line.split()):
-          if((line.split()[0]!=";")):
-            param_name = line.split()[0]
-            prior_type = line.split()[2]
-            if(prior_type=='gaussian'):
-              sigma      = float(line.split()[4])
-              for param, x in zip(pipeline.varied_params, output_params):
-                if((param.section == section_name) & (param.name == param_name)):
-                  output[section_name].append("%s  =  %s    %r    %r\n"% (param.name,prior_type,x,sigma))
-        line = fp.readline()
-    file = open(output_prior_file_name, 'w')
-    for section, params in sorted(output.items()):
-        file.write("[%s]\n"%section)
-        for line in params:
-          file.write(line)
-        file.write("\n")
-    file.close()
-  except:
-    print('no prior file available')
+    try:
+        priorfile = ini.get("pipeline","priors")
+        import collections
+        output = collections.defaultdict(list)
+        with open(priorfile) as fp:
+            line = fp.readline()
+            while line:
+                if(line[0]=='['):
+                    section_name = line.strip()[1:-1]
+                    print(section_name)
+                    # what prior type is used? 
+                elif(line.split()):
+                    if((line.split()[0]!=";")):
+                        param_name = line.split()[0]
+                        prior_type = line.split()[2]
+                        if(prior_type=='gaussian'):
+                            sigma      = float(line.split()[4])
+                            for param, x in zip(pipeline.varied_params, output_params):
+                                if((param.section == section_name) & (param.name == param_name)):
+                                    output[section_name].append("%s  =  %s    %r    %r\n"% (param.name,prior_type,x,sigma))
+                line = fp.readline()
+        file = open(output_prior_file_name, 'w')
+        for section, params in sorted(output.items()):
+            file.write("[%s]\n"%section)
+            for line in params:
+                file.write(line)
+            file.write("\n")
+        file.close()
+    except:
+        print('no prior file available')
 
