@@ -23,6 +23,7 @@ def setup(options):
 
 
     cov_file = options.get_string(option_section, "covariance_file").split()
+    n_mocks = options.get_int(option_section, "n_mocks", default=2048)
 
     cov = {}
     for i, f in enumerate(cov_file):
@@ -48,6 +49,12 @@ def setup(options):
             cov[b] = np.delete(cov[b], cut_points_idx, axis=1)
     
     inv_cov = {b : np.linalg.inv(cov[b]) for b in cov.keys()}
+
+    if n_mocks > 0:
+        nu = n_mocks - 1
+        for b, psi in inv_cov.items():
+            p = psi.shape[0]
+            inv_cov[b] = (nu-p-1)/nu * psi
     
     like_name = options.get_string(option_section, "like_name")
     keep_theory_vector = options.get_bool(option_section, "keep_theory_vector", False)

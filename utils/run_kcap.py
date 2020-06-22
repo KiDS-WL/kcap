@@ -742,6 +742,7 @@ class K1000Pipeline:
                                                         "utils/mini_BOSS_like.py"),
                                     "data_vector_file" : " ".join(BOSS_data_files),
                                     "covariance_file" : " ".join(BOSS_cov_files),
+                                    "n_mocks"            : 2048,
                                     "points_range"       : points_range,
                                     "like_name"          : BOSS_like_name,
                                     "keep_theory_vector" : True,},
