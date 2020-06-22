@@ -16,4 +16,5 @@ cosebis/WnLog
 examples/output*
 runs/output*
 
+runs/
 tests/test_pofk

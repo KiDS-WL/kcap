@@ -21,15 +21,20 @@ BOSS_PATH = os.path.join(KCAP_PATH, "../kcap_boss_module")
 CSL_PATH = os.path.join(KCAP_PATH, "cosmosis-standard-library")
 COSEBIS_PATH = os.path.join(KCAP_PATH, "cosebis")
 COSEBIS_OUTPUTS = COSEBIS_PATH
+REACT_PATH = os.path.join(KCAP_PATH, "../ReACT")
 
 SCALE_CUT_PATH = os.path.join(KCAP_PATH, "modules/scale_cuts")
 MOCK_DIR = os.path.join(KCAP_PATH, "data/gaussian_mocks/KV450/")
 
-def create_git_status_file(filename):
+def create_git_status_file(filename, cwd="."):
     """Get current status of git repository, write to a file (filename) and 
     return the file content as a string."""
 
-    commands = [{"cmd"     : ["git", "describe", "--always"],
+    commands = [{"cmd"     : ["git", "rev-parse", "--show-toplevel"],
+                 "comment" : "Name of the repository"},
+                {"cmd"     : ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                 "comment" : "Name of the branch"},    
+                {"cmd"     : ["git", "describe", "--always"],
                  "comment" :  "Current version/revision of repository"},
                 {"cmd"     : ["git", "rev-parse", "HEAD"],
                  "comment" :  "Current revision of repository"},
@@ -39,7 +44,7 @@ def create_git_status_file(filename):
     s = ""
     for command in commands:
         s += f"# {command['comment']} ({' '.join(command['cmd'])}):\n"
-        s += subprocess.check_output(command["cmd"]).strip().decode("ascii")
+        s += subprocess.check_output(command["cmd"], cwd=cwd).strip().decode("ascii")
         s += "\n\n"
 
     with open(filename, "w") as f:
@@ -58,11 +63,19 @@ class K1000Pipeline:
         wedges_param_range = [("cosmological_parameters", "omch2", {"max" : 0.2}),
                               ("cosmological_parameters", "n_s", {"max" : 1.1})]
 
-        ggl_modules = ["approximate_P_gm", "bandpower_ggl"]
-        ggl_keys = [("projection", "position-shear")]
+        ggl_modules = ["approximate_P_gm", 
+                       "magnification_alphas",
+                       "add_magnification", 
+                       "add_intrinsic", 
+                       "bandpower_ggl"]
+        ggl_keys = [#("extrapolate_power", "sections"),
+                    ("linear_alignment", "do_galaxy_intrinsic"),
+                    ("projection", "magnification-shear"),
+                    ("projection", "position-shear"), 
+                    ("projection", "position-intrinsic")]
         ggl_stats = [("scale_cuts", "use_stats", ["PneE"])]
 
-        cosmic_shear_modules = ["linear_alignment", "bandpower_shear_e"]
+        cosmic_shear_modules = ["bandpower_shear_e"]
         cosmic_shear_keys = [("projection", "fast-shear-shear-ia")]
         
         EE_stats = [("scale_cuts", "use_stats", ["PeeE"])]
@@ -82,15 +95,16 @@ class K1000Pipeline:
 
         self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
+                                                                  "sample_negative_mnu",
+                                                                  "cosmicemu",
+                                                                  "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
-                                                                  "add_intrinsic",
-                                                                  "magnification_alphas",
-                                                                  "add_magnification",
-                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",],
+                                                                  "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
+                                                                  "planck_like"],
                                                "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
                                                                   ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
                                                                   ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
-                                                                  ("projection", "magnification-shear")] }
+                                                                  ] }
 
         self.pipelines = {"EE_nE_w" :         {"cut_modules"    : [],
                                                "cut_keys"       : [],
@@ -123,7 +137,7 @@ class K1000Pipeline:
                                                "fix_values"     : IA_values + RSD_values + c_term_values,},
 
                           "w" :               {"cut_modules"    : cosmic_shear_modules + ggl_modules \
-                                                                  + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "projection", "scale_cuts", "2x2pt_like"],
+                                                                  + ["extrapolate_power", "load_nz_fits", "source_photoz_bias", "linear_alignment", "projection", "scale_cuts", "2x2pt_like"],
                                                "cut_keys"       : cosmic_shear_keys + ggl_keys,
                                                "set_parameters" : wedges_param_range,
                                                "fix_values"     : IA_values + baryon_values + nofz_values + c_term_values},
@@ -146,9 +160,15 @@ class K1000Pipeline:
                                                                          "add_magnification"],
                                               "uncut_keys"            : [("projection", "magnification-shear")]}
         self.pipelines["EE_nE_w_magnification"] = {**self.pipelines["EE_nE_w"],
-                                              "uncut_modules"         : ["magnification_alphas",
-                                                                         "add_magnification"],
-                                              "uncut_keys"            : [("projection", "magnification-shear")]}  
+                                                   "uncut_modules"         : ["magnification_alphas",
+                                                                              "add_magnification"],
+                                                   "uncut_keys"            : [("projection", "magnification-shear")]} 
+
+        self.pipelines["EE_fR"] = {**self.pipelines["EE"],
+                                    "uncut_modules"       : ["reaction",
+                                                             "hmcode_csl", 
+                                                             "multiply_reaction"],
+                                    "set_keys"            : EE_stats + [("camb", "nonlinear", "none")]} 
 
                         #   # Old settings, will get removed soon:
                         #   # 3x2pt w/ magnification
@@ -174,7 +194,7 @@ class K1000Pipeline:
 
     @staticmethod
     def set_parameter_range(value, config):
-        if isinstance(value, collections.Iterable):
+        if isinstance(value, collections.abc.Iterable):
             l, m, u = value
         else:
             m = value
@@ -183,9 +203,13 @@ class K1000Pipeline:
 
         if "min" in config or "max" in config:
             # Set (or  change) the range
-            l = config.get("min", l)
-            m = config.get("fiducial", m)
-            u = config.get("max", u)
+            if "min" in config and not np.isnan(config["min"]):
+                l = config["min"]
+            if "fiducial" in config and not np.isnan(config["fiducial"]):
+                m = config["fiducial"]
+            if "max" in config and not np.isnan(config["max"]):
+                u = config["max"]
+                
             if not all([v is not None for v in [l,m,u]]):
                 raise ValueError(f"min, fiducial, and max need to be specified but got {[l,m,u]}.")
             return [l,m,u]
@@ -204,7 +228,8 @@ class K1000Pipeline:
                 values[section][k] = K1000Pipeline.set_parameter_range(v, {})
 
     def choose_pipeline(self, name=None, pipeline=None, sample=True, 
-                        set_parameters=None, fix_values=None, set_keys=None,
+                        set_parameters=None, fix_values=None, set_priors=None,
+                        set_keys=None,
                         cut_modules=None, uncut_modules=None):
         if name is not None:
             pipeline = self.pipelines[name]
@@ -235,6 +260,8 @@ class K1000Pipeline:
         # Set parameters/parameter ranges
         set_range = pipeline.get("set_parameters", []) + (set_parameters or [])
         for section, parameter, vals in set_range:
+            if section not in values:
+                values[section] = {}
             if not vals:
                 del values[section][parameter]
             else:
@@ -258,7 +285,13 @@ class K1000Pipeline:
                 del values[sec][key]
                 priors[sec].pop(key, None)
 
-        
+        # Set parameter priors
+        set_priors = pipeline.get("set_priors", []) + (set_priors or [])
+        for sec, parameter, val in set_priors:
+            if sec not in priors:
+                priors[sec] = {}
+            priors[sec][parameter] = val
+
         # If we're creating mocks, i.e., not sampling, fix all parameters to 
         # their fiducial values
         if not sample:
@@ -390,7 +423,8 @@ class K1000Pipeline:
                                            "bsigma8S8_name" : "bsigma8S8_bin_2_input",
                                            "b_name"         : "b1_bin_2"},
 
-                    
+                    "sample_negative_mnu" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_negative_mnu.py"),},
 
                     "sigma8toAs"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sigma8toAs.py"),},
@@ -431,6 +465,24 @@ class K1000Pipeline:
                                             "background_nz"      : 6000,
                                             },
 
+                    "cosmicemu"          : {"file" : os.path.join(CSL_PATH, "structure/cosmic_emu/interface.so"),
+                                            "zmax" : 2.0,
+                                            "nz"   : 100,
+                                            },
+
+                    "reaction"           : {"file" : os.path.join(REACT_PATH, 
+                                                                  "cosmosis/cosmosis_reaction_module.py"),
+                                            "verbose" : 1,
+                                            "massloop" : 20,
+                                            "log10_fR0" : True,
+                                            "z_max"    : 1.5},
+                    "hmcode_csl"         : {"file" : os.path.join(CSL_PATH, 
+                                                                  "structure/meadcb/mead_interface.so"),
+                                            "one_baryon_parameter" : False,
+                                            "feedback" : False},
+                    "multiply_reaction"  : {"file" : os.path.join(REACT_PATH, 
+                                                                  "cosmosis/cosmosis_multiply_reaction_module.py")},
+
                     "wedges"     :         {"file" : os.path.join(BOSS_PATH, 
                                                                 "python_interface/cosmosis_module.py"),
                                             "window_file" : os.path.join(BOSS_PATH,
@@ -458,7 +510,9 @@ class K1000Pipeline:
 
                     "extrapolate_power" :  {"file" : os.path.join(CSL_PATH, 
                                                         "boltzmann/extrapolate/extrapolate_power.py"),
-                                            "kmax" : 500.0},
+                                            "kmax" : 500.0,
+                                            #"sections" : "matter_galaxy_power"
+                                            },
 
                     "load_nz_fits" :       {"file" : os.path.join(CSL_PATH, 
                                                             "number_density/load_nz_fits/load_nz_fits.py"),
@@ -482,17 +536,18 @@ class K1000Pipeline:
                                             "mode" : "additive",
                                             "sample" : f"nz_{source_nz_sample}",
                                             "bias_section" : "nofz_shifts",
-                                            "interpolation" : "linear",
+                                            "interpolation" : "cubic",
                                             "output_deltaz" : True,
                                             "output_section_name" :  "delta_z_out"},
 
                     "linear_alignment" :   {"file" : os.path.join(CSL_PATH, 
                                                         "intrinsic_alignments/la_model/linear_alignments_interface.py"),
-                                            "method" : "bk_corrected"},
+                                            "method" : "bk_corrected",
+                                            "do_galaxy_intrinsic" : True},
 
                     "magnification_alphas":{"file" : os.path.join(KCAP_PATH, 
                                                         "utils/magnification_alphas.py"),
-                                            "alpha_binned" : " ".join(magnification_alphas)},
+                                            "alpha_binned" : magnification_alphas},
 
                     "projection" :         {"file" : os.path.join(CSL_PATH, 
                                                         "structure/projection/project_2d.py"),
@@ -502,7 +557,7 @@ class K1000Pipeline:
                                             "shear-shear" : f"{source_nz_sample}-{source_nz_sample}",
                                             "position-shear" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "shear-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
-                                            #"position-intrinsic" : f"{lens_nz_sample}-{source_nz_sample}",
+                                            "position-intrinsic" : f"{lens_nz_sample}-{source_nz_sample}",
                                             "intrinsic-intrinsic" : f"{source_nz_sample}-{source_nz_sample}",
                                             "fast-shear-shear-ia" : f"{source_nz_sample}-{source_nz_sample}",
                                             "magnification-shear" : f"{lens_nz_sample}-{source_nz_sample}",
@@ -512,7 +567,8 @@ class K1000Pipeline:
 
                     "add_intrinsic" :      {"file" : os.path.join(CSL_PATH, 
                                                         "shear/add_intrinsic/add_intrinsic.py"),
-                                            "position-shear" : False},
+                                            "shear-shear" : False,
+                                            "position-shear" : True},
 
                     "add_magnification" :  {"file" : os.path.join(KCAP_PATH, 
                                                         "utils/add_magnification.py"),
@@ -682,11 +738,11 @@ class K1000Pipeline:
                                             "mock_filename" : KiDS_mock_output_file,
                                             },
 
-
                     "BOSS_like"  : {"file" :  os.path.join(KCAP_PATH,
                                                         "utils/mini_BOSS_like.py"),
                                     "data_vector_file" : " ".join(BOSS_data_files),
                                     "covariance_file" : " ".join(BOSS_cov_files),
+                                    "n_mocks"            : 2048,
                                     "points_range"       : points_range,
                                     "like_name"          : BOSS_like_name,
                                     "keep_theory_vector" : True,},
@@ -694,6 +750,13 @@ class K1000Pipeline:
                     "2x2pt_like" : {"file" : os.path.join(KCAP_PATH, "utils/mini_like.py"),
                                     "input_section_name" : "theory_data_covariance",
                                     "like_name"          : "2x2pt_like"},
+
+                    "planck_like": {"file" : os.path.join(CSL_PATH, "likelihood/planck2018/planck_interface.so"),
+                                    "save_separate_likelihoods" : True,
+                                    "data_1" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/low_l/commander/commander_dx12_v3_2_29.clik"),
+                                    "data_2" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/low_l/simall/simall_100x143_offlike5_EE_Aplanck_B.clik"),
+                                    "data_3" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/hi_l/plik_lite/plik_lite_v22_TTTEEE.clik"),
+                                    "like_name" : "PLANCK2018"},
         }
         return config
 
@@ -762,7 +825,8 @@ class K1000Pipeline:
                     "maxlike" :    {"method"          : maxlike_method,
                                     "tolerance"       : maxlike_tolerance,
                                     "maxiter"         : max_iterations,
-                                    "max_posterior"   : "T" if max_posterior else "F"},
+                                    "max_posterior"   : "T" if max_posterior else "F",
+                                    "output_steps"    : "T",},
                     }
 
         config[sampler_name] = samplers[sampler_name]
@@ -890,7 +954,7 @@ if __name__ == "__main__":
     parser.add_argument("--run-name")
 
     parser.add_argument("--halofit-version", default="mead")
-    parser.add_argument("--magnification-alpha", default="3.0")
+    parser.add_argument("--magnification-alphas", nargs=2, default=[1.8, 2.62])
 
     parser.add_argument("--no-c-term", action="store_true")
     parser.add_argument("--no-2d-c-term", action="store_true")
@@ -907,6 +971,7 @@ if __name__ == "__main__":
     parser.add_argument("--set-keys", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set keys in the configuration.")
     parser.add_argument("--fix-values", nargs=1, action="append", metavar="SECTION", help="Fix parameters in section.")
     parser.add_argument("--set-parameters", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set parameters in the values file.")
+    parser.add_argument("--set-priors", nargs=3, action="append", metavar=("SECTION", "PARAMETER", "VALUE"), help="Set priors in the values file.")
 
     parser.add_argument("--cut-modules", nargs=1, action="append", metavar="MODULE", help="Remove a module from the pipeline.")
     parser.add_argument("--enable-modules", nargs=1, action="append", metavar="MODULE", help="Enable a module in the pipeline.")
@@ -1090,7 +1155,7 @@ if __name__ == "__main__":
         theta_range_xiM = [0.5, 300]
 
     halofit_version = args.halofit_version
-    magnification_alphas = [str(args.magnification_alpha)]*2
+    magnification_alphas = args.magnification_alphas
 
     sampler = args.sampler
 
@@ -1164,6 +1229,7 @@ if __name__ == "__main__":
     
     set_keys = args.set_keys
     fix_values = args.fix_values
+    set_priors = args.set_priors
     cut_modules = [m[0] for m in args.cut_modules] if args.cut_modules else None
     uncut_modules = [m[0] for m in args.enable_modules] if args.enable_modules else None
 
@@ -1178,7 +1244,9 @@ if __name__ == "__main__":
 
     if create_mocks:
         p.choose_pipeline(pipeline_name, sample=False, 
-                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          set_parameters=set_parameters, fix_values=fix_values, 
+                          set_priors=set_priors,
+                          set_keys=args.set_keys,
                           cut_modules=cut_modules, uncut_modules=uncut_modules)
         block = p.run_pipeline()
 
@@ -1211,7 +1279,9 @@ if __name__ == "__main__":
 
     else:
         p.choose_pipeline(pipeline_name, 
-                          set_parameters=set_parameters, fix_values=fix_values, set_keys=args.set_keys,
+                          set_parameters=set_parameters, fix_values=fix_values, 
+                          set_priors=set_priors,
+                          set_keys=args.set_keys,
                           cut_modules=cut_modules, uncut_modules=uncut_modules)
 
 
@@ -1229,6 +1299,7 @@ if __name__ == "__main__":
 
         derived_parameters=["cosmological_parameters/S_8",
                             "cosmological_parameters/sigma_8",
+                            "cosmological_parameters/sigma_12",
                             "cosmological_parameters/A_s",
                             "cosmological_parameters/omega_m",
                             "cosmological_parameters/omega_nu",
@@ -1241,12 +1312,14 @@ if __name__ == "__main__":
             # Get the mean n(z) shifts
             n_source_bin = len(p.config["correlated_dz_priors"]["output_parameters"].split(" "))
             sec = p.config["source_photoz_bias"]["output_section_name"]
-            derived_parameters += [f"{sec}/bias_{i+1}" for i in range(n_source_bin)]
+            derived_parameters += [f"{sec}/bin_{i+1}" for i in range(n_source_bin)]
         
         if "sample_bsigma8S8_bin_1" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_1"]
         if "sample_bsigma8S8_bin_2" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_2"]
+        if "sample_negative_mnu" in p.config:
+            derived_parameters += ["cosmological_parameters/mnu"]
 
         sampler_config = {"derived_parameters"  : derived_parameters,
                           "parameter_file"      : values_file,
@@ -1283,3 +1356,12 @@ if __name__ == "__main__":
             f.write(" ".join(sys.argv))
 
         create_git_status_file(os.path.join(config_dir, "git_status.txt"))
+
+        if args.KiDS_data_file is not None:
+            create_git_status_file(os.path.join(data_dir, "KiDS_twopoint_file_git_status.txt"), os.path.dirname(args.KiDS_data_file))
+        if args.dz_covariance_file is not None:
+            create_git_status_file(os.path.join(data_dir, "dz_covariance_file_git_status.txt"), os.path.dirname(args.dz_covariance_file))
+        if args.BOSS_data_files is not None:
+            create_git_status_file(os.path.join(data_dir, "BOSS_data_file_git_status.txt"), os.path.dirname(args.BOSS_data_files[0]))
+        if args.BOSS_covariance_files is not None:
+            create_git_status_file(os.path.join(data_dir, "BOSS_covariance_file_git_status.txt"), os.path.dirname(args.BOSS_covariance_files[0]))
