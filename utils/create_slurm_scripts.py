@@ -73,10 +73,11 @@ if __name__ == "__main__":
             create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, use_mpi=not args.no_mpi, print_config=False)
             print(f"Processed {run_name}.")
 
-        # sbatch_files = path.glob("*/config/sbatch_command.sh")
-        # with open(path.joinpath("sbatch_all.sh"), "w") as f:
-        #     f.write("#!/bin/sh\n")
-        #     f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
+        if len(config_files) > 1:
+            sbatch_files = path.glob("*/config/sbatch_command.sh")
+            with open(path.joinpath("sbatch_all.sh"), "w") as f:
+                f.write("#!/bin/sh\n")
+                f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
         
     else:
         create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name, use_mpi=not args.no_mpi, )
