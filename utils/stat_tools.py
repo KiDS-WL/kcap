@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import scipy.optimize
@@ -564,7 +566,7 @@ def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683
     if return_coverage_nd:
         result += [coverage_nd_inner]
     if return_n_sample:
-        result += [n_sample]
+        result += [n_inner]
 
     if len(result) == 1:
         # Only CI
