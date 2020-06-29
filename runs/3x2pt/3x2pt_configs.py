@@ -30,6 +30,8 @@ if __name__ == "__main__":
                           "--sampler-config", "live_points", "500", # For final setup we probably want something higher than this
                          ]
 
+    timeout_setttings = ["--set-keys", "wedges", "timeout", "600.0"]
+
     nE_scale_cuts = ["--set-keys", "scale_cuts", "keep_ang_PneE_1_1", "100 300",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_1_2", "100 300",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_1_3", "100 300",
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     # Cosmology chains
     root_dir = "runs/3x2pt/data_initial_cov/cosmology/"
 
-    blinds = ["B", "C"]                       # For final setup: ["A", "B", "C"]
+    blinds = ["A", "B", "C"]                       # For final setup: ["A", "B", "C"]
     run_types = ["EE", "EE_w", "EE_nE", "EE_nE_w"] # For final setup: ["EE", "nE", "w", "EE_nE", "EE_w", "nE_w", "EE_nE_w"]
 
     use_Planck = [False]
@@ -104,13 +106,17 @@ if __name__ == "__main__":
                     if sampler == "multinest":
                         cmd += multinest_settings
 
+                    # Allow wedges to time out
+                    if "w" in run_type:
+                        cmd += timeout_setttings
+
                     # cmd += ["--overwrite"]
 
                     subprocess.run(["python", script] + cmd, check=True)
 
 
     # Systematics chains
-    root_dir = "runs/3x2pt/data_initial_cov/systematics/"
+    root_dir = "runs/3x2pt/data_initial_cov_fast_w_timeout/systematics/"
 
     # Configs for tomographic bin cuts
     tomographic_bin_cut_configs = []
@@ -192,6 +198,10 @@ if __name__ == "__main__":
             # sampler settings
             if sampler == "multinest":
                 cmd += multinest_settings
+
+            # Allow wedges to time out
+            if "w" in run_type:
+                cmd += timeout_setttings
 
             # cmd += ["--overwrite"]
 
