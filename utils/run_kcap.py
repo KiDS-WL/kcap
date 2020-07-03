@@ -828,7 +828,8 @@ class K1000Pipeline:
                                     "tolerance"       : maxlike_tolerance,
                                     "maxiter"         : max_iterations,
                                     "max_posterior"   : "T" if max_posterior else "F",
-                                    "output_steps"    : "T",},
+                                    "output_steps"    : "T",
+                                    "flush_steps"     : 1},
                     }
 
         config[sampler_name] = samplers[sampler_name]

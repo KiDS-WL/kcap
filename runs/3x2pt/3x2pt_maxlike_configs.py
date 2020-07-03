@@ -23,6 +23,14 @@ if __name__ == "__main__":
 
     # Covariance of the n(z)
     dz_cov_file = "../Cat_to_Obs_K1000_P1/data/kids/nofz/SOM_cov_multiplied.asc"
+    dz_mean_file = "../Cat_to_Obs_K1000_P1/data/kids/nofz/deltaz.asc"
+    
+    # Compute the decorrelated dz mean shifts
+    dz_cov = np.loadtxt(dz_cov_file)
+    dz_mean = np.loadtxt(dz_mean_file)
+    L = np.linalg.cholesky(dz_cov) 
+    L_inv = np.linalg.inv(L)
+    dx_mean = L_inv @ dz_mean
 
     # BOSS files
     boss_data_files = ["../Cat_to_Obs_K1000_P1/data/boss/Sanchez_etal_2017/BOSS.DR12.lowz.3xiwedges_measurements.txt",
@@ -102,7 +110,6 @@ if __name__ == "__main__":
                         "--set-parameter", "nofz_shifts", "p_4", f"nan {p['p_z4']} nan",
                         "--set-parameter", "nofz_shifts", "p_5", f"nan {p['p_z5']} nan",
 
-
                         "--set-parameter", "bias_parameters", "b1_bin_1", f"nan {p['b1l']} nan",
                         "--set-parameter", "bias_parameters", "b2_bin_1", f"nan {p['b2l']} nan",
                         "--set-parameter", "bias_parameters", "gamma3_bin_1", f"nan {p['gamma3l']} nan",
@@ -112,6 +119,10 @@ if __name__ == "__main__":
                         "--set-parameter", "bias_parameters", "b2_bin_2", f"nan {p['b2h']} nan",
                         "--set-parameter", "bias_parameters", "gamma3_bin_2", f"nan {p['gamma3h']} nan",
                         "--set-parameter", "bias_parameters", "a_vir_bin_2", f"nan {p['a_virh']} nan",]
+
+                # dz prior means
+                for i, m in enumerate(dx_mean):
+                    cmd += ["--set-priors", "nofz_shifts", f"p_{i+1}", f"gaussian {m} 1.0"]
 
                 if "nE" in run_type:
                     cmd += nE_scale_cuts
