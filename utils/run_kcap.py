@@ -788,6 +788,7 @@ class K1000Pipeline:
                                      maxlike_method="Nelder-Mead",
                                      maxlike_tolerance=1e-3,
                                      max_posterior=True,
+                                     **extra_sampler_options,
                                      ):
         config = {  "pipeline" :   {"modules"           : " ".join(modules),
                                     "values"            : parameter_file,
@@ -829,10 +830,11 @@ class K1000Pipeline:
                                     "maxiter"         : max_iterations,
                                     "max_posterior"   : "T" if max_posterior else "F",
                                     "output_steps"    : "T",
-                                    "flush_steps"     : 1},
+                                    "flush_steps"     : 1,},
                     }
 
-        config[sampler_name] = samplers[sampler_name]
+        config[sampler_name] = {**samplers[sampler_name], **extra_sampler_options}
+
 
         return config
 
