@@ -22,6 +22,7 @@ CSL_PATH = os.path.join(KCAP_PATH, "cosmosis-standard-library")
 COSEBIS_PATH = os.path.join(KCAP_PATH, "cosebis")
 COSEBIS_OUTPUTS = COSEBIS_PATH
 REACT_PATH = os.path.join(KCAP_PATH, "../ReACT")
+HMX_PATH = os.path.join(KCAP_PATH, "../HMx")
 
 SCALE_CUT_PATH = os.path.join(KCAP_PATH, "modules/scale_cuts")
 MOCK_DIR = os.path.join(KCAP_PATH, "data/gaussian_mocks/KV450/")
@@ -97,7 +98,7 @@ class K1000Pipeline:
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
                                                                   "sample_negative_mnu",
                                                                   "cosmicemu",
-                                                                  "reaction", "hmcode_csl", "multiply_reaction", # ReACT stuff
+                                                                  "reaction", "hmcode", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
                                                                   "planck_like"],
@@ -166,7 +167,7 @@ class K1000Pipeline:
 
         self.pipelines["EE_fR"] = {**self.pipelines["EE"],
                                     "uncut_modules"       : ["reaction",
-                                                             "hmcode_csl", 
+                                                             "hmcode", 
                                                              "multiply_reaction"],
                                     "set_keys"            : EE_stats + [("camb", "nonlinear", "none")]} 
 
@@ -476,10 +477,11 @@ class K1000Pipeline:
                                             "massloop" : 20,
                                             "log10_fR0" : True,
                                             "z_max"    : 1.5},
-                    "hmcode_csl"         : {"file" : os.path.join(CSL_PATH, 
-                                                                  "structure/meadcb/mead_interface.so"),
-                                            "one_baryon_parameter" : False,
-                                            "feedback" : False},
+                    "hmcode"             : {"file" : os.path.join(HMX_PATH, 
+                                                                  "python_interface/cosmosis_interface.py"),
+                                            "mode" : "HMCode2016",
+                                            },
+
                     "multiply_reaction"  : {"file" : os.path.join(REACT_PATH, 
                                                                   "cosmosis/cosmosis_multiply_reaction_module.py")},
 
