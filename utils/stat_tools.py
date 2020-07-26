@@ -8,7 +8,8 @@ import scipy.stats
 
 def find_CI(method, samples, weights=None, coverage=0.683,
             logpost=None, logpost_sort_idx=None,
-            return_point_estimate=False, return_coverage=False, options=None):
+            return_point_estimate=False, return_coverage=False, 
+            return_extras=False, options=None):
     """Compute credible intervals and point estimates from samples.
 
     Arguments
@@ -59,6 +60,7 @@ def find_CI(method, samples, weights=None, coverage=0.683,
     """
     options = options or {}
 
+    extras = None
     if method.lower() == "pj-hpd" or method.lower() == "projected joint hpd":
         if logpost is None and logpost_sort_idx is None:
             raise ValueError("For method PJ-HPD, either logpost or logpost_sort_idx need to be specified.")
@@ -69,12 +71,15 @@ def find_CI(method, samples, weights=None, coverage=0.683,
                                                              return_map=True, return_coverage_1d=True, return_n_sample=True,
                                                              **options)
         point_estimate = MAP
+        extras = n_sample
         
     elif method.lower() == "hpd" or method.lower() == "m-hpd":
-        CI, marg_MAP, alpha = find_marginal_HPDI(samples, weights, coverage=coverage, 
-                                                 return_map=True, return_coverage=True,
-                                                 **options)
+        CI, marg_MAP, alpha, no_constraints = find_marginal_HPDI(samples, weights, coverage=coverage, 
+                                                                 return_map=True, return_coverage=True,
+                                                                 check_prior_edges=True,
+                                                                 **options)
         point_estimate = marg_MAP
+        extras = no_constraints
         
     elif method.lower() == "tail ci" or method.lower() == "quantile ci":
         CI, marg_median, alpha = find_quantile_CI(samples, weights, coverage=coverage, 
@@ -94,7 +99,9 @@ def find_CI(method, samples, weights=None, coverage=0.683,
         result += [point_estimate]
     if return_coverage:
         result += [alpha]
-        
+    if return_extras:
+        result += [extras]
+
     if len(result) == 1: 
         # Only CI
         return result[0]
@@ -226,7 +233,8 @@ def find_quantile_CI(samples, weights=None, coverage=0.683,
 
 def find_marginal_HPDI(samples, weights=None, coverage=0.683,
                        kde_bandwidth="silverman",
-                       return_map=False, return_coverage=False):
+                       return_map=False, return_coverage=False,
+                       check_prior_edges=False, prior_edge_threshold=0.1):
     """Find the highest posterior density interval of a marginal posterior.
 
     Arguments
@@ -316,11 +324,19 @@ def find_marginal_HPDI(samples, weights=None, coverage=0.683,
     level = res.root
     alpha, CI = get_coverage(level, return_interval=True)
 
+    if check_prior_edges:
+        if marg_samples_min/marg_MAP_value > prior_edge_threshold or marg_samples_max/marg_MAP_value > prior_edge_threshold:
+            prior_edge_hit = True
+        else:
+            prior_edge_hit = False
+
     result = [CI]
     if return_map:
         result += [marg_MAP]
     if return_coverage:
         result += [alpha]
+    if check_prior_edges:
+        result += [prior_edge_hit]
 
     if len(result) == 1:
         # Only CI
@@ -336,7 +352,9 @@ def compute_sample_range_and_coverage(samples, weights, idx):
     coverage_nd = np.sum(weights[idx])
     return (l,u), coverage_1d, coverage_nd
 
-def create_interpolated_cdf(samples, weights, threshold, reverse=False):
+def create_interpolated_cdf(samples, weights, 
+                            threshold=None, reverse=False,
+                            start_at_zero=True):
     unique_samples, unique_inverse_idx = np.unique(samples, return_inverse=True)
     if len(unique_samples) != len(samples):
         unique_weights = np.zeros_like(unique_samples)
@@ -344,20 +362,47 @@ def create_interpolated_cdf(samples, weights, threshold, reverse=False):
         samples = unique_samples
         weights = unique_weights
 
-    selection = samples <= threshold if reverse else samples >= threshold
+    if threshold is None:
+        selection = np.ones_like(samples, dtype=bool)
+    else:
+        selection = samples <= threshold if reverse else samples >= threshold
     if reverse:
         sample_sort_idx = np.argsort(samples[selection])
         cdf = np.cumsum(weights[selection][sample_sort_idx])
         cdf = cdf[-1] - cdf
+        if not start_at_zero:
+            cdf += weights[selection][sample_sort_idx[-1]]
     else:
         sample_sort_idx = np.argsort(samples[selection])
         cdf = np.cumsum(weights[selection][sample_sort_idx])
-        cdf -= cdf[0]
+        if start_at_zero:
+            cdf -= cdf[0]
+    
+    if len(cdf) < 2:
+        # Only one sample
+        return lambda x: np.zeros_like(x)
+
     cdf_func = scipy.interpolate.InterpolatedUnivariateSpline(x=samples[selection][sample_sort_idx],
                                                               y=cdf, k=1, ext=3)
     return cdf_func
 
-def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683,
+def weighted_median(a, weights):
+    if len(a) == 1:
+        return a
+
+    threshold = np.sum(weights)/2
+    sort_idx = np.argsort(a)
+    
+    l_cum = create_interpolated_cdf(a, weights, start_at_zero=False)
+    r_cum = create_interpolated_cdf(a, weights, reverse=True, start_at_zero=False)
+
+    
+    
+    return scipy.optimize.root_scalar(lambda x: l_cum(x) - r_cum(x), bracket=(a.min(),a.max())).root
+
+
+def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683, 
+                              MAP=None,
                               sort_idx=None, log_posterior=None, 
                               method="interpolate", twosided=True, verbose=False, strict=False,
                               return_map=False, return_coverage_1d=False,
@@ -379,6 +424,9 @@ def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683
         provided is assumed to be unifrom 1/n_sample.
     coverage_1d_threshold : float
         Target 1D coverage of the CI. (Default 0.683)
+    MAP : float, optional
+        If the exact MAP is known, it can be specified here. If not provided, 
+        the sample with the highest posterior value is used. 
     sort_idx : numpy.array
         Array of indices that sort the samples in descending posterior value.
         If not provided, this will be computed internally from log_posterior.
@@ -425,10 +473,25 @@ def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683
             raise ValueError("If sorting indicies are not provided, the log posterior must be given.")
         sort_idx = np.argsort(log_posterior)[::-1]
 
+    if MAP is not None:
+        samples = np.insert(samples, 0, MAP)
+        weights = np.insert(weights, 0, 0.0)
+        sort_idx = np.insert(sort_idx + 1, 0, 0)
+
+    if samples[sort_idx[0]] <= samples.min():
+        samples[sort_idx[0]] = samples.min()
+        twosided = False
+        warnings.warn("The starting point is at or lower than the sample range. Only using one sided interpolation.")
+    elif samples[sort_idx[0]] >= samples.max():
+        samples[sort_idx[0]] = samples.max()
+        twosided = False
+        warnings.warn("The starting point is at or higher than the sample range. Only using one sided interpolation.")
+
+
     l_outer = l_inner = u_inner = u_outer = samples[sort_idx[0]]
     coverage_1d_inner = coverage_nd_inner = 0
     n_inner = 0
-    for i in range(3, len(sort_idx)):
+    for i in range(2, len(sort_idx)):
         (l_this, u_this), coverage_1d_this, coverage_nd_this = compute_sample_range_and_coverage(samples, weights, sort_idx[:i])
 
         if coverage_1d_this < coverage_1d_threshold:
@@ -559,8 +622,10 @@ def find_projected_joint_HPDI(samples, weights=None, coverage_1d_threshold=0.683
 
     result = [(l, u)]
     if return_map:
-        MAP = samples[sort_idx[0]]
-        result += [MAP]
+        if MAP is not None:
+            result += [samples[sort_idx[1]]]
+        else:
+            result += [samples[sort_idx[0]]]
     if return_coverage_1d:
         result += [coverage_1d]
     if return_coverage_nd:
