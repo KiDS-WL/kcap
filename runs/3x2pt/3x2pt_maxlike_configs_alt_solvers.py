@@ -19,7 +19,7 @@ if __name__ == "__main__":
                              "C" : {"EE_nE_w" : "runs/3x2pt/data_initial_cov_fast/cosmology/multinest_blindC_EE_nE_w/chain/samples_multinest_blindC_EE_nE_w.txt",
                                     "EE_nE"   : "runs/3x2pt/data_initial_cov_bad_w_zs/cosmology/multinest_blindC_EE_nE/chain/samples_multinest_blindC_EE_nE.txt",},
                             }
-    n_start_point = 36
+    n_start_point = 12
 
     # Cosmic shear + GGL twopoint file
     twopoint_file_template = "../Cat_to_Obs_K1000_P1/data/kids/fits/bp_KIDS1000_Blind{blind}_with_m_bias_V1.0.0A_ugriZYJHKs_photoz_SG_mask_LF_svn_309c_2Dbins_v2_goldclasses_Flag_SOM_Fid.fits"
@@ -54,13 +54,15 @@ if __name__ == "__main__":
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_4", "100 600",
                      "--set-keys", "scale_cuts", "keep_ang_PneE_2_5", "100 600",]
 
-    root_dir = "runs/3x2pt/data_initial_cov_MAP/cosmology/"
+    root_dir = "runs/3x2pt/data_initial_cov_MAP_L_BFGS_B_ftol6_eps3_multi/cosmology/"
 
-    blinds = ["C",]#"A", "B",]
+    blinds = ["A", "B", "C"]
     run_types = ["EE_nE_w",]# "EE_nE", ]
 
     sampler = "maxlike"
     run_name_root = "MAP"
+
+    solver = "L-BFGS-B"
 
     for blind in blinds:
         print(f"Blind {blind}")
@@ -83,10 +85,24 @@ if __name__ == "__main__":
             for idx in logpost_sort_idx[:n_start_point]:
                 start_points.append({n : getattr(d, n)[idx] for n in param_names})
 
+            # if solver  == "Powell":
+            #     with open(multinest_chain_file[run_type], "r") as f:
+            #         for l in f.readlines():
+            #             if "n_varied" in l:
+            #                 n_varied = int(l.split("=")[-1])
+            #                 break
+            #     cov = chain.cov(params=list(range(n_varied)))
+            #     v, e = np.linalg.eig(cov)
+
+            #     step_size = 0.1
+            #     search_directions = np.array([step_size * v[i] * e[:,i] for i in range(n_varied)])
+
             for i, p in enumerate(start_points):
                 print(f"Starting point {i} (logpost : {p['logpost']:.2f})")
 
-                run_name = f"{run_name_root}_{i}_blind{blind}_{run_type}"
+                run_name = f"{run_name_root}_{i}_blind{blind}_{run_type}_{solver}"
+
+                # np.savetxt(os.path.join(root_dir, run_name, "config", "powell_search_directions.txt"), search_directions)
 
                 # Base setup
                 cmd = [ "--root-dir", root_dir,
@@ -139,7 +155,19 @@ if __name__ == "__main__":
                 if "w" in run_type:
                     cmd += timeout_setttings
 
-                cmd += ["--sampler-config", "max_iterations", "3000",]
+                cmd += ["--sampler-config", "max_iterations", "3000",
+                        "--sampler-config", "maxlike_method", solver]
+
+                if solver == "Powell":
+                    cmd += ["--sampler-config", "step_size", "0.1",
+                            "--sampler-config", "maxlike_tolerance", "0.0001"]
+                elif solver == "L-BFGS-B":
+                    MAP_covmat_file = os.path.join(root_dir, run_name, "chain", f"cov_estimate_{run_name}.txt")
+                    cmd += ["--sampler-config", "grad_eps", "1e-3",
+                            "--sampler-config", "gtol", "0.001",
+                            "--sampler-config", "ftol", "1e-6",
+                            "--sampler-config", "lbfgs_maxcor", "200",
+                            "--sampler-config", "output_covmat", MAP_covmat_file]
 
                 # cmd += ["--overwrite"]
 
