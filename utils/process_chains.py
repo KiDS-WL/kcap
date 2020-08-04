@@ -382,7 +382,7 @@ parameter_dictionary = {
                                       "latex" :       "b_2^{\\rm lowz}"},
         "gamma_3 lowz" :             {"cosmosis" :    "bias_parameters--gamma3_bin_1",
                                       "cosmomc" :     "gamma3l",
-                                      "latex" :       "\\gamma_3^{\\rm lowz}"},
+                                      "latex" :       "\\gamma_{3-}^{\\rm lowz}"},
         "a_vir lowz" :               {"cosmosis" :    "bias_parameters--a_vir_bin_1",
                                       "cosmomc" :     "a_virl",
                                       "latex" :       "a_{\\rm vir}^{\\rm lowz}"},
@@ -394,7 +394,7 @@ parameter_dictionary = {
                                       "latex" :       "b_2^{\\rm highz}"},
         "gamma_3 highz" :            {"cosmosis" :    "bias_parameters--gamma3_bin_2",
                                       "cosmomc" :     "gamma3h",
-                                      "latex" :       "\\gamma_3^{\\rm highz}"},
+                                      "latex" :       "\\gamma_{3-}^{\\rm highz}"},
         "a_vir highz" :              {"cosmosis" :    "bias_parameters--a_vir_bin_2",
                                       "cosmomc" :     "a_virh",
                                       "latex" :       "a_{\\rm vir}^{\\rm highz}"},
@@ -596,7 +596,8 @@ def cosmosis_to_cosmomc_param_names(param_names):
 
 def load_chain(chain_file, parameters=None, run_name=None, 
                chain_format="cosmosis", parameter_map="cosmomc", strict_mapping=False, 
-               values=None, burn_in=0.3, keep_raw_samples=False, verbose=False):
+               values=None, burn_in=0.3, keep_raw_samples=False, ignore_inf=False,
+               verbose=False):
     with open(chain_file, "r") as f:
         params = f.readline()[1:]
     
@@ -670,6 +671,10 @@ def load_chain(chain_file, parameters=None, run_name=None,
     else:
         ranges = {}
     
+    if ignore_inf:
+        if np.any(~np.isfinite(chain[:,stat_column_idx["lnlike"]])):
+            chain = chain[np.isfinite(chain[:,stat_column_idx["lnlike"]])]
+
     run_name = run_name or os.path.split(chain_file)[1]
     samples = getdist.MCSamples(name_tag=run_name,
                                 samples=chain[:,column_idx],
