@@ -16,5 +16,10 @@ cosebis/WnLog
 examples/output*
 runs/output*
 
-runs/
+runs/*
+
+!runs/3x2pt/
+runs/3x2pt/*
+!runs/**/*.py
+
 tests/test_pofk
