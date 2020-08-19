@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     multinest_settings = ["--sampler-config", "multinest_efficiency", "0.3",
                           "--sampler-config", "nested_sampling_tolerance", "1.0e-2",
-                          "--sampler-config", "live_points", "250", 
+                          "--sampler-config", "live_points", "500", 
                          ]
 
     timeout_setttings = ["--set-keys", "wedges", "timeout", "600.0"]
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
 
     # Systematics chains
-    root_dir = "runs/3x2pt/data_iterated_cov_very_fast/systematics/"
+    root_dir = "runs/3x2pt/data_iterated_cov_fast_extra/systematics/"
 
     # Configs for tomographic bin cuts
     tomographic_bin_cut_configs = []
@@ -177,8 +177,18 @@ if __name__ == "__main__":
                                                  "--set-parameters", "bias_parameters", "gamma3_bin_2", "0.0",
                                                  "--set-parameters", "bias_parameters", "gamma2_bin_2", "0.0",
                                                  "--set-parameters", "bias_parameters", "a_vir_bin_2", "0.0",])]
-    
-    configs = no_higher_order_configs + tomographic_bin_cut_configs + no_baryon_configs
+
+    ns_prior_configs = [("fix_ns",          ["--set-parameters", "cosmological_parameters", "ns", "0.9658923",]),
+                        ("narrow_ns_prior", ["--set-priors", "cosmological_parameters", "ns", "gaussian 0.96 0.02",])]
+
+    w_scale_cuts_config = [("w_smax75",      ["--set-keys", "wedges", "bands_range", "20 75",
+                                              "--set-keys", "wedges", "points_range", "4 15",
+                                              "--set-keys", "BOSS_like", "points_range", "4 15"]),
+                           ("w_smax100",     ["--set-keys", "wedges", "bands_range", "20 100",
+                                              "--set-keys", "wedges", "points_range", "4 20",
+                                              "--set-keys", "BOSS_like", "points_range", "4 20"])]
+
+    configs = ns_prior_configs + w_scale_cuts_config #no_higher_order_configs + tomographic_bin_cut_configs + no_baryon_configs
     
     blinds = ["C"]
     for blind in blinds:
