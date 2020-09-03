@@ -1,0 +1,6 @@
+itype int 4
+nbins int 9
+lmax int 2500
+renorm int 1
+ren1 int 1
+has_calib int 1
