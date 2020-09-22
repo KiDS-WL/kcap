@@ -3,6 +3,8 @@ include ${COSMOSIS_SRC_DIR}/config/compilers.mk
 #--- objects to build
 #-----------------------------------
 USER_LDFLAGS += -L${GSL_LIB}  -lgsl -lgslcblas
+USER_CXXFLAGS += -I${GSL_INC}
+
 OBJS     = matrix.o function_cosebis.o ticker.o tostring.o tolower.o timestamp.o \
 		   globaldef.o Integrate.o COSEBIs.o WnLog.o TpnLogRadian.o nrutil.o \
 		   KsiCovariance.o BandPower_g.o BandPower_W.o BandPower.o calChiS.o
@@ -17,7 +19,7 @@ HEADER   = $(OBJS:.o=.h)
 
 # make objects (components) of library
 %.o : %.cc 
-	$(CXX) $(USER_LDFLAGS) $(CXXFLAGS) -c $<
+	$(CXX) $(USER_LDFLAGS) $(CXXFLAGS) ${USER_CXXFLAGS} -c $<
 #%.o: %.cc
 #	$(CXX) -o $@ -c $(CXXFLAGS) $*.cc
 
