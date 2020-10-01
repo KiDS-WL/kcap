@@ -410,6 +410,9 @@ parameter_dictionary = {
                                       "montepython" : "eta_0",
                                       "cosmomc" :     "eta_baryon",
                                       "latex" :       "\\eta_{\\rm baryon}"},
+        "log T_AGN" :                {"cosmosis" :    "halo_model_parameters--logt_agn",
+                                      "cosmomc" :     "logt_agn",
+                                      "latex" :       "\\log_{10} T_{\\rm AGN}"},
         "delta_c" :                  {"cosmosis" :    "shear_c_bias--delta_c",
                                       "montepython" : "dc",
                                       "cosmomc" :     "delta_c",
@@ -471,6 +474,9 @@ parameter_dictionary = {
         "A_Planck" :                 {"cosmosis" :    "planck--a_planck",
                                       "cosmomc" :     "calPlanck",
                                       "latex" :       "A_{\\rm Planck}"},
+        "SN_M" :                     {"cosmosis" :    "supernova_params--m",
+                                      "cosmomc" :     "sn_m",
+                                      "latex" :       "M_{\\rm SN}"},
         "F_AP lowz" :                {"cosmosis" :    "lss_parameters--f_ap_bin_1",
                                       "cosmomc" :     "FAP1",
                                       "latex" :       "F_{\\rm AP lowz}"},
@@ -597,6 +603,7 @@ def cosmosis_to_cosmomc_param_names(param_names):
 def load_chain(chain_file, parameters=None, run_name=None, 
                chain_format="cosmosis", parameter_map="cosmomc", strict_mapping=False, 
                values=None, burn_in=0.3, keep_raw_samples=False, ignore_inf=False,
+               extra_ranges=None,
                verbose=False):
     with open(chain_file, "r") as f:
         params = f.readline()[1:]
@@ -670,11 +677,17 @@ def load_chain(chain_file, parameters=None, run_name=None,
         ranges = {cosmomc_names[i] : sampled_params_ranges[i][2] for i in range(len(cosmomc_names)) if cosmomc_names[i] in parameter_names}
     else:
         ranges = {}
+
+    extra_ranges = extra_ranges or {}
+    ranges = {**ranges, **extra_ranges}
     
     if ignore_inf:
         if np.any(~np.isfinite(chain[:,stat_column_idx["lnlike"]])):
             chain = chain[np.isfinite(chain[:,stat_column_idx["lnlike"]])]
+        if np.any(~np.isfinite(chain[:,stat_column_idx["weight"]])):
+            chain = chain[np.isfinite(chain[:,stat_column_idx["weight"]])]
 
+    print(chain.shape, column_idx, stat_column_idx)
     run_name = run_name or os.path.split(chain_file)[1]
     samples = getdist.MCSamples(name_tag=run_name,
                                 samples=chain[:,column_idx],
