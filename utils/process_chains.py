@@ -687,7 +687,6 @@ def load_chain(chain_file, parameters=None, run_name=None,
         if np.any(~np.isfinite(chain[:,stat_column_idx["weight"]])):
             chain = chain[np.isfinite(chain[:,stat_column_idx["weight"]])]
 
-    print(chain.shape, column_idx, stat_column_idx)
     run_name = run_name or os.path.split(chain_file)[1]
     samples = getdist.MCSamples(name_tag=run_name,
                                 samples=chain[:,column_idx],

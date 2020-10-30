@@ -59,63 +59,38 @@ if __name__ == "__main__":
                        "--set-parameters", "planck",                  "a_planck",  "0.9879083109867925    1.000610   1.0130810744845216",
                        "--set-priors", "planck", "a_planck", "gaussian 1.0 0.0025",]
 
-    Planck_wCDM_settings = ["--enable-modules", "planck_like",
-                       "--set-keys", "camb", "mode", "cmb",
-                       "--set-keys", "camb", "lmax", "2650",
-                       "--set-keys", "camb", "nonlinear", "both",
-                       "--set-keys", "camb", "do_lensing", "T",
-                       "--set-keys", "camb", "do_reionization", "T",
-                       # Planck TTTEEE+lowl+lowE 5 sigma ranges, with S8 and ns having a 7 sigma lower range and h having a 7 sigma upper range.
-                       "--set-parameters", "cosmological_parameters", "omch2",     "0.11311880756197211 0.12 0.12673547660171416",
-                       "--set-parameters", "cosmological_parameters", "ombh2",     "0.021654218587807587 0.0225 0.023132100816368375",
-                       "--set-parameters", "cosmological_parameters", "h0",        "0.64    0.7        0.82",
-                       "--set-parameters", "cosmological_parameters", "n_s",        "0.9437568113540074 0.97 0.9870276396097222",
-                       "--set-parameters", "cosmological_parameters", "S_8_input", "0.6280620828064101 0.7458 0.9269044096801944",
-                       "--set-parameters", "cosmological_parameters", "w", "-3.0 -1.0 -0.33",
-                       "--set-parameters", "cosmological_parameters", "tau",       "0.014360345677643029 0.0543 0.09350636226730699",
-                       "--set-parameters", "planck",                  "a_planck",  "0.9881436963908558 1.00061 1.0129303406710994",
-                       "--set-priors", "planck", "a_planck", "gaussian 1.0 0.0025",]
+    Planck_lensing_settings = ["--enable-modules", "planck_lensing_like",
+                               "--set-keys", "camb", "mode", "cmb",
+                               "--set-keys", "camb", "lmax", "2650",
+                               "--set-keys", "camb", "nonlinear", "both",
+                               "--set-keys", "camb", "do_lensing", "T",
+                               "--set-keys", "camb", "do_reionization", "T",
+                               "--set-keys", "camb", "lens_potential_accuracy", "1",
+                               "--set-parameters", "cosmological_parameters", "tau",       "0.055",]
 
+    Pantheon_settings = ["--enable-modules", "pantheon_like",
+                         "--set-parameters", "supernova_params",  "M",  "-22.0  -19.0   -17.0",]
 
-    oLCDM_configs = [("oLCDM",          ["--set-parameters", "cosmological_parameters", "omega_k", "-0.4 0.0 0.4",]),
-                     #("oLCDM_0p3_prior",["--set-parameters", "cosmological_parameters", "omega_k", "-0.3 0.0 0.3",]),
-                     ]
-    wLCDM_configs = [("wLCDM",          ["--set-parameters", "cosmological_parameters", "w", "-3.0 -1.0 -0.33",]),]
-    nuLCDM_configs = [#("nuLCDM_fold",   ["--set-parameters", "cosmological_parameters", "mnu_folded", "-3.0 0.06 3.0",
-                      #                   "--set-parameters", "cosmological_parameters", "mnu", "none",
-                      #                   "--enable-module", "sample_folded_prior",
-                      #                   "--set-keys", "sample_folded_prior", "name", "cosmological_parameters/mnu",
-                      #                   "--set-keys", "sample_folded_prior", "fold", "0.0",]),
-                      #("nuLCDM_wrap",   ["--set-parameters", "cosmological_parameters", "mnu", "0.0 0.06 3.0",
-                      #                   "--sampler-config", "wrapped_params", "cosmological_parameters--mnu"]),
-                      ("nuLCDM",        ["--set-parameters", "cosmological_parameters", "mnu", "0.0 0.06 3.0",]),]
+    Pantheon_fixed_cal_settings = ["--enable-modules", "pantheon_like",
+                                   "--set-parameters", "supernova_params",  "M",  "-19.0",]
 
-    HMCode2020_configs = [#("HMCode2020",["--set-parameters", "halo_model_parameters", "logT_AGN", "7.6 7.8 8.0",
-                          #               "--set-parameters", "halo_model_parameters", "A", "none",
-                          #               "--cut-modules", "one_parameter_hmcode",
-                          #               "--set-keys", "camb", "halofit_version", "mead2020_feedback"]),
-                          ("HMCode2020_wide",["--set-parameters", "halo_model_parameters", "logT_AGN", "7.3 7.8 8.3",
-                                         "--set-parameters", "halo_model_parameters", "A", "none",
-                                         "--cut-modules", "one_parameter_hmcode",
-                                         "--set-keys", "camb", "halofit_version", "mead2020_feedback"]),]
+    Riess2019_settings = ["--set-priors", "cosmological_parameters", "h0",  "gaussian 0.7403 0.0142"]
 
-    fRCDM_configs = [("fRCDM"         , ["--set-parameters", "cosmological_parameters", "log10_fR0", "-8.0 -7.0 -2.0",
-                                         "--set-parameters", "cosmological_parameters", "S_8_input", "0.45 0.7458 1.3",
-                                         "--set-keys", "reaction", "mode", "f(R)",
-                                         "--derived-parameters", "cosmological_parameters/sigma_8_LCDM", "cosmological_parameters/S_8_LCDM",
-                                         "--sampler-config", "wrapped_params", "cosmological_parameters--log10_fr0",],)]
+    Pantheon_configs = [("LCDM_Pantheon",  Pantheon_settings),]
+    Pantheon_fixed_cal_configs = [("LCDM_Pantheon_fixed_cal",  Pantheon_fixed_cal_settings),]
+    Riess2019_configs = [("LCDM_Riess2019",  Riess2019_settings),]
 
-    wCDM_Planck_configs = [("wCDM_Planck", Planck_wCDM_settings)]
+    Planck_lensing_configs = [("LCDM_Planck_lensing", Planck_lensing_settings)]
 
     # Cosmology chains
     root_dir = "runs/extended_cosmologies/data/cosmology/"
 
     blinds = ["C"]      
-    run_types = ["w"]#["EE", "EE_nE_w"]
+    run_types = ["EE_nE_w"]
 
     use_Planck = [False]
 
-    configs = nuLCDM_configs# + oLCDM_configs + wLCDM_configs
+    configs = Riess2019_configs
 
     for blind in blinds:
         print(f"Blind {blind}")

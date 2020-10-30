@@ -17,11 +17,11 @@ def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_n
 #SBATCH -o {log_dir}/log_{run_name}.out
 #SBATCH -e {log_dir}/log_{run_name}.err
 #SBATCH --partition={args.partition}
-module load intel
-module load openmpi/4.0.0/intel
-source ${{HOME}}/Codes/miniconda/bin/activate kcap_env
+module load openmpi/4.0.5
+source ${{HOME}}/Codes/miniconda/bin/activate kcap_env_re
 
 export OMP_NUM_THREADS={args.n_thread}
+module load intel
 """
     if use_mpi:
         template += f"mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib cosmosis --mpi {config_file}"
@@ -46,15 +46,15 @@ if __name__ == "__main__":
     parser.add_argument("--run-name")
     parser.add_argument("--job-name")
     parser.add_argument("--output-dir")
-    parser.add_argument("--log-dir", default="runs/logs")
+    parser.add_argument("--log-dir", default="runs/logs2")
 
     parser.add_argument("--email-type", default="ALL")
 
     parser.add_argument("--no-mpi", action="store_true", default=False)
 
-    parser.add_argument("--n-task", default=32)
-    parser.add_argument("--partition", default="all")
-    parser.add_argument("--time", default="4-00:00")
+    parser.add_argument("--n-task", default=72)
+    parser.add_argument("--partition", default="WL")
+    parser.add_argument("--time", default="14-00:00")
     parser.add_argument("--n-thread", default="1")
     args = parser.parse_args()
 
