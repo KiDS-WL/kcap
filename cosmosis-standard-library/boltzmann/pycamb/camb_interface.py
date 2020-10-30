@@ -223,7 +223,9 @@ def extract_initial_power_params(block, config, more_config):
 
 def extract_nonlinear_params(block, config, more_config):
     hmcode_params = get_optional_params(block, names.halo_model_parameters, 
-                                        [("A", "HMCode_A_baryon"), ("eta0", "HMCode_eta_baryon")])
+                                        [("A", "HMCode_A_baryon"), 
+                                         ("eta0", "HMCode_eta_baryon"),
+                                         ("logT_AGN", "HMCode_logT_AGN")])
         
     return camb.nonlinear.Halofit(
         **more_config["nonlinear_params"],
