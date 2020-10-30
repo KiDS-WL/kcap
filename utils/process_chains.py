@@ -346,10 +346,10 @@ parameter_dictionary = {
                                       "latex" :       "S_8"},
         "m_nu" :                     {"cosmosis" :    "cosmological_parameters--mnu",
                                       "cosmomc" :     "mnu",
-                                      "latex" :       "M_\\nu"},
+                                      "latex" :       "\\sum m_\\nu"},
         "omega_k" :                  {"cosmosis" :    "cosmological_parameters--omega_k",
                                       "cosmomc" :     "omegak",
-                                      "latex" :       "\\Omega_\\mathrm{k}"},
+                                      "latex" :       "\\Omega_K"},
         "omega_Lambda" :             {"cosmosis" :    "cosmological_parameters--omega_lambda",
                                       "cosmomc" :     "omegal",
                                       "latex" :       "\\Omega_\\Lambda"},
@@ -361,7 +361,7 @@ parameter_dictionary = {
                                       "latex" :       "fR_0"},
         "logfR0" :                   {"cosmosis" :    "cosmological_parameters--log10_fr0",
                                       "cosmomc" :     "logfr0",
-                                      "latex" :       "\\log_{10}fR_0"},
+                                      "latex" :       "\\log_{10}|f_{R0}|"},
         "b_1 sigma_8 S_8 lowz" :     {"cosmosis" :    "cosmological_parameters--bsigma8S8_bin_1",
                                       "cosmomc" :     "b1l_sigma8_s8",
                                       "latex" :       "b_1^{\\rm lowz}\\sigma_8 S_8"},
@@ -412,7 +412,7 @@ parameter_dictionary = {
                                       "latex" :       "\\eta_{\\rm baryon}"},
         "log T_AGN" :                {"cosmosis" :    "halo_model_parameters--logt_agn",
                                       "cosmomc" :     "logt_agn",
-                                      "latex" :       "\\log_{10} T_{\\rm AGN}"},
+                                      "latex" :       "\\log_{10} \\left(T_{\\rm AGN}/{\\rm K}\\right)"},
         "delta_c" :                  {"cosmosis" :    "shear_c_bias--delta_c",
                                       "montepython" : "dc",
                                       "cosmomc" :     "delta_c",
@@ -682,12 +682,11 @@ def load_chain(chain_file, parameters=None, run_name=None,
     ranges = {**ranges, **extra_ranges}
     
     if ignore_inf:
-        if np.any(~np.isfinite(chain[:,stat_column_idx["lnlike"]])):
+        if "lnlike" in stat_column_idx and np.any(~np.isfinite(chain[:,stat_column_idx["lnlike"]])):
             chain = chain[np.isfinite(chain[:,stat_column_idx["lnlike"]])]
-        if np.any(~np.isfinite(chain[:,stat_column_idx["weight"]])):
+        if "weight" in stat_column_idx and np.any(~np.isfinite(chain[:,stat_column_idx["weight"]])):
             chain = chain[np.isfinite(chain[:,stat_column_idx["weight"]])]
 
-    print(chain.shape, column_idx, stat_column_idx)
     run_name = run_name or os.path.split(chain_file)[1]
     samples = getdist.MCSamples(name_tag=run_name,
                                 samples=chain[:,column_idx],

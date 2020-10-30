@@ -389,14 +389,16 @@ def create_interpolated_cdf(samples, weights,
 def weighted_median(a, weights):
     if len(a) == 1:
         return a
+    if np.all(np.isclose(a, a[0])):
+        return a[0]
 
-    threshold = np.sum(weights)/2
+    if weights.sum()/weights.max()-1 < 1e-2:
+        return a[np.argmax(weights)]
+
     sort_idx = np.argsort(a)
     
     l_cum = create_interpolated_cdf(a, weights, start_at_zero=False)
     r_cum = create_interpolated_cdf(a, weights, reverse=True, start_at_zero=False)
-
-    
     
     return scipy.optimize.root_scalar(lambda x: l_cum(x) - r_cum(x), bracket=(a.min(),a.max())).root
 
