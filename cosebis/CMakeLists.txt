@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2)
 
 project(COSEBIS LANGUAGES C CXX VERSION 0.1)
     set(QUIET_MAKE "--no-print-directory")
+    cmake_policy(SET CMP0002 OLD)
+
 
     # Adding customized cmake module
     list(APPEND CMAKE_MODULE_PATH  "${PROJECT_SOURCE_DIR}/cmake/Modules/")

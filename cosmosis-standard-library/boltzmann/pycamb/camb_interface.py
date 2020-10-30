@@ -223,7 +223,9 @@ def extract_initial_power_params(block, config, more_config):
 
 def extract_nonlinear_params(block, config, more_config):
     hmcode_params = get_optional_params(block, names.halo_model_parameters, 
-                                        [("A", "HMCode_A_baryon"), ("eta0", "HMCode_eta_baryon")])
+                                        [("A", "HMCode_A_baryon"), 
+                                         ("eta0", "HMCode_eta_baryon"),
+                                         ("logT_AGN", "HMCode_logT_AGN")])
         
     return camb.nonlinear.Halofit(
         **more_config["nonlinear_params"],
@@ -430,10 +432,10 @@ def execute(block, config):
 
         if p.DoLensing:
             # Get CMB lensing potential
-            cl = r.get_lens_potential_cls(lmax=len(ell)-1, raw_cl=False, CMB_unit="muK")
-            block[names.cmb_cl, "PP"] = cl[2:,0]
-            block[names.cmb_cl, "PT"] = cl[2:,1]
-            block[names.cmb_cl, "PE"] = cl[2:,2]
+            cl = r.get_lens_potential_cls(lmax=ell[-1], raw_cl=True, CMB_unit="muK")
+            block[names.cmb_cl, "PP"] = cl[2:,0]*(ell*(ell+1))/(2*np.pi)
+            block[names.cmb_cl, "PT"] = cl[2:,1]*(ell*(ell+1))/(2*np.pi)
+            block[names.cmb_cl, "PE"] = cl[2:,2]*(ell*(ell+1))/(2*np.pi)
     
     return 0
 

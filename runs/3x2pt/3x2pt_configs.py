@@ -178,8 +178,20 @@ if __name__ == "__main__":
                                                  "--set-parameters", "bias_parameters", "gamma2_bin_2", "0.0",
                                                  "--set-parameters", "bias_parameters", "a_vir_bin_2", "0.0",])]
 
-    ns_prior_configs = [("fix_ns",          ["--set-parameters", "cosmological_parameters", "ns", "0.9658923",]),
-                        ("narrow_ns_prior", ["--set-priors", "cosmological_parameters", "ns", "gaussian 0.96 0.02",])]
+    ns_prior_configs = [("fix_ns",          ["--set-parameters", "cosmological_parameters", "n_s", "0.9658923",]),
+                        ("narrow_ns_prior", ["--set-priors", "cosmological_parameters", "n_s", "gaussian 0.96 0.02",])]
+
+    As_prior_configs = [("fix_As",          ["--set-parameters", "cosmological_parameters", "A_s", "2.1e-9",
+                                             "--set-parameters", "cosmological_parameters", "S_8_input", "0.0",
+                                             #"--enable-modules", "sample_ln_As",
+                                             "--cut-modules", "sample_S8",
+                                             "--cut-modules", "sigma8toAs"]),]
+
+    As_ns_prior_configs = [("fix_As_ns",    ["--set-parameters", "cosmological_parameters", "A_s", "2.1e-9",
+                                             "--set-parameters", "cosmological_parameters", "n_s", "0.9658923",
+                                             "--set-parameters", "cosmological_parameters", "S_8_input", "none",
+                                             "--cut-modules", "sample_S8",
+                                             "--cut-modules", "sigma8toAs"]),]
 
     w_scale_cuts_config = [("w_smax75",      ["--set-keys", "wedges", "bands_range", "20 75",
                                               "--set-keys", "wedges", "points_range", "4 15",
@@ -188,14 +200,14 @@ if __name__ == "__main__":
                                               "--set-keys", "wedges", "points_range", "4 20",
                                               "--set-keys", "BOSS_like", "points_range", "4 20"])]
 
-    configs = ns_prior_configs + w_scale_cuts_config #no_higher_order_configs + tomographic_bin_cut_configs + no_baryon_configs
+    configs = As_ns_prior_configs #+ ns_prior_configs + w_scale_cuts_config #no_higher_order_configs + tomographic_bin_cut_configs + no_baryon_configs
     
     blinds = ["C"]
     for blind in blinds:
         print(f"Blind {blind}")
         twopoint_file = twopoint_file_template.format(blind=blind)
 
-        run_type = "EE_nE_w"
+        run_type = "EE"
         print(f"  Run type: {run_type}")
 
         for config_name, config in configs:

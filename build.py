@@ -71,8 +71,6 @@ def build(mpi=False):
     subprocess.check_call(["cmake", ".."], cwd="build")
     print("Running make.")
     subprocess.check_call(["make"], cwd="build")
-    print("Running make install.")
-    subprocess.check_call(["make", "install"], cwd="build")
 
 def clean():
     print("Running make csl-clean")
