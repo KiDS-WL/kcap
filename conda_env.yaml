@@ -9,4 +9,6 @@ dependencies:
   - pip>=20.0
   - pip:
     - emcee
-    - mpi4py
+      #- mpi4py
+    - hankel
+    - hmf
