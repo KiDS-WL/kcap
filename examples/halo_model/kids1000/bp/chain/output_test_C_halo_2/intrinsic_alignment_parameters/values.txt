@@ -1,0 +1,7 @@
+a = 1.0
+beta_l = 1.2
+gamma_1h_amplitude = 0.000989
+gamma_1h_radial_slope = -2.0
+gamma_2h_amplitude = 5.33
+l_0 = 46989410000.0
+zeta_l = 0.7

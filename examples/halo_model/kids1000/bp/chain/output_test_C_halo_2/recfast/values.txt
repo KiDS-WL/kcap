@@ -1,0 +1,11 @@
+agauss1 = -0.14
+agauss2 = 0.079
+min_a_evolve_tm = 0.0011098779505118728
+recfast_fudge = 1.125
+recfast_fudge_he = 0.86
+recfast_heswitch = 6
+recfast_hswitch = True
+wgauss1 = 0.18
+wgauss2 = 0.33
+zgauss1 = 7.28
+zgauss2 = 6.73

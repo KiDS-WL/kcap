@@ -1,0 +1,3 @@
+_cosmosis_order_n_cen = 'z_cosmosis_order_mass'
+_cosmosis_order_n_sat = 'z_cosmosis_order_mass'
+_cosmosis_order_n_tot = 'z_cosmosis_order_mass'
