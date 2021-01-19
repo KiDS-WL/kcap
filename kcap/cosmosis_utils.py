@@ -4,6 +4,7 @@ import os
 import configparser
 import io
 import warnings
+import copy
 
 import numpy as np
 
@@ -21,7 +22,8 @@ def dict_to_datablock(d={}):
 
 def create_pipeline(config, verbose=True):
     modules = []
-    for module_name, c in config.items():
+    config_copy = copy.deepcopy(config)
+    for module_name, c in config_copy.items():
         filename = c.pop("file")
         module = cosmosis.runtime.module.Module(module_name=module_name,
                                                 file_path=filename)
