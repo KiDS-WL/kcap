@@ -96,12 +96,12 @@ class K1000Pipeline:
 
         self.default_config_cuts =            {"cut_modules"   : ["sample_ln_As", "sample_S8_squared",
                                                                   "sample_bsigma8S8_bin_1", "sample_bsigma8S8_bin_2",
-                                                                  "sample_negative_mnu",
+                                                                  "sample_folded_prior",
                                                                   "cosmicemu",
                                                                   "reaction", "hmcode", "multiply_reaction", # ReACT stuff
                                                                   "load_source_nz", "load_lens_nz",      # Loading from twopoint fits file be default
                                                                   "cl2xi_shear", "cl2xi_ggl", "bin_xi_plus", "bin_xi_minus", "bin_xi_ggl", "cosebis",
-                                                                  "planck_like"],
+                                                                  "planck_like", "planck_lensing_like", "pantheon_like"],
                                                "cut_keys"      : [("projection", "shear-shear"),          # We're using the fast IA approach by default
                                                                   ("projection", "shear-intrinsic"),      # We're using the fast IA approach by default
                                                                   ("projection", "intrinsic-intrinsic"),  # We're using the fast IA approach by default
@@ -424,8 +424,8 @@ class K1000Pipeline:
                                            "bsigma8S8_name" : "bsigma8S8_bin_2_input",
                                            "b_name"         : "b1_bin_2"},
 
-                    "sample_negative_mnu" : {"file" : os.path.join(KCAP_PATH,
-                                                            "utils/sample_negative_mnu.py"),},
+                    "sample_folded_prior" : {"file" : os.path.join(KCAP_PATH,
+                                                            "utils/sample_folded_prior.py"),},
 
                     "sigma8toAs"       : {"file" : os.path.join(KCAP_PATH,
                                                             "utils/sigma8toAs.py"),},
@@ -474,7 +474,7 @@ class K1000Pipeline:
                     "reaction"           : {"file" : os.path.join(REACT_PATH, 
                                                                   "cosmosis/cosmosis_reaction_module.py"),
                                             "verbose" : 1,
-                                            "massloop" : 20,
+                                            "massloop" : 30,
                                             "log10_fR0" : True,
                                             "z_max"    : 1.5},
                     "hmcode"             : {"file" : os.path.join(HMX_PATH, 
@@ -759,6 +759,15 @@ class K1000Pipeline:
                                     "data_2" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/low_l/simall/simall_100x143_offlike5_EE_Aplanck_B.clik"),
                                     "data_3" : os.path.join(KCAP_PATH, "data/Planck/COM_Likelihood_Data-baseline_R3.00/plc_3.0/hi_l/plik_lite/plik_lite_v22_TTTEEE.clik"),
                                     "like_name" : "PLANCK2018"},
+
+                    "planck_lensing_like" : 
+                                    {"file" : os.path.join(KCAP_PATH, "utils/cobaya_planck_lensing.py"),
+                                    "like_name"          : "planck_lensing_like"},
+
+                    "pantheon_like": {"file" : os.path.join(CSL_PATH, "likelihood/pantheon/pantheon.py"),
+                                      "like_name" : "pantheon_like",
+                                     },
+                    
         }
         return config
 
@@ -788,6 +797,7 @@ class K1000Pipeline:
                                      maxlike_method="Nelder-Mead",
                                      maxlike_tolerance=1e-3,
                                      max_posterior=True,
+                                     **extra_sampler_options,
                                      ):
         config = {  "pipeline" :   {"modules"           : " ".join(modules),
                                     "values"            : parameter_file,
@@ -828,10 +838,12 @@ class K1000Pipeline:
                                     "tolerance"       : maxlike_tolerance,
                                     "maxiter"         : max_iterations,
                                     "max_posterior"   : "T" if max_posterior else "F",
-                                    "output_steps"    : "T",},
+                                    "output_steps"    : "T",
+                                    "flush_steps"     : 1,},
                     }
 
-        config[sampler_name] = samplers[sampler_name]
+        config[sampler_name] = {**samplers[sampler_name], **extra_sampler_options}
+
 
         return config
 
@@ -977,6 +989,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--cut-modules", nargs=1, action="append", metavar="MODULE", help="Remove a module from the pipeline.")
     parser.add_argument("--enable-modules", nargs=1, action="append", metavar="MODULE", help="Enable a module in the pipeline.")
+
+    parser.add_argument("--derived-parameters", nargs="+")
 
     parser.add_argument("--sampler", default="multinest")
     parser.add_argument("--sampler-config", nargs=2, action="append", metavar=("PARAMETER", "VALUE"), help="Set keys in the sampler configuration.")
@@ -1320,8 +1334,12 @@ if __name__ == "__main__":
             derived_parameters += ["bias_parameters/b1_bin_1"]
         if "sample_bsigma8S8_bin_2" in p.config:
             derived_parameters += ["bias_parameters/b1_bin_2"]
-        if "sample_negative_mnu" in p.config:
-            derived_parameters += ["cosmological_parameters/mnu"]
+        
+        if "sample_folded_prior" in p.config:
+            derived_parameters += [p.config["sample_folded_prior"]["name"]]
+
+        if args.derived_parameters is not None:
+            derived_parameters += args.derived_parameters
 
         sampler_config = {"derived_parameters"  : derived_parameters,
                           "parameter_file"      : values_file,

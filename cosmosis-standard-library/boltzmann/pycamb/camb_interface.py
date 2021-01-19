@@ -107,13 +107,22 @@ def setup(options):
     more_config['nz'] = options.get_int(opt, 'nz', default=150)
     more_config.update(get_optional_params(options, opt, ["zmid", "nz_mid"]))
 
+    # Allow for finer redshift sampling at low redshifts
     if "zmid" in more_config:
         if not more_config["zmin"] < more_config["zmid"] or not more_config["zmid"] < more_config["zmax"]:
             raise ValueError("zmid needs to be larger than zmin and smaller than zmax!")
 
-    more_config['zmin_background'] = options.get_double(opt, 'zmin_background', default=more_config['zmin'])
-    more_config['zmax_background'] = options.get_double(opt, 'zmax_background', default=more_config['zmax'])
-    more_config['nz_background'] = options.get_int(opt, 'nz_background', default=more_config['nz'])
+    # Allow usage of both background_* (for backwards compatability), as well *_background
+    z_background = get_optional_params(options, opt, [("background_zmin", "zmin_background"),
+                                                      ("zmin_background", "zmin_background"),
+                                                      ("background_zmax", "zmax_background"),
+                                                      ("zmax_background", "zmax_background"),
+                                                      ("background_nz", "nz_background"),
+                                                      ("nz_background", "nz_background"),])
+
+    more_config['zmin_background'] = z_background.get('zmin_background', more_config['zmin'])
+    more_config['zmax_background'] = z_background.get('zmax_background', more_config['zmax'])
+    more_config['nz_background'] = z_background.get('nz_background', more_config['nz'])
 
     more_config["transfer_params"] = get_optional_params(options, opt, ["k_per_logint", "accurate_massive_neutrinos"])
     # Adjust CAMB defaults
@@ -214,7 +223,9 @@ def extract_initial_power_params(block, config, more_config):
 
 def extract_nonlinear_params(block, config, more_config):
     hmcode_params = get_optional_params(block, names.halo_model_parameters, 
-                                        [("A", "HMCode_A_baryon"), ("eta0", "HMCode_eta_baryon")])
+                                        [("A", "HMCode_A_baryon"), 
+                                         ("eta0", "HMCode_eta_baryon"),
+                                         ("logT_AGN", "HMCode_logT_AGN")])
         
     return camb.nonlinear.Halofit(
         **more_config["nonlinear_params"],
@@ -421,10 +432,13 @@ def execute(block, config):
 
         if p.DoLensing:
             # Get CMB lensing potential
-            cl = r.get_lens_potential_cls(lmax=len(ell)-1, raw_cl=False, CMB_unit="muK")
-            block[names.cmb_cl, "PP"] = cl[2:,0]
-            block[names.cmb_cl, "PT"] = cl[2:,1]
-            block[names.cmb_cl, "PE"] = cl[2:,2]
+            # The cosmosis-standard-library clik interface expects ell(ell+1)/2 pi Cl
+            # for all angular power spectra, including the lensing potential.
+            # For compatability reasons, we provide that scaling here as well.
+            cl = r.get_lens_potential_cls(lmax=ell[-1], raw_cl=True, CMB_unit="muK")
+            block[names.cmb_cl, "PP"] = cl[2:,0]*(ell*(ell+1))/(2*np.pi)
+            block[names.cmb_cl, "PT"] = cl[2:,1]*(ell*(ell+1))/(2*np.pi)
+            block[names.cmb_cl, "PE"] = cl[2:,2]*(ell*(ell+1))/(2*np.pi)
     
     return 0
 

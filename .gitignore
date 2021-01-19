@@ -16,5 +16,14 @@ cosebis/WnLog
 examples/output*
 runs/output*
 
-runs/
+runs/*
+
+!runs/3x2pt/
+runs/3x2pt/*
+
+!runs/extended_cosmologies/
+runs/extended_cosmologies/*
+
+!runs/**/*.py
+
 tests/test_pofk

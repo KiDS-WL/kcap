@@ -163,9 +163,92 @@ def test_consistency():
     for k in block_no_consistency.keys('cosmological_parameters'):
         print(k[1], block_no_consistency[k[0], k[1]])
 
+def test_background_z():
+    config = {       "camb1"     : {"file"               : CAMB_INTERFACE,
+                                    "do_reionization"    : False,
+                                    "mode"               : "background",
+                                    "background_zmax"    : 42,
+                                    "background_zmin"    : 2.3,
+                                    "background_nz"      : 12},
+                     "camb2"     : {"file"               : CAMB_INTERFACE,
+                                    "do_reionization"    : False,
+                                    "mode"               : "background",
+                                    "zmax_background"    : 42,
+                                    "zmin_background"    : 2.3,
+                                    "nz_background"      : 12},
+                     "camb3"     : {"file"               : CAMB_INTERFACE,
+                                    "do_reionization"    : False,
+                                    "mode"               : "background",
+                                    "zmax"               : 42.0,
+                                    "zmin"               : 2.3,
+                                    "nz"                 : 12},
+                     "camb4"     : {"file"               : CAMB_INTERFACE,
+                                    "do_reionization"    : False,
+                                    "mode"               : "transfer",
+                                    "zmax"               : 2.0,
+                                    "zmin"               : 0.0,
+                                    "nz"                 : 100,
+                                    "zmax_background"    : 42,
+                                    "zmin_background"    : 2.3,
+                                    "nz_background"      : 12}}
+
+    camb_module1 = cosmosis.runtime.module.Module(module_name="camb1", 
+                                                 file_path=config["camb1"]["file"])
+    camb_module2 = cosmosis.runtime.module.Module(module_name="camb2", 
+                                                 file_path=config["camb2"]["file"])
+    camb_module3 = cosmosis.runtime.module.Module(module_name="camb3", 
+                                                 file_path=config["camb3"]["file"])
+    camb_module4 = cosmosis.runtime.module.Module(module_name="camb4", 
+                                                 file_path=config["camb4"]["file"])
+
+    camb_module1.setup(dict_to_datablock(config))
+    camb_module2.setup(dict_to_datablock(config))
+    camb_module3.setup(dict_to_datablock(config))
+    camb_module4.setup(dict_to_datablock(config))
+
+    param_dict = {"cosmological_parameters" : {"omch2"   : 0.1,
+                                               "ombh2"   : 0.022,
+                                               "h0"      : 0.7,
+                                               "n_s"     : 0.96,
+                                               "A_s"     : 2.1e-9,}}
+
+    block_camb1 = dict_to_datablock(param_dict)
+    camb_module1.execute(block_camb1)
+
+    block_camb2 = dict_to_datablock(param_dict)
+    camb_module2.execute(block_camb2)
+
+    block_camb3 = dict_to_datablock(param_dict)
+    camb_module3.execute(block_camb3)
+
+    block_camb4 = dict_to_datablock(param_dict)
+    camb_module4.execute(block_camb4)
+
+    assert block_camb1["distances", "z"].size == 12
+    assert np.isclose(block_camb1["distances", "z"].min(), 2.3)
+    assert np.isclose(block_camb1["distances", "z"].max(), 42)
+
+    assert block_camb2["distances", "z"].size == 12
+    assert np.isclose(block_camb2["distances", "z"].min(), 2.3)
+    assert np.isclose(block_camb2["distances", "z"].max(), 42)
+
+    assert block_camb3["distances", "z"].size == 12
+    assert np.isclose(block_camb3["distances", "z"].min(), 2.3)
+    assert np.isclose(block_camb3["distances", "z"].max(), 42)
+
+    assert block_camb4["distances", "z"].size == 12
+    assert np.isclose(block_camb4["distances", "z"].min(), 2.3)
+    assert np.isclose(block_camb4["distances", "z"].max(), 42)
+
+    assert block_camb4["growth_parameters", "z"].size == 100
+    assert np.isclose(block_camb4["growth_parameters", "z"].min(), 0.0)
+    assert np.isclose(block_camb4["growth_parameters", "z"].max(), 2.0)
+
+
 if __name__ == "__main__":
     test_setup()
     test_parameters()
     test_neutrinos()
     test_camb_massless_neutrinos()
     test_consistency()
+    test_background_z()

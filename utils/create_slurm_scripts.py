@@ -4,7 +4,7 @@ import argparse
 import sys
 import pathlib
 
-def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_name=None, use_mpi=True, print_config=True):
+def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_name=None, email_type="ALL", use_mpi=True, print_config=True):
     jobname = job_name or run_name
     template = f"""#!/bin/bash
 #SBATCH --ntasks {args.n_task}
@@ -12,16 +12,16 @@ def create_sbatch_config(run_name, config_file, output_dir, log_dir, args, job_n
 #SBATCH --time {args.time}                      # Time in days-hours:min
 #SBATCH --job-name={jobname}               # this will be displayed if you write squeue in terminal and will be in the title of all emails slurm sends
 #SBATCH --requeue                           # Allow requeing
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type={email_type}
 #SBATCH --mail-user=ttr@roe.ac.uk
 #SBATCH -o {log_dir}/log_{run_name}.out
 #SBATCH -e {log_dir}/log_{run_name}.err
 #SBATCH --partition={args.partition}
-module load intel
-module load openmpi/4.0.0/intel
-source ${{HOME}}/Codes/miniconda/bin/activate kcap_env
+module load openmpi/4.0.5
+source ${{HOME}}/Codes/miniconda/bin/activate kcap_env_re
 
 export OMP_NUM_THREADS={args.n_thread}
+module load intel
 """
     if use_mpi:
         template += f"mpirun --host `python ${{HOME}}/Codes/SlurmEnvToHostfile/SlurmEnvToHostfile.py --no-file` --mca btl ^openib cosmosis --mpi {config_file}"
@@ -46,13 +46,15 @@ if __name__ == "__main__":
     parser.add_argument("--run-name")
     parser.add_argument("--job-name")
     parser.add_argument("--output-dir")
-    parser.add_argument("--log-dir", default="runs/logs")
+    parser.add_argument("--log-dir", default="runs/logs2")
+
+    parser.add_argument("--email-type", default="ALL")
 
     parser.add_argument("--no-mpi", action="store_true", default=False)
 
-    parser.add_argument("--n-task", default=32)
-    parser.add_argument("--partition", default="all")
-    parser.add_argument("--time", default="4-00:00")
+    parser.add_argument("--n-task", default=72)
+    parser.add_argument("--partition", default="WL")
+    parser.add_argument("--time", default="14-00:00")
     parser.add_argument("--n-thread", default="1")
     args = parser.parse_args()
 
@@ -70,7 +72,7 @@ if __name__ == "__main__":
             run_name = config_file.parts[-3]
             job_name = run_name
             output_dir = config_file.parent
-            create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, use_mpi=not args.no_mpi, print_config=False)
+            create_sbatch_config(run_name, config_file, output_dir, args.log_dir, args, job_name, email_type=args.email_type, use_mpi=not args.no_mpi, print_config=False)
             print(f"Processed {run_name}.")
 
         if len(config_files) > 1:
@@ -80,6 +82,6 @@ if __name__ == "__main__":
                 f.writelines([f"sbatch {sbf}\n" for sbf in sbatch_files])
         
     else:
-        create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name, use_mpi=not args.no_mpi, )
+        create_sbatch_config(args.run_name, args.config_file, args.output_dir, args.log_dir, args, args.job_name, email_type=args.email_type, use_mpi=not args.no_mpi, )
 
 

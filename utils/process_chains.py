@@ -293,15 +293,15 @@ parameter_dictionary = {
         "omega_m" :                  {"cosmosis" :    "cosmological_parameters--omega_m",
                                       "montepython" : "Omega_m",
                                       "cosmomc" :     "omegam",
-                                      "latex" :       "\\Omega_m"},
+                                      "latex" :       "\\Omega_\\mathrm{m}"},
         "omega_c h^2" :              {"cosmosis" :    "cosmological_parameters--omch2",
                                       "montepython" : "omega_cdm",
                                       "cosmomc" :     "omegach2",
-                                      "latex" :       "h^2\\Omega_c"},
+                                      "latex" :       "h^2\\Omega_\\mathrm{c}"},
         "omega_b h^2" :              {"cosmosis" :    "cosmological_parameters--ombh2", 
                                       "montepython" : "omega_b",
                                       "cosmomc" :     "omegabh2",
-                                      "latex" :       "h^2\\Omega_b"},
+                                      "latex" :       "h^2\\Omega_\\mathrm{b}"},
         "h" :                        {"cosmosis" :    "cosmological_parameters--h0", 
                                       "montepython" : "h",
                                       "cosmomc" :     "h",
@@ -317,19 +317,22 @@ parameter_dictionary = {
         "n_s"   :                    {"cosmosis" :    "cosmological_parameters--n_s",
                                       "montepython" : "n_s",
                                       "cosmomc" :     "ns",
-                                      "latex" :       "n_s"},
+                                      "latex" :       "n_\\mathrm{s}"},
         "A_s"   :                    {"cosmosis" :    "cosmological_parameters--a_s",
                                       "montepython" : "A_s",
                                       "cosmomc" :     "as",
-                                      "latex" :       "A_s"},
+                                      "latex" :       "A_\\mathrm{s}"},
         "log A_s"   :                {"cosmosis" :    "cosmological_parameters--ln_1e10_a_s",
                                       "montepython" : "ln10^{10}A_s",
                                       "cosmomc" :     "logA",
-                                      "latex" :       "{\\rm ln}(10^{10} A_s)"},
+                                      "latex" :       "{\\rm ln}(10^{10} A_\\mathrm{s})"},
         "sigma_8" :                  {"cosmosis" :    "cosmological_parameters--sigma_8",
                                       "montepython" : "sigma8",
                                       "cosmomc" :     "sigma8",
                                       "latex" :       "\\sigma_8"},
+        "sigma_12" :                  {"cosmosis" :    "cosmological_parameters--sigma_12",
+                                      "cosmomc" :     "sigma12",
+                                      "latex" :       "\\sigma_{12}"},
         "S_8" :                      {"cosmosis" :    "cosmological_parameters--s_8",
                                       "montepython" : "S8",
                                       "cosmomc" :     "s8",
@@ -343,10 +346,10 @@ parameter_dictionary = {
                                       "latex" :       "S_8"},
         "m_nu" :                     {"cosmosis" :    "cosmological_parameters--mnu",
                                       "cosmomc" :     "mnu",
-                                      "latex" :       "M_\\nu"},
+                                      "latex" :       "\\sum m_\\nu"},
         "omega_k" :                  {"cosmosis" :    "cosmological_parameters--omega_k",
                                       "cosmomc" :     "omegak",
-                                      "latex" :       "\\Omega_k"},
+                                      "latex" :       "\\Omega_K"},
         "omega_Lambda" :             {"cosmosis" :    "cosmological_parameters--omega_lambda",
                                       "cosmomc" :     "omegal",
                                       "latex" :       "\\Omega_\\Lambda"},
@@ -358,7 +361,7 @@ parameter_dictionary = {
                                       "latex" :       "fR_0"},
         "logfR0" :                   {"cosmosis" :    "cosmological_parameters--log10_fr0",
                                       "cosmomc" :     "logfr0",
-                                      "latex" :       "\\log_{10}fR_0"},
+                                      "latex" :       "\\log_{10}|f_{R0}|"},
         "b_1 sigma_8 S_8 lowz" :     {"cosmosis" :    "cosmological_parameters--bsigma8S8_bin_1",
                                       "cosmomc" :     "b1l_sigma8_s8",
                                       "latex" :       "b_1^{\\rm lowz}\\sigma_8 S_8"},
@@ -379,7 +382,7 @@ parameter_dictionary = {
                                       "latex" :       "b_2^{\\rm lowz}"},
         "gamma_3 lowz" :             {"cosmosis" :    "bias_parameters--gamma3_bin_1",
                                       "cosmomc" :     "gamma3l",
-                                      "latex" :       "\\gamma_3^{\\rm lowz}"},
+                                      "latex" :       "\\gamma_{3-}^{\\rm lowz}"},
         "a_vir lowz" :               {"cosmosis" :    "bias_parameters--a_vir_bin_1",
                                       "cosmomc" :     "a_virl",
                                       "latex" :       "a_{\\rm vir}^{\\rm lowz}"},
@@ -391,7 +394,7 @@ parameter_dictionary = {
                                       "latex" :       "b_2^{\\rm highz}"},
         "gamma_3 highz" :            {"cosmosis" :    "bias_parameters--gamma3_bin_2",
                                       "cosmomc" :     "gamma3h",
-                                      "latex" :       "\\gamma_3^{\\rm highz}"},
+                                      "latex" :       "\\gamma_{3-}^{\\rm highz}"},
         "a_vir highz" :              {"cosmosis" :    "bias_parameters--a_vir_bin_2",
                                       "cosmomc" :     "a_virh",
                                       "latex" :       "a_{\\rm vir}^{\\rm highz}"},
@@ -402,11 +405,14 @@ parameter_dictionary = {
         "A_baryon" :                 {"cosmosis" :    "halo_model_parameters--a",
                                       "montepython" : "c_min",
                                       "cosmomc" :     "a_baryon",
-                                      "latex" :       "A_{\\rm baryon}"},
+                                      "latex" :       "A_{\\rm bary}"},
         "eta_baryon" :               {"cosmosis" :    "halo_model_parameters--eta0",
                                       "montepython" : "eta_0",
                                       "cosmomc" :     "eta_baryon",
                                       "latex" :       "\\eta_{\\rm baryon}"},
+        "log T_AGN" :                {"cosmosis" :    "halo_model_parameters--logt_agn",
+                                      "cosmomc" :     "logt_agn",
+                                      "latex" :       "\\log_{10} \\left(T_{\\rm AGN}/{\\rm K}\\right)"},
         "delta_c" :                  {"cosmosis" :    "shear_c_bias--delta_c",
                                       "montepython" : "dc",
                                       "cosmomc" :     "delta_c",
@@ -468,6 +474,9 @@ parameter_dictionary = {
         "A_Planck" :                 {"cosmosis" :    "planck--a_planck",
                                       "cosmomc" :     "calPlanck",
                                       "latex" :       "A_{\\rm Planck}"},
+        "SN_M" :                     {"cosmosis" :    "supernova_params--m",
+                                      "cosmomc" :     "sn_m",
+                                      "latex" :       "M_{\\rm SN}"},
         "F_AP lowz" :                {"cosmosis" :    "lss_parameters--f_ap_bin_1",
                                       "cosmomc" :     "FAP1",
                                       "latex" :       "F_{\\rm AP lowz}"},
@@ -487,6 +496,7 @@ parameter_dictionary = {
                                       "cosmomc" :     "fsigma8z2",
                                       "latex" :       "f\\sigma_8 {\\rm highz}"},
         "lnlike" :                   {"cosmosis" :    "like",
+                                      "montepython" : "mloglkl",
                                       "cosmomc" :     "loglike",
                                       "latex" :       "\\log \\mathcal{L}"},
         "lnpost" :                   {"cosmosis" :    "post",
@@ -496,6 +506,7 @@ parameter_dictionary = {
                                       "cosmomc" :     "logprior",
                                       "latex" :       "\\log \\pi"},
         "weight" :                   {"cosmosis" :    "weight",
+                                      "montepython" : "weights",
                                       "cosmomc" :     "weight",
                                       "latex" :       "w"},
            
@@ -591,7 +602,9 @@ def cosmosis_to_cosmomc_param_names(param_names):
 
 def load_chain(chain_file, parameters=None, run_name=None, 
                chain_format="cosmosis", parameter_map="cosmomc", strict_mapping=False, 
-               values=None, burn_in=0.3):
+               values=None, burn_in=0.3, keep_raw_samples=False, ignore_inf=False,
+               extra_ranges=None,
+               verbose=False):
     with open(chain_file, "r") as f:
         params = f.readline()[1:]
     
@@ -608,7 +621,7 @@ def load_chain(chain_file, parameters=None, run_name=None,
     parameter_names_latex = []
     for p in chain_params:
         for mapping in parameter_dictionary.values():
-            if mapping[chain_format] == p:
+            if chain_format in mapping and mapping[chain_format] == p:
                 parameter_names.append(mapping[parameter_map])
                 parameter_names_latex.append(mapping["latex"])
                 break
@@ -619,6 +632,8 @@ def load_chain(chain_file, parameters=None, run_name=None,
                 warnings.warn(f"Parameter {p} in chain does not have mapping to {parameter_map} format.")
                 parameter_names.append(p)
                 parameter_names_latex.append(p)
+
+    raw_chain_parameter_names = parameter_names[:]
 
     column_idx = list(range(len(parameter_names)))
     
@@ -648,9 +663,12 @@ def load_chain(chain_file, parameters=None, run_name=None,
             chain = chain[burn_in:]
         else:
             raise ValueError(f"Invalid burn_in value: {burn_in}")
-        print(f"Using {chain.shape[0]} samples out of {n_sample} in the chain.")
+        if verbose: print(f"Using {chain.shape[0]} samples out of {n_sample} in the chain.")
         nested_sampling = False
         
+    if chain.size == 0:
+        raise RuntimeError("No samples in file.")
+    
     if values:
         if chain_format != "cosmosis" or parameter_map != "cosmomc":
             raise ValueError("Loading value files is only supported for cosmosis chains and cosmomc parameters.")
@@ -659,7 +677,16 @@ def load_chain(chain_file, parameters=None, run_name=None,
         ranges = {cosmomc_names[i] : sampled_params_ranges[i][2] for i in range(len(cosmomc_names)) if cosmomc_names[i] in parameter_names}
     else:
         ranges = {}
+
+    extra_ranges = extra_ranges or {}
+    ranges = {**ranges, **extra_ranges}
     
+    if ignore_inf:
+        if "lnlike" in stat_column_idx and np.any(~np.isfinite(chain[:,stat_column_idx["lnlike"]])):
+            chain = chain[np.isfinite(chain[:,stat_column_idx["lnlike"]])]
+        if "weight" in stat_column_idx and np.any(~np.isfinite(chain[:,stat_column_idx["weight"]])):
+            chain = chain[np.isfinite(chain[:,stat_column_idx["weight"]])]
+
     run_name = run_name or os.path.split(chain_file)[1]
     samples = getdist.MCSamples(name_tag=run_name,
                                 samples=chain[:,column_idx],
@@ -669,6 +696,10 @@ def load_chain(chain_file, parameters=None, run_name=None,
                                 labels=parameter_names_latex,
                                 sampler="nested" if nested_sampling else None,
                                 ranges=ranges)
+
+    if keep_raw_samples:
+        samples.raw_chain_samples = chain
+        samples.raw_chain_parameter_names = raw_chain_parameter_names
     
     if nested_sampling:
         samples.log_Z = log_Z
