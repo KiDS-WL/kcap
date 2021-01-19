@@ -432,6 +432,9 @@ def execute(block, config):
 
         if p.DoLensing:
             # Get CMB lensing potential
+            # The cosmosis-standard-library clik interface expects ell(ell+1)/2 pi Cl
+            # for all angular power spectra, including the lensing potential.
+            # For compatability reasons, we provide that scaling here as well.
             cl = r.get_lens_potential_cls(lmax=ell[-1], raw_cl=True, CMB_unit="muK")
             block[names.cmb_cl, "PP"] = cl[2:,0]*(ell*(ell+1))/(2*np.pi)
             block[names.cmb_cl, "PT"] = cl[2:,1]*(ell*(ell+1))/(2*np.pi)
