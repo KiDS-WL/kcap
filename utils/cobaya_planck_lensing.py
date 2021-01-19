@@ -3,6 +3,7 @@ import numpy as np
 from cosmosis.datablock import names as section_names
 from cosmosis.datablock import option_section
 
+# This uses the cobaya standalone CMB lensing likelihood https://github.com/CobayaSampler/planck_lensing_external
 import plancklensing
 
 cosmo = section_names.cosmological_parameters
