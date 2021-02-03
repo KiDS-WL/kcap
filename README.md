@@ -6,7 +6,7 @@ This repository contains the cosmology inference pipeline that was used in the K
  - 3x2pt: [Heymans, Tröster et al. 2021](https://arxiv.org/abs/2007.15632)
  - Beyond flat ΛCDM: [Tröster et al. 2021](https://arxiv.org/abs/2010.16416)
 
-The pipeline is built on CosmoSIS, albeit a modified version that doesn't rely on environmental variables.
+The pipeline is built on CosmoSIS, albeit a [modified version](https://bitbucket.org/tilmantroester/cosmosis/src/kcap/) that is `pip`-installable and doesn't rely on environmental variables.
 
 A MontePython likelihood that wraps the kcap functionality can be found at [here](https://github.com/BStoelzner/KiDS-1000_MontePython_likelihood). 
 Note that the standard version of MontePython does not support non-flat priors yet, which is a problem for samplers that distiguish between likelihood and prior (such as MultiNest and PolyChord). 
