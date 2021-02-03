@@ -1,12 +1,21 @@
 # KiDS Cosmology Analysis Pipeline
 
-Pipeline for the cosmology analysis of KiDS 1000.
+This repository contains the cosmology inference pipeline that was used in the KiDS-1000 analyses:
+ - Methodology: [Joachimi, Lin, Asgari, Tröster, Heymans et al. 2021](https://arxiv.org/abs/2007.01844)
+ - Cosmic shear: [Asgari, Lin, Joachimi et al. 2021](https://arxiv.org/abs/2007.15633)
+ - 3x2pt: [Heymans, Tröster et al. 2021](https://arxiv.org/abs/2007.15632)
+ - Beyond flat ΛCDM: [Tröster et al. 2021](https://arxiv.org/abs/2010.16416)
 
 The pipeline is built on CosmoSIS, albeit a modified version that doesn't rely on environmental variables.
+
+A MontePython likelihood that wraps the kcap functionality can be found at [here](https://github.com/BStoelzner/KiDS-1000_MontePython_likelihood). 
+Note that the standard version of MontePython does not support non-flat priors yet, which is a problem for samplers that distiguish between likelihood and prior (such as MultiNest and PolyChord). 
+A version that supports Gaussian priors with MultiNest can be found [here](https://github.com/BStoelzner/montepython_public/tree/gaussian_prior).
 
 The different modules (CosmoSIS standard library, etc) are included as git subtree. Users don't have to worry about this detail but if you make changes to any of the modules it helps to structure your commits such that they only touch on one module at a time, such that these changes can be easily backported to the individual repositories.
 
 For a fiducial KV450 setup, have a look at `runs/config/KV450_fiducial.ini`.
+
 
 ## Installation
 
