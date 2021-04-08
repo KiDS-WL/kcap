@@ -46,6 +46,8 @@ params:
     name: "string, default is empty.  If set, save the outputs to sections with the name as a suffix, e.g intrinsic_power_NAME"
     grid_mode: "bool, default false. If set, save the fields b(k,z) and r(k,z) as described in Bridle & King instead of applying directly to P(k)"
     do_galaxy_intrinsic: "bool, default False. Compute the matter-IA cross correlation."
+    X_matter_power_section: "string, default is empty. Compute X-IA cross correlation, using the X-matter power spectrum."
+    X_intrinsic_power_output_section: "string. Name of section the X-IA power spectrum gets written to."
 #Inputs for a given choice of a parameter, from the values.ini or from other modules
 inputs:
     cosmological_parameters:

@@ -11,6 +11,12 @@ def setup(options):
     grid_mode = options.get_bool(option_section, "grid_mode", default=False)
     gal_intrinsic_power = options.get_bool(
         option_section, "do_galaxy_intrinsic", False)
+
+    X_matter_power_section = options.get_string(option_section, "X_matter_power_section", default="").lower()
+    X_intrinsic_power_output_section = ""
+    if X_matter_power_section != "":
+        X_intrinsic_power_output_section = options.get_string(option_section, "X_intrinsic_power_output_section").lower()
+
     name = options.get_string(option_section, "name", default="").lower()
     if name:
         suffix = "_" + name
@@ -22,11 +28,11 @@ def setup(options):
                          'be either "KRHB" (for Kirk, Rassat, Host, Bridle) or BK for '
                          'Bridle & King or "BK_corrected" for the corrected version of that')
 
-    return method, gal_intrinsic_power, grid_mode, suffix
+    return method, gal_intrinsic_power, X_matter_power_section, X_intrinsic_power_output_section, grid_mode, suffix
 
 
 def execute(block, config):
-    method, gal_intrinsic_power, grid_mode, suffix = config
+    method, gal_intrinsic_power, X_matter_power_section, X_intrinsic_power_output_section, grid_mode, suffix = config
 
     # load z_lin, k_lin, P_lin, z_nl, k_nl, P_nl, C1, omega_m, H0
     lin = names.matter_power_lin
@@ -75,6 +81,19 @@ def execute(block, config):
         #assert np.allclose(k_nl[k_nl <= gm_k_max], k[k <= gm_k_max])
         P_gI = P_GI[:,k_I <= gm_k_max] * p_gm[:,k <= gm_k_max] / p_nl[:,k_nl <= gm_k_max]
         block.put_grid(ia_gi, "z", z, "k_h", k[k <= gm_k_max], "p_k", P_gI)
+
+    # Generalised version of the galaxy-intrinsic hack above for general 
+    # field X-intrinsic power spectra
+    if X_intrinsic_power_output_section != "":
+        ia_Xi = X_intrinsic_power_output_section
+        z, k, p_Xm = block.get_grid(X_matter_power_section, "z", "k_h", "p_k")
+        # Make sure k ranges match in case P_gm wasn't extrapolated
+        Xm_k_max = k[-1]*0.999
+        #assert np.allclose(k_I[k_I <= gm_k_max], k[k <= gm_k_max])
+        #assert np.allclose(k_nl[k_nl <= gm_k_max], k[k <= gm_k_max])
+        P_XI = P_GI[:,k_I <= Xm_k_max] * p_Xm[:,k <= Xm_k_max] / p_nl[:,k_nl <= Xm_k_max]
+        block.put_grid(ia_Xi, "z", z, "k_h", k[k <= Xm_k_max], "p_k", P_XI)
+
     return 0
 
 
