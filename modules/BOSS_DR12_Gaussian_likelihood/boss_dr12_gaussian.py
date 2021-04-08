@@ -1,6 +1,7 @@
 import os
 
 from cosmosis.datablock import option_section, names
+from cosmosis.datablock.cosmosis_py import errors
 
 import numpy as np
 import scipy.interpolate
@@ -33,7 +34,12 @@ def setup(options):
     data_file = options.get_string(option_section, "data_file", default=default_data_file)
     cov_file = options.get_string(option_section, "cov_file", default=default_cov_file)
 
-    redshifts = [float(z) for z in options.get_string(option_section, "z", default="0.38 0.51 0.61").split(" ")]
+    try:
+        redshifts = options[option_section, "z"]
+    except errors.BlockNameNotFound:
+        redshifts = [0.38, 0.51, 0.61]
+
+    print("Using redshifts ", redshifts)
 
     data  = {}
     with open(data_file) as f:
@@ -76,11 +82,21 @@ def execute(block, config):
         mu = np.zeros_like(data)
 
         for i, z in enumerate(redshifts):
-            rs_DV = interpolate(block[names.distances, "z"][1:], block[names.distances, "rs_DV"][1:], z)
-            F_AP = interpolate(block[names.distances, "z"][1:], block[names.distances, "F_AP"][1:], z)
-            fsigma8 = interpolate(block[names.growth_parameters, "z"], block[names.growth_parameters, "fsigma_8"], z)
+            try:
+                rs_DV = 1/block["lss_parameters", f"DV_rs_bin_{i+1}"]
+                F_AP = block["lss_parameters", f"F_AP_bin_{i+1}"]
+                fsigma8 = block["lss_parameters", f"fsigma_8_bin_{i+1}"]
+            except errors.BlockError:
+                rs_DV = interpolate(block[names.distances, "z"][1:], block[names.distances, "rs_DV"][1:], z)
+                F_AP = interpolate(block[names.distances, "z"][1:], block[names.distances, "F_AP"][1:], z)
+                fsigma8 = interpolate(block[names.growth_parameters, "z"], block[names.growth_parameters, "fsigma_8"], z)
             
+                block["lss_parameters", f"DV_rs_bin_{i+1}"] = float(1/rs_DV)
+                block["lss_parameters", f"F_AP_bin_{i+1}"] = float(F_AP)
+                block["lss_parameters", f"fsigma_8_bin_{i+1}"] = float(fsigma8)
+
             mu[i*n_param:(i+1)*n_param] = np.array([1/rs_DV, F_AP, fsigma8])
+
     else:
         raise ValueError(f"Mode {mode} not supported.")
 
