@@ -1,10 +1,12 @@
 import glob
 import collections
 import os
+import re
 import configparser
 import io
 import warnings
 import copy
+import shutil
 
 import numpy as np
 
@@ -52,6 +54,281 @@ def config_to_string(config):
         config.write(s)
         s.seek(0)
         return s.read()
+
+def flatten_config(values, only_str_list_conversion=False):
+    values = copy.deepcopy(values)
+    for section, d in values.items():
+        for key, value in d.items():
+            if isinstance(value, (list, tuple)) and all(isinstance(l, str) for l in value):
+                # Join list of strings
+                d[key] = " ".join([v for v in value])
+            if not only_str_list_conversion:
+                if isinstance(value, (list, tuple)) and not all(isinstance(l, str) for l in value):
+                    # Join other lists as well
+                    d[key] = " ".join([str(v) for v in value])
+                if value is True:
+                    d[key] = "T"
+                elif value is False:
+                    d[key] = "F"
+    return values
+
+
+def emulate_configparser_interpolation(string, defaults, max_depth=100):
+    """Emulate the configparser basic interpolation syntax.
+    
+    Interpolation happens by replacing occurrences of %(key)s in string by
+    defaults[key].
+    """
+    def replacer(match):
+        s = defaults[match.group("replace")]
+        return s
+
+    old_string = string
+    for depth in range(max_depth):
+        new_string = re.sub(pattern=r"%\((?P<replace>[a-z0-9_]+)\)s", 
+                            repl=replacer,
+                            string=old_string, flags=re.IGNORECASE)
+        if new_string == old_string:
+            break
+        else:
+            old_string = new_string
+
+    return new_string
+
+
+class CosmoSISPipelineFactory:
+    def __init__(self, options, files=None):
+        self._init_options = copy.deepcopy(options)
+        
+        self.base_config = self.create_base_config(**options)
+        self.base_params = self.create_base_params()
+        self.reset_config()
+        self.reset_params()
+        
+        self.file_options_registry = self.base_config_data_files
+            
+    def reset_config(self):
+        self.config = copy.deepcopy(self.base_config)
+        
+    def reset_params(self):
+        self.params = copy.deepcopy(self.base_params)
+        
+    def update_config(self, config_update):
+        for sec, sec_update in config_update.items():
+            # Delete section if section update value is Nine
+            if sec_update is None:
+                del self.config[sec]
+            else:
+                for opt, val in copy.deepcopy(sec_update).items():
+                    # Delete option if update value is None
+                    if val is None and opt in self.config[sec]:
+                        del self.config[sec][opt]
+                        # Remove from the update dict
+                        del sec_update[opt]
+                # Else update the option with the new values
+                self.config[sec].update(sec_update)
+                
+    def update_params(self, params_update):
+        for k, u in params_update.items():
+            self.params[k].update(u)
+                
+    def add_section(self, section, position):
+        pass
+    
+    def run_pipeline(self, defaults=None):
+        c = copy.deepcopy(self.config)
+        p = copy.deepcopy(self.params)
+        
+        # Resolve %()s definitions with defaults dict
+        for sec in c:
+            for option, value in c[sec].items():
+                if isinstance(value, str):
+                    c[sec][option] = emulate_configparser_interpolation(value, defaults)
+
+        # Discard range information if available
+        for sec in p:
+            for name, value in p[sec].items():
+                if isinstance(value, list):
+                    p[sec][name] = value[1]            
+
+        pipeline = create_pipeline(c)
+        block = dict_to_datablock(p)
+        pipeline(block)
+
+        return block
+
+    
+    def add_sampling_config(self, sampling_options):
+        modules = sampling_options.pop("modules",
+                                       self.config.keys())
+        derived_parameters = sampling_options.pop("derived_parameters", 
+                                                  self.derived_params())
+        parameter_file = sampling_options.pop("parameter_file",
+                                              "%(CONFIG_DIR)s/values.ini")
+        prior_file = sampling_options.pop("prior_file", 
+                                          "%(CONFIG_DIR)s/priors.ini")
+                    
+        self.sampling_config = self.create_base_sampling_config(
+                                        modules=modules,
+                                        derived_parameters=derived_parameters,
+                                        parameter_file=parameter_file,
+                                        prior_file=prior_file,
+                                        **sampling_options)
+        
+        self.config = {**self.sampling_config, **self.config}
+        
+    def stage_files(self, root_dir, defaults, data_file_dirs=None, copy_data_files=False, create_multinest_dir=True):
+        pipeline_config = copy.deepcopy(self.config)
+        
+        # Create directories
+        config_dir = os.path.join(root_dir, "config")
+        os.makedirs(config_dir, exist_ok=True)
+        os.makedirs(os.path.join(root_dir, "output"), exist_ok=True)
+        if create_multinest_dir:
+            os.makedirs(os.path.join(root_dir, "output", "multinest"), exist_ok=True)
+            
+        if copy_data_files:
+            if self.file_options_registry is None:
+                raise ValueError("No files have been registered for staging.")
+                
+            data_file_dirs = data_file_dirs or {}
+
+            data_dir = os.path.join(root_dir, "data")
+            os.makedirs(data_dir, exist_ok=True)
+            
+            for sec, name in self.file_options_registry:
+                filepaths = self.config[sec][name]
+                # Resolve %()s in the paths
+                filepaths = emulate_configparser_interpolation(filepaths, {**defaults, **data_file_dirs})
+                # Allow for case of multiple files per option. E.g. n(z) files
+                filepaths = filepaths.split(" ")
+                new_filepaths = []
+                
+                staging_dir = os.path.join(data_dir, sec)
+                os.makedirs(staging_dir, exist_ok=True)
+                
+                for filepath in filepaths:
+                    filename = os.path.split(filepath)[1]
+                    shutil.copy(filepath, os.path.join(staging_dir, filename))
+                    new_filepaths.append("%(DATA_DIR)s/"+f"{sec}/{filename}")
+                
+                new_filepaths = " ".join(new_filepaths) if len(new_filepaths) > 1 else new_filepaths[0]
+                
+                pipeline_config[sec][name] = new_filepaths
+                
+        d = copy.deepcopy(defaults)
+        if not any([name in d for name in ["root_dir", "ROOT_DIR"]]):
+            d["ROOT_DIR"] = root_dir
+        if not any([name in d for name in ["data_dir", "DATA_DIR"]]):
+            d["DATA_DIR"] = "%(ROOT_DIR)s/data/"
+        if not any([name in d for name in ["output_dir", "OUTPUT_DIR"]]):
+            d["OUTPUT_DIR"] = "%(ROOT_DIR)s/output/"
+        if not any([name in d for name in ["data_dir", "CONFIG_DIR"]]):
+            d["CONFIG_DIR"] = "%(ROOT_DIR)s/config/"
+
+        # Create ini files
+        ini = configparser.ConfigParser()
+        ini.read_dict(flatten_config({"DEFAULT" : d, **pipeline_config}))
+        with open(os.path.join(config_dir, "pipeline.ini"), "w") as f:
+            ini.write(f)
+
+        ini = configparser.ConfigParser()
+        ini.read_dict(flatten_config(self.params))
+        with open(os.path.join(config_dir, "values.ini"), "w") as f:
+            ini.write(f)
+
+        ini = configparser.ConfigParser()
+        ini.read_dict({})
+        with open(os.path.join(config_dir, "priors.ini"), "w") as f:
+            ini.write(f)
+    
+    def create_base_config(self, *args, **kwargs):
+        raise NotImplementedError("create_base_config should be overwritten "
+                                  "by a subclass.")
+    
+    @property
+    def base_config_data_files(self):
+        raise NotImplementedError("base_config_data_files should be overwritten "
+                                  "by a subclass.")
+        
+    def create_base_params(self, *args, **kwargs):
+        raise NotImplementedError("create_base_params should be overwritten "
+                                  "by a subclass.")
+        
+    def create_base_sampling_config(self,
+                                    modules,
+                                    derived_parameters,
+                                    parameter_file,
+                                    prior_file,
+                                    verbose,
+                                    debug,
+                                    sampler_name,
+                                    run_name,
+                                    max_iterations=10000,
+                                    resume=True,
+                                    live_points=250,
+                                    nested_sampling_tolerance=0.1,
+                                    multinest_efficiency=0.8,
+                                    multinest_const_efficiency=False,
+                                    emcee_walker=80,
+                                    emcee_covariance_file="",
+                                    maxlike_method="Nelder-Mead",
+                                    maxlike_tolerance=1e-3,
+                                    max_posterior=True,
+                                    **extra_sampler_options,
+                             ):
+        config = {      "pipeline" :   {"modules"           : " ".join(modules),
+                                        "values"            : parameter_file,
+                                        "priors"            : prior_file,
+                                        "likelihoods"       : "tsz_like",
+                                        "extra_output"      : " ".join(derived_parameters),
+                                        "quiet"             : "F" if verbose else "T",
+                                        "timing"            : "T",
+                                        "debug"             : "T" if debug else "F"},
+
+                        "runtime"  :   {"sampler"           : sampler_name},
+
+                        "output"   :   {"filename"          : "%(OUTPUT_DIR)s/samples_%(RUN_NAME)s.txt",
+                                        "format"            : "text"},
+
+                        "multinest" :  {"max_iterations"    : max_iterations,
+                                        "multinest_outfile_root" : "%(OUTPUT_DIR)s/multinest/multinest_%(RUN_NAME)s_",
+                                        "update_interval"   : 20,
+                                        "resume"            : "T" if resume else "F",
+                                        "live_points"       : live_points,
+                                        "efficiency"        : multinest_efficiency,
+                                        "tolerance"         : nested_sampling_tolerance,
+                                        "constant_efficiency" : "T" if multinest_const_efficiency else "F"},
+
+                        "emcee"      : {"walkers"           : emcee_walker,
+                                        "samples"           : max_iterations,
+                                        "covmat"            : emcee_covariance_file,
+                                        "nsteps"            : 5},
+
+                        "test" :       {"save_dir"          : "%(OUTPUT_DIR)s/data_block",
+                                        "fatal_errors"      : "T",},
+
+                        "maxlike" :    {"method"          : maxlike_method,
+                                        "tolerance"       : maxlike_tolerance,
+                                        "maxiter"         : max_iterations,
+                                        "max_posterior"   : "T" if max_posterior else "F",
+                                        "output_steps"    : "T",
+                                        "flush_steps"     : 1,},
+                        }
+        return config
+    
+    def derived_params(self):
+        derived_parameters=["cosmological_parameters/S_8",
+                            "cosmological_parameters/sigma_8",
+                            "cosmological_parameters/A_s",
+                            "cosmological_parameters/omega_m",
+                            "cosmological_parameters/omega_nu",
+                            "cosmological_parameters/omega_lambda"]
+        if "correlate_dz" in self.config:
+            derived_parameters += self.config["correlate_dz"]["output_parameters"].split(" ")
+            
+        return derived_parameters
+
 
 class CosmoSISModule:
     module_name = None
