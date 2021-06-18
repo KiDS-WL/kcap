@@ -5,7 +5,7 @@ BOSS DR12 data are presented in Alam et al 2016, 1607.03155
 
 """
 
-from numpy import log, pi, interp, where, loadtxt, dot, append, linalg, concatenate, array
+from numpy import log, pi, interp, where, loadtxt, dot, append, linalg, concatenate, array, atleast_1d
 import os
 from cosmosis.datablock import names as section_names
 from cosmosis.datablock import option_section
@@ -43,6 +43,7 @@ def setup(options):
 
 	redshift_file = options.get_string(section, "redshift_file", default=RED_file)
 	redshift = loadtxt(redshift_file)
+	redshift = atleast_1d(redshift)
 	rs_fiducial = options.get_double(option_section, "rs_fiducial", default_rs_fiducial)
 
 	return (mode,data,cov,redshift,rs_fiducial,feedback)
@@ -109,10 +110,15 @@ def execute(block, config):
 	n_z = len(redshift)
 	if not mode:
 		#reordering the parameters
-		params = concatenate([array([d, h, f]) for d, h in zip(dm_z_rs, h_z_rs)])
+		params = concatenate([array([d, h]) for d, h in zip(dm_z_rs, h_z_rs)])
 	else:
 		#reordering the parameters
 		params = concatenate([array([d, h, f]) for d, h, f in zip(dm_z_rs, h_z_rs, fsig)])
+		block["lss", "z"] = redshift
+		for i, (d, h, f) in enumerate(zip(dm_z_rs, h_z_rs, fsig)):
+			block["lss", f"dm_rs_z{i}"] = d
+			block["lss", f"h_rs_z{i}"] = h
+			block["lss", f"fsigma8_z{i}"] = f
 	
 	#computation of chi square
 	d = params - data
