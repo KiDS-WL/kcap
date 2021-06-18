@@ -421,8 +421,13 @@ def execute(block, config):
         block[names.cosmological_parameters, "S_8"] = sigma_8[0]*np.sqrt(p.omegam/0.3)
         
     if p.WantCls:
+        # The Cls should be scaled by the fixed, FIRAS CMB temperature
+        # See discussion in 2005.10656
+        T_FIRAS = camb.constants.COBE_CMBTemp
+        CMB_unit_muK = (T_FIRAS*1e6)
         # Get total (scalar + tensor) lensed CMB Cls (is that what we want?)
-        cl = r.get_total_cls(raw_cl=False, CMB_unit="muK")
+        cl = r.get_total_cls(raw_cl=False, CMB_unit=None)
+        cl = cl * CMB_unit_muK**2
         ell = np.arange(2,cl.shape[0])
         block[names.cmb_cl, "ell"] = ell
         block[names.cmb_cl, "TT"] = cl[2:,0]
@@ -435,7 +440,8 @@ def execute(block, config):
             # The cosmosis-standard-library clik interface expects ell(ell+1)/2 pi Cl
             # for all angular power spectra, including the lensing potential.
             # For compatability reasons, we provide that scaling here as well.
-            cl = r.get_lens_potential_cls(lmax=ell[-1], raw_cl=True, CMB_unit="muK")
+            cl = r.get_lens_potential_cls(lmax=ell[-1], raw_cl=True, CMB_unit=None)
+            cl = cl * CMB_unit_muK
             block[names.cmb_cl, "PP"] = cl[2:,0]*(ell*(ell+1))/(2*np.pi)
             block[names.cmb_cl, "PT"] = cl[2:,1]*(ell*(ell+1))/(2*np.pi)
             block[names.cmb_cl, "PE"] = cl[2:,2]*(ell*(ell+1))/(2*np.pi)
