@@ -14,6 +14,8 @@ __pycache__
 cosebis/WnLog
 
 examples/output*
+examples/
+
 runs/output*
 
 runs/*

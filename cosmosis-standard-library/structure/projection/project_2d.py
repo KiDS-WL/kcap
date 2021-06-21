@@ -3,7 +3,7 @@ import os
 import ctypes as ct
 import numpy as np
 import limber
-from gsl_wrappers import GSLSpline, NullSplineError, GSLSpline2d, BICUBIC
+from gsl_wrappers import GSLSpline, NullSplineError, GSLSpline2d, BICUBIC, LINEAR
 from cosmosis.datablock import names, option_section, BlockError
 from enum34 import Enum
 import re
@@ -71,6 +71,10 @@ class MatterMatterPower3D(Power3D):
 class PressurePressurePower3D(Power3D):
     section = "pressure_pressure_power_spectrum"
     source_specific = False
+
+class PressureIntrinsicPower3D(Power3D):
+    section = "pressure_intrinsic_power_spectrum"
+    source_specific = True
 
 def lensing_prefactor(block):
     c_kms = 299792.4580
@@ -349,10 +353,21 @@ class SpectrumType(Enum):
         autocorrelation = True
         name = "y_y_cl"
         prefactor_power = 0
+
+    class IntrinsicY(Spectrum):
+        power_3d_type = PressureIntrinsicPower3D
+        kernels = "N y"
+        autocorrelation = False
+        name = "intrinsic_y_cl"
+        prefactor_power = 0
         
 def get_tSZ_kernel(chi_max, a_of_chi, h):
     n = 500
-    chi = np.linspace(0, chi_max, n, endpoint=True)
+    # The limber integrator assumes W(chi) = 0 for chi = 0. That is not the
+    # case for tSZ. To get around this, add point to the kernel really close to
+    # chi = 0. 
+    chi = np.concatenate((np.linspace(0.0, 10.0, 10, endpoint=False), 
+                          np.linspace(10.0, chi_max, n, endpoint=True)))
     a = a_of_chi(chi)
     y_fac = 8.125561e-16 # sigma_T/m_e*c^2 in SI
     mpc = 3.086e22 # m/Mpc
