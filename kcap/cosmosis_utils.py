@@ -158,7 +158,7 @@ class CosmoSISPipelineFactory:
         return block
 
     
-    def add_sampling_config(self, sampling_options):
+    def add_sampling_config(self, likelihood_name, sampling_options):
         modules = sampling_options.pop("modules",
                                        self.config.keys())
         derived_parameters = sampling_options.pop("derived_parameters", 
@@ -173,6 +173,7 @@ class CosmoSISPipelineFactory:
                                         derived_parameters=derived_parameters,
                                         parameter_file=parameter_file,
                                         prior_file=prior_file,
+                                        likelihood_name=likelihood_name,
                                         **sampling_options)
         
         self.config = {**self.sampling_config, **self.config}
@@ -260,6 +261,7 @@ class CosmoSISPipelineFactory:
                                     derived_parameters,
                                     parameter_file,
                                     prior_file,
+                                    likelihood_name,
                                     verbose,
                                     debug,
                                     sampler_name,
@@ -280,7 +282,7 @@ class CosmoSISPipelineFactory:
         config = {      "pipeline" :   {"modules"           : " ".join(modules),
                                         "values"            : parameter_file,
                                         "priors"            : prior_file,
-                                        "likelihoods"       : "tsz_like",
+                                        "likelihoods"       : likelihood_name,
                                         "extra_output"      : " ".join(derived_parameters),
                                         "quiet"             : "F" if verbose else "T",
                                         "timing"            : "T",

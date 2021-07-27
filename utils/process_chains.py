@@ -2,6 +2,7 @@ import re
 import warnings
 import os
 import configparser
+import glob
 
 import numpy as np
 import scipy.optimize
@@ -513,6 +514,15 @@ parameter_dictionary = {
         "fsigma_8(z1)" :             {"cosmosis" :    "lss--fsigma8_z0",
                                       "cosmomc" :     "fsigma8z1",
                                       "latex" :       "f\\sigma_8(z_1)"},
+        "D_M(z2)" :                  {"cosmosis" :    "lss--dm_rs_z1",
+                                      "cosmomc" :     "rsDMz2",
+                                      "latex" :       "D_M(z_2)\\frac{r_s}{r_s^{\\rm fid}}"},
+        "H(z2)" :                    {"cosmosis" :    "lss--h_rs_z1",
+                                      "cosmomc" :     "rsHz2",
+                                      "latex" :       "H(z_2)\\frac{r_s}{r_s^{\\rm fid}}"},
+        "fsigma_8(z2)" :             {"cosmosis" :    "lss--fsigma8_z1",
+                                      "cosmomc" :     "fsigma8z2",
+                                      "latex" :       "f\\sigma_8(z_2)"},
         "lnlike" :                   {"cosmosis" :    "like",
                                       "montepython" : "mloglkl",
                                       "cosmomc" :     "loglike",
@@ -617,6 +627,48 @@ def cosmosis_to_cosmomc_param_names(param_names):
             cosmomc_params.append("--".join(param).lower())
         
     return cosmomc_params
+
+
+def load_equal_weight_chain(chain):
+    chain_file = (glob.glob(os.path.join(chain.chain_def["root_dir"], "chain/samples_*.txt"))
+                  + glob.glob(os.path.join(chain.chain_def["root_dir"], "output/samples_*.txt")))[0]
+    equal_weight_chain_file = (glob.glob(os.path.join(chain.chain_def["root_dir"], "chain/multinest/*_post_equal_weights.dat"))
+                               + glob.glob(os.path.join(chain.chain_def["root_dir"], "output/multinest/*_post_equal_weights.dat")))[0]
+    
+    with open(chain_file, "r") as f:
+        header = f.readlines()[:3]
+        
+    parameter_names = []
+    chain_format = "cosmosis"
+    parameter_map = "cosmomc"
+    chain_params = [s.strip().lower() for s in header[0][1:].split("\t")]
+    for p in chain_params:
+        for mapping in parameter_dictionary.values():
+            if chain_format in mapping and mapping[chain_format] == p:
+                parameter_names.append(mapping[parameter_map])
+                break
+        else:
+            raise ValueError(f"Parameter {p} in chain does not have mapping to {parameter_map} format.")
+            
+    for p in ["loglike", "weight"]:
+        if p in parameter_names:
+            parameter_names.pop(parameter_names.index(p))
+    
+    #print(len(parameter_names))
+    #print(parameter_names)
+    
+    equal_weight_chain = np.loadtxt(equal_weight_chain_file)
+    
+    samples = getdist.MCSamples(name_tag=chain.name_tag,
+                                samples=equal_weight_chain[:,:-1],
+                                loglikes=equal_weight_chain[:,-1],
+                                names=parameter_names,
+                                sampler="nested",
+                                ranges=chain.ranges)
+
+    
+    return samples
+
 
 def load_chain(chain_file, parameters=None, run_name=None, 
                chain_format="cosmosis", parameter_map="cosmomc", strict_mapping=False, 
