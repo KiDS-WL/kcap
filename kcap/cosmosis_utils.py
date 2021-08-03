@@ -102,8 +102,10 @@ class CosmoSISPipelineFactory:
         
         self.base_config = self.create_base_config(**options)
         self.base_params = self.create_base_params()
+        self.base_priors= self.create_base_priors()
         self.reset_config()
         self.reset_params()
+        self.reset_priors()
         
         self.file_options_registry = self.base_config_data_files
             
@@ -112,6 +114,9 @@ class CosmoSISPipelineFactory:
         
     def reset_params(self):
         self.params = copy.deepcopy(self.base_params)
+    
+    def reset_priors(self):
+        self.priors = copy.deepcopy(self.base_priors)
         
     def update_config(self, config_update):
         for sec, sec_update in config_update.items():
@@ -239,7 +244,7 @@ class CosmoSISPipelineFactory:
             ini.write(f)
 
         ini = configparser.ConfigParser()
-        ini.read_dict({})
+        ini.read_dict(flatten_config(self.priors))
         with open(os.path.join(config_dir, "priors.ini"), "w") as f:
             ini.write(f)
     
@@ -255,6 +260,9 @@ class CosmoSISPipelineFactory:
     def create_base_params(self, *args, **kwargs):
         raise NotImplementedError("create_base_params should be overwritten "
                                   "by a subclass.")
+
+    def create_base_priors(self, *args, **kwargs):
+        return {}
         
     def create_base_sampling_config(self,
                                     modules,
