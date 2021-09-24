@@ -126,7 +126,7 @@ def execute(block, config):
                 L_2prime[i,j] = (delta_prime[i] @ inv_cov @ delta_prime[j]) + (delta_prime[j] @ inv_cov @ delta_prime[i]) + (delta_2prime[i,j] @ inv_cov @ r) + (r @ inv_cov @ delta_2prime[i,j])
 
         l,d,p = linalg.ldl(L_2prime, lower=True)
-        l2,d2,p2 = linalg.ldl(L_2prime + 1/2 * np.matmul(L_2prime, np.matmul(covariance,L_2prime)), lower=True)
+        l2,d2,p2 = linalg.ldl(L_2prime + 1/2 * np.matmul(L_2prime, np.matmul(covariance, L_2prime)), lower=True)
         y = linalg.solve(l, L_prime, lower=True)
         y2 = linalg.solve(l2, L_prime, lower=True)
         chi2_marg1 = -(np.dot(y, np.dot(np.linalg.inv(d),y)) - np.dot(y2, np.dot(np.linalg.inv(d2),y2)))/2
