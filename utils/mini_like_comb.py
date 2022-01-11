@@ -26,8 +26,10 @@ def execute(block, config):
     d = block[input_section_name, "data"]
     # Theory vector for all combinations of comb components
     mu_combonents = block[input_section_name, "theory"]
+    block[input_section_name, "theory_combonents"] = mu_combonents
     # Set up empty theory vector for correlations between tomographic bins
     mu = np.zeros(d.shape)
+    mu_ind = np.zeros((*d.shape, 3))
     # Read comb amplitudes and determine the number of comb components
     amplitudes = np.exp(block["amplitudes", "amp"])
     n_tomo = amplitudes.shape[0]
@@ -39,17 +41,34 @@ def execute(block, config):
     # Determine number of data points (should be equal to len(mu_combonents[0]) !)
     n_data = int(mu.shape[0]/((n_tomo**2+n_tomo)/2))
     # Fill the theory vector of tomographic bins. Nested loops here; there's probably a smarter method!
+#   A_a, A_b, c_ij = [], [], []
     for bin1 in range(n_tomo):
         for bin2 in range(bin1, n_tomo):
             index = one_dim_index(bin1, bin2, n_tomo)
+            mu_ind[index*n_data:(index+1)*n_data] = np.column_stack(([bin1]*n_data, [bin2]*n_data, range(n_data)))
             # Both sums sum over all gaussians!
             for comp1 in range(n_comp):
                 for comp2 in range(n_comp):
                     index_comp = one_dim_index(comp1, comp2, n_comp)
                     mu[index*n_data:(index+1)*n_data] += amplitudes[bin1, comp1] * amplitudes[bin2, comp2] * mu_combonents[index_comp]
+#                    if bin1==0 and bin2==1:
+#                        A_a.append(amplitudes[bin1, comp1])
+#                        A_b.append(amplitudes[bin2, comp2])
+#                        c_ij.append(mu_combonents[index_comp])
+#    import h5py
+#    A_a, A_b, c_ij = (np.array(x).squeeze() for x in (A_a, A_b, c_ij))
+#    with h5py.File('bs_ch_test.h5', 'w') as file:
+#        file.create_dataset('A_a', data=A_a)
+#        file.create_dataset('A_b', data=A_b)
+#        file.create_dataset('c_ij', data=c_ij)
     # Compute fiducial chi-square
     inv_cov = block[input_section_name, "inv_covariance"]
     cov = block[input_section_name, "covariance"]
+    bin2, bin1, ang = mu_ind.T + 1
+    sorter = np.lexsort((ang, bin2, bin1))
+    _mu = mu.copy()
+    mu = mu[sorter]
+    block[input_section_name, "theory"] = mu
     r = d - mu
     chi2_fid = float(r @ inv_cov @ r)
     if analytic_marginalisation:
@@ -144,6 +163,18 @@ def execute(block, config):
             chi2 = 2e12
         ln_like = -0.5*chi2
         block[names.data_vector, like_name+"_CHI2"] = chi2
+        block['comb', 'reconstructed_theory_vector'] =  _mu[sorter]
+        block['comb', 'bin1'] =   np.array(bin1, dtype=int)[sorter]
+        block['comb', 'bin2'] =   np.array(bin2, dtype=int)[sorter]
+        block['comb', 'angbin'] =  np.array(ang, dtype=int)[sorter]
+        import os
+        import h5py
+        out = 'datablock_BS_comb_handle_pp_shear_CCLv2/comb'
+        os.makedirs(out, exist_ok=True)
+        with h5py.File(os.path.join(out, 'delta_primes.h5'), 'w') as fil:
+            fil.create_dataset('delta_prime', data=delta_prime[:, sorter])
+            fil.create_dataset('delta_2prime', data=delta_2prime[:, :, sorter])
+            fil.close()
     else:
         ln_like = -0.5*chi2_fid
         block[names.data_vector, like_name+"_CHI2"] = chi2_fid

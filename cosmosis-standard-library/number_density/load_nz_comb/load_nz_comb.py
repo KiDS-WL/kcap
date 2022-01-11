@@ -66,6 +66,8 @@ def execute(block, config):
 		block[name, "z"] = z
 		for i, n in enumerate(nz):
 			block[name, "bin_{0}".format(i + 1)] = n
+	block["amplitudes", "n_tomo"] = n_tomo
+	block["amplitudes", "n_comp"] = n_comp
 	block["amplitudes", "amp"] = amplitudes
 	block["amplitudes", "cov"] = covariance
 	block["comb", "means"] = means

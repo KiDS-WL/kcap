@@ -23,7 +23,7 @@ def execute(block, config):
 
 	p = []
 	for name in names:
-		p.append(block[section, name])
+		p.append(block[section, 'uncorr_'+name])
 	p = L @ np.array(p)
 	p[p < 0.] = 0.
 	p[p > 1.] = 1.
