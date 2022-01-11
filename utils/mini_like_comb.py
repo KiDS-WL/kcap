@@ -89,13 +89,13 @@ def execute(block, config):
                         index_zbins = one_dim_index(alpha, beta, n_tomo)
                         x = np.zeros(n_data, 'float64')
                         for i in range(n_comp):
+                            sum_index = one_dim_index(i, m, n_comp)
                             factor = 0.
                             # Delta functions (eq. A.2)
                             if alpha == mu:
                                 factor += amplitudes[beta,i]
                             if beta == mu:
                                 factor += amplitudes[alpha,i]
-                            sum_index = one_dim_index(i, m, n_comp)
                             x += mu_combonents[sum_index]*factor
                         # Put everything together
                         delta_prime[index,index_zbins*n_data:(index_zbins+1)*n_data] = (-amplitudes[mu,m]*x)
@@ -108,6 +108,7 @@ def execute(block, config):
                         # Determine the vector index for a given z-bin and comb-component
                         index1 = one_dim_index_L_vector(mu, m, n_comp)
                         index2 = one_dim_index_L_vector(nu, n, n_comp)
+                        index_components = one_dim_index(m, n, n_comp)
                         # Loop through redshift bin combinations
                         for alpha in range(n_tomo):
                             for beta in range(alpha, n_tomo):
@@ -120,19 +121,18 @@ def execute(block, config):
                                 if ((beta == mu) and (alpha == nu)):
                                     factor +=1
                                 if factor > 0:
-                                    index_components = one_dim_index(m, n, n_comp)
                                     temp -= (amplitudes[mu,m] * amplitudes[nu,n] * mu_combonents[index_components] * factor)
                                 if ((m==n) and (mu==nu)):
                                     s = np.zeros(n_data, 'float64')
                                     for i in range(n_comp):
+                                        sum_index = one_dim_index(i, m, n_comp)
                                         factor2 = 0
                                         if alpha == mu:
                                             factor2 += (amplitudes[beta,i])
                                         if beta == mu:
                                             factor2 += (amplitudes[alpha,i])
                                         if factor2 > 0:
-                                            sum_index = one_dim_index(i, m, n_comp)
-                                            s += mu_combonents[index_components] * factor2
+                                            s += mu_combonents[sum_index] * factor2
                                     temp -= (amplitudes[mu,m] * s)
                                 # Put everything together
                                 delta_2prime[index1,index2,index_zbins*n_data:(index_zbins+1)*n_data] = temp
