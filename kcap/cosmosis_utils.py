@@ -119,6 +119,7 @@ class CosmoSISPipelineFactory:
         self.priors = copy.deepcopy(self.base_priors)
         
     def update_config(self, config_update):
+        config_update = copy.deepcopy(config_update)
         for sec, sec_update in config_update.items():
             # Delete section if section update value is Nine
             if sec_update is None:
@@ -203,7 +204,11 @@ class CosmoSISPipelineFactory:
             os.makedirs(data_dir, exist_ok=True)
             
             for sec, name in self.file_options_registry:
-                filepaths = self.config[sec][name]
+                try:
+                    filepaths = self.config[sec][name]
+                except KeyError:
+                    print(f"Cannot stage {(sec, name)}.")
+                    continue
                 # Resolve %()s in the paths
                 filepaths = emulate_configparser_interpolation(filepaths, {**defaults, **data_file_dirs})
                 # Allow for case of multiple files per option. E.g. n(z) files

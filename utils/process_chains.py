@@ -419,7 +419,7 @@ parameter_dictionary = {
                                       "latex" :       "\\log_{10} \\left(T_{\\rm AGN}/{\\rm K}\\right)"},
         "log T_Heat" :               {"cosmosis" :    "halo_model_parameters--log10_theat",
                                       "cosmomc" :     "logt_heat",
-                                      "latex" :       "\\log_{10} \\left(T_{\\rm Heat}/{\\rm K}\\right)"},
+                                      "latex" :       "\\log_{10} \\left(T_{\\rm AGN}/{\\rm K}\\right)"},
         "delta_c" :                  {"cosmosis" :    "shear_c_bias--delta_c",
                                       "montepython" : "dc",
                                       "cosmomc" :     "delta_c",
@@ -673,7 +673,7 @@ def load_equal_weight_chain(chain):
 def load_chain(chain_file, parameters=None, run_name=None, 
                chain_format="cosmosis", parameter_map="cosmomc", strict_mapping=False, 
                values=None, burn_in=0.3, keep_raw_samples=False, ignore_inf=False,
-               extra_ranges=None,
+               extra_ranges=None, n_walker=None, thin=1,
                verbose=False):
     with open(chain_file, "r") as f:
         params = f.readline()[1:]
@@ -727,12 +727,19 @@ def load_chain(chain_file, parameters=None, run_name=None,
     except:
         chain = np.atleast_2d(np.loadtxt(chain_file))
         n_sample = chain.shape[0]
+        if n_walker is not None:
+            n_sample_per_walker = n_sample//n_walker
+        chain = chain.reshape(n_sample_per_walker, n_walker, -1)
+        
         if isinstance(burn_in, float) and burn_in > 0.0 and burn_in < 1.0:
-            chain = chain[int(n_sample*burn_in):]
+            chain = chain[int(chain.shape[0]*burn_in):]
         elif isinstance(burn_in, int):
             chain = chain[burn_in:]
         else:
             raise ValueError(f"Invalid burn_in value: {burn_in}")
+        if thin > 1:
+            chain = chain[::thin]
+        chain = chain.reshape(-1, chain.shape[-1])
         if verbose: print(f"Using {chain.shape[0]} samples out of {n_sample} in the chain.")
         nested_sampling = False
         
