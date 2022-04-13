@@ -22,6 +22,8 @@ def execute(block, config):
     ln_like = -0.5*chi2
 
     block[names.data_vector, like_name+"_CHI2"] = chi2
+    block[names.data_vector, like_name+"_THEORY"] = mu
+    block[names.data_vector, like_name+"_INVERSE_COVARIANCE"] = inv_cov
     block[names.likelihoods, like_name+"_LIKE"] = ln_like
 
     return 0

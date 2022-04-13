@@ -163,6 +163,7 @@ def execute(block, config):
             chi2 = 2e12
         ln_like = -0.5*chi2
         block[names.data_vector, like_name+"_CHI2"] = chi2
+        block[names.data_vector, like_name+"_CHI2_FIDUCIAL"] = chi2_fid
         block['comb', 'reconstructed_theory_vector'] =  _mu[sorter]
         block['comb', 'bin1'] =   np.array(bin1, dtype=int)[sorter]
         block['comb', 'bin2'] =   np.array(bin2, dtype=int)[sorter]
@@ -174,11 +175,16 @@ def execute(block, config):
         with h5py.File(os.path.join(out, 'delta_primes.h5'), 'w') as fil:
             fil.create_dataset('delta_prime', data=delta_prime[:, sorter])
             fil.create_dataset('delta_2prime', data=delta_2prime[:, :, sorter])
+            fil.create_dataset('L_prime', data=L_prime)
+            fil.create_dataset('L_2prime', data=L_2prime)
+            fil.create_dataset('inv_cov', data=inv_cov)
+            fil.create_dataset('r', data=r)
             fil.close()
     else:
         ln_like = -0.5*chi2_fid
         block[names.data_vector, like_name+"_CHI2"] = chi2_fid
     block[names.likelihoods, like_name+"_LIKE"] = ln_like
+    block[names.likelihoods, like_name+"_LIKE_FIDUCIAL"] = -0.5*chi2_fid
 
     return 0
 
