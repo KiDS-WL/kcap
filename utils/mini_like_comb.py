@@ -18,11 +18,12 @@ def setup(options):
     like_name = options.get_string(option_section, "like_name")
     input_section_name = options.get_string(option_section, "input_section_name", default="likelihood")
     analytic_marginalisation = options.get_bool(option_section, "analytic_marginalisation")
+    save_path = options.get_string(option_section, "save_path", None)
 
-    return like_name, input_section_name, analytic_marginalisation
+    return like_name, input_section_name, analytic_marginalisation, save_path
 
 def execute(block, config):
-    like_name, input_section_name, analytic_marginalisation = config
+    like_name, input_section_name, analytic_marginalisation, save_path = config
     d = block[input_section_name, "data"]
     # Theory vector for all combinations of comb components
     mu_combonents = block[input_section_name, "theory"]
@@ -157,6 +158,7 @@ def execute(block, config):
         # sign, chi2_full_marg2 = np.linalg.slogdet(np.identity(self.nfitparameters) + np.matmul(self.calibration_matrix, self.L_2prime) / 2.)
         # Use SVD to calculate ln(det) because of numerical stability
         chi2_marg2 = np.sum(np.log(np.linalg.svd(np.identity(n_tomo*n_comp) + np.matmul(covariance, L_2prime)/2, compute_uv=False)))
+        print(f'chi2 fid:{chi2_fid:.5f}, marg1:{chi2_marg1:.5f}, marg2:{chi2_marg2:.5f}')
         chi2 = chi2_fid + chi2_marg1 + chi2_marg2
         if chi2<0:
             print('chi2 < 0 !')
@@ -170,16 +172,17 @@ def execute(block, config):
         block['comb', 'angbin'] =  np.array(ang, dtype=int)[sorter]
         import os
         import h5py
-        out = 'datablock_BS_comb_handle_pp_shear_CCLv2/comb'
-        os.makedirs(out, exist_ok=True)
-        with h5py.File(os.path.join(out, 'delta_primes.h5'), 'w') as fil:
-            fil.create_dataset('delta_prime', data=delta_prime[:, sorter])
-            fil.create_dataset('delta_2prime', data=delta_2prime[:, :, sorter])
-            fil.create_dataset('L_prime', data=L_prime)
-            fil.create_dataset('L_2prime', data=L_2prime)
-            fil.create_dataset('inv_cov', data=inv_cov)
-            fil.create_dataset('r', data=r)
-            fil.close()
+        if save_path:
+            out = os.path.join(save_path, 'comb')
+            os.makedirs(out, exist_ok=True)
+            with h5py.File(os.path.join(out, 'delta_primes.h5'), 'w') as fil:
+                fil.create_dataset('delta_prime', data=delta_prime[:, sorter])
+                fil.create_dataset('delta_2prime', data=delta_2prime[:, :, sorter])
+                fil.create_dataset('L_prime', data=L_prime)
+                fil.create_dataset('L_2prime', data=L_2prime)
+                fil.create_dataset('inv_cov', data=inv_cov)
+                fil.create_dataset('r', data=r)
+                fil.close()
     else:
         ln_like = -0.5*chi2_fid
         block[names.data_vector, like_name+"_CHI2"] = chi2_fid

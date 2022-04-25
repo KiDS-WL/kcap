@@ -1,7 +1,7 @@
 from __future__ import print_function
 from cosmosis.datablock import names, option_section
 import numpy as np
-from scipy import special
+from scipy import special, integrate
 import scipy
 
 def combonent(z, amp, z_mean, sigma):
@@ -25,7 +25,10 @@ def integrate_combonents(n_comp, z_bins_mid, means, sigma):
 	return n_combonents
 # This function sums up combonents for a given set of amplitudes and return the n(z) histogram
 def combmodel(z, n_tomo, n_combonents, *ln_amps):
-	amps = np.exp(np.split(np.array(ln_amps),n_tomo))
+	ln_amps = np.array(ln_amps)
+	if ln_amps.shape[0] != n_tomo:
+		ln_amps = np.array(np.split(ln_amps, n_tomo))
+	amps = np.exp(ln_amps)
 	n_z = np.concatenate([np.sum(n_combonents*amps[i][:,None], axis=0) for i in range(n_tomo)])
 	return n_z
 
@@ -68,16 +71,12 @@ def execute(block, config):
 	data = {}
 	if sum_amplitudes:
 		print("Sum amplitudes to generate redshift distributions of {0} tomographic bins.".format(n_tomo))
-		#nz = np.zeros((n_tomo, len(z)))
-		#for i in range(n_tomo):
-		#	nz[i,:] = comb_nz(z, amplitudes[i], means, sigma)
 		nz = combmodel(z, n_tomo, _n_combonents, *amplitudes)
 		nz = nz.reshape(n_tomo, len(z))
 	else:
 		print("Generate redshift distributions of {0} comb components.".format(n_comp))
 		nz = np.zeros((n_comp, len(z)))
 		for i in range(n_comp):
-			#nz[i,:] = combonent(z, 0, means[i], sigma)
 			nz[i,:] = combonent1(z, means[i], sigma)
 	data[section] = (z, nz)
 
