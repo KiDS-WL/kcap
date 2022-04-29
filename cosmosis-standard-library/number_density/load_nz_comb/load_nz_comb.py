@@ -1,5 +1,6 @@
 from __future__ import print_function
 from cosmosis.datablock import names, option_section
+from cosmosis.datablock.cosmosis_py.errors import BlockNameNotFound
 import numpy as np
 from scipy import special, integrate
 import scipy
@@ -62,7 +63,10 @@ def execute(block, config):
 	amplitudes = np.zeros((n_tomo, n_comp))
 	for nt in range(n_tomo):
 		for nc in range(n_comp):
-			amplitudes[nt, nc] = block["amplitudes", "a_{0}_{1}".format(str(nt+1).zfill(2), str(nc+1).zfill(2))]
+			try:
+				amplitudes[nt, nc] = block["amplitudes", "a_{0}_{1}".format(str(nt+1).zfill(2), str(nc+1).zfill(2))]
+			except BlockNameNotFound:
+				amplitudes[nt, nc] = np.exp(block["amplitudes", "ln_a_{0}_{1}".format(str(nt+1).zfill(2), str(nc+1).zfill(2))])
 		# per bin amplitudes must sum to unity
 		amplitudes[nt] /= amplitudes[nt].sum()
 	# take natural log for computations
