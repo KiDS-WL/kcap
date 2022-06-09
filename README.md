@@ -88,7 +88,7 @@ mpirun -n 4 cosmosis --mpi runs/config/KV450_no_sys.ini
 ## Repository structure
 
 - `cosebis`, `cosmosis-standard-library`: git subtrees that mirror the `kcap` branches of https://bitbucket.org/marika_a/cosebis_cosmosis and https://bitbucket.org/tilmantroester/cosmosis-standard-library, respectively.
-- `data`: collection of data files. Does not include the KiDS-1000 data. KiDS-1000 data can be found [here](https://github.com/KiDS-WL/Cat_to_Obs_K1000_P1).
+- `data`: collection of data files. Does not include the KiDS-1000 data. KiDS-1000 data can be found [here](https://github.com/KiDS-WL/Cat_to_Obs_K1000_P1) or a select subset in the `runs` directory.
 - `kcap`: Python package for the pipeline. Deprecated.
 - `modules`: non-trivial CosmoSIS modules used in kcap.
 - `montepython`: old MontePython likelihood files. Deprecated in favour of https://github.com/BStoelzner/KiDS-1000_MontePython_likelihood.

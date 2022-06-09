@@ -1,0 +1,1 @@
+If you are looking for an example setup of the KiDS-1000 cosmology results (the KiDS-1000 3x2pt+Planck run), see [here](https://github.com/KiDS-WL/kcap/tree/master/runs/3x2pt/data/cosmology/multinest_blindA_EE_nE_w_Planck).
