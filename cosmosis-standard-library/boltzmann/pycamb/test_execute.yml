@@ -1,5 +1,0 @@
-cosmological_parameters: {a_s: 2.1e-09, baryon_fraction: 0.1273479783508437, h0: 0.6726,
-  hubble: 67.25999999999999, k: -0.0, k_s: 0.05, n_run: 0.0, n_s: 0.96, ombh2: 0.0180956304,
-  omch2: 0.12400030731599998, omega_b: 0.04, omega_c: 0.2741, omega_k: 0.0, omega_lambda: 0.6859,
-  omega_m: 0.3141, omega_nu: 0.0, ommh2: 0.142095937716, omnuh2: 0.0, tau: 0.08, w: -1.0,
-  wa: 0.0, yhe: 0.245341}
