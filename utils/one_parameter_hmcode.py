@@ -12,7 +12,7 @@ def execute(block, config):
     a_0, a_1 = config
     A = block[names.halo_model_parameters, "A"]
     eta = a_0 + a_1*A
-    block[names.halo_model_parameters, "eta0"] = eta
+    block[names.halo_model_parameters, "eta"] = eta
     return 0
 
 def cleanup(config):
