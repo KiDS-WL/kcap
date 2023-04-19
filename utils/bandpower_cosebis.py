@@ -122,16 +122,27 @@ def create_cosebis_window_function(n_mode=5,
 
 def setup(options):
     extra_info = {}
-    extra_info["ell_min_extrapolate"] = options.get_double(
-                                            option_section,
-                                            "ell_min_extrapolate", -1.0)
-    if extra_info["ell_min_extrapolate"] < 0:
-        extra_info["ell_min_extrapolate"] = None
-    extra_info["ell_max_extrapolate"] = options.get_double(
-                                            option_section,
-                                            "ell_max_extrapolate", -1.0)
-    if extra_info["ell_max_extrapolate"] < 0:
-        extra_info["ell_max_extrapolate"] = None
+
+    do_extrapolate_low = options.get_bool(
+        option_section, "do_extrapolate_low", True)
+    do_extrapolate_high = options.get_bool(
+        option_section, "do_extrapolate_high", True)
+
+    extra_info["do_extrapolate_low"] = do_extrapolate_low
+    if do_extrapolate_low:
+        extra_info["ell_min_extrapolate"] = options.get_double(
+                                                option_section,
+                                                "ell_min_extrapolate", -1.0)
+        if extra_info["ell_min_extrapolate"] < 0:
+            extra_info["ell_min_extrapolate"] = None
+
+    extra_info["do_extrapolate_high"] = do_extrapolate_high
+    if do_extrapolate_high:
+        extra_info["ell_max_extrapolate"] = options.get_double(
+                                                option_section,
+                                                "ell_max_extrapolate", -1.0)
+        if extra_info["ell_max_extrapolate"] < 0:
+            extra_info["ell_max_extrapolate"] = None
 
     extra_info["integration_mode"] = options.get_string(option_section,
                                                         "integration_mode",
@@ -174,6 +185,8 @@ def setup(options):
             np.savez(window_function_file, ell=ell, EE=window_function,
                      modes=cosebis_modes, statistic="cosebis")
 
+    print(f"Window function for {stat_name}: "
+          f"ell_min={ell[0]}, ell_max={ell[-1]}, n_ell={len(ell)}")
     if stat_name == "bandpower":
         extra_info["l_min_vec"] = ell_bin_edges[:-1]
         extra_info["l_max_vec"] = ell_bin_edges[1:]
@@ -207,12 +220,14 @@ def execute(block, config):
                    for j in range(i+1)]
 
     m = np.ones(ell.size, dtype=bool)
-    if extra_info["ell_min_extrapolate"] is not None:
-        m &= (ell >= extra_info["ell_min_extrapolate"])
+    if extra_info["do_extrapolate_low"]:
+        if extra_info["ell_min_extrapolate"] is not None:
+            m &= (ell >= extra_info["ell_min_extrapolate"])
     else:
         m &= (ell >= ell_data_block.min())
-    if extra_info["ell_max_extrapolate"] is not None:
-        m &= (ell <= extra_info["ell_max_extrapolate"])
+    if extra_info["do_extrapolate_high"]:
+        if extra_info["ell_max_extrapolate"] is not None:
+            m &= (ell <= extra_info["ell_max_extrapolate"])
     else:
         m &= (ell <= ell_data_block.max())
 
