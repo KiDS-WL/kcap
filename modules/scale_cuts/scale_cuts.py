@@ -3,7 +3,7 @@ from cosmosis.datablock import option_section
 from cosmosis.datablock.cosmosis_py import errors
 import configparser as cfp
 import numpy as np
-import twopoint
+#import twopoint
 import wrapper_twopoint as wtp
 
 
@@ -18,28 +18,18 @@ def setup(options):
         raise NameError('data_and_covariance_fits_filename cannot be empty')
     
     ## Read extension names for data outputs
-    config['wt_plus_extension_name']                  = options.get_string(option_section, 'wt_plus_extension_name', default='wTh')
-    config['gt_plus_extension_name']                  = options.get_string(option_section, 'gt_plus_extension_name', default='gT')
     config['xi_plus_extension_name']                  = options.get_string(option_section, 'xi_plus_extension_name', default='xiP')
     config['xi_minus_extension_name']                 = options.get_string(option_section, 'xi_minus_extension_name', default='xiM')
-    config['bandpower_clustering_extension_name']     = options.get_string(option_section, 'bandpower_clustering_extension_name', default='Pnn')
     config['bandpower_ggl_extension_name']            = options.get_string(option_section, 'bandpower_ggl_extension_name', default='PneE')
     config['bandpower_e_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_extension_name', default='PeeE')
-    config['bandpower_b_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_extension_name', default='PeeB')
     config['cosebis_extension_name']                  = options.get_string(option_section, 'cosebis_extension_name', default='En')
-    config['onepoint_extension_name']                 = options.get_string(option_section, 'onepoint_extension_name', default='1pt')
     
     ## Read section names for theory outputs
-    config['wt_plus_section_name']                  = options.get_string(option_section, 'wt_plus_section_name', default='galaxy_xi')
-    config['gt_plus_section_name']                  = options.get_string(option_section, 'gt_plus_section_name', default='galaxy_shear_xi')
     config['xi_plus_section_name']                  = options.get_string(option_section, 'xi_plus_section_name', default='shear_xi_plus')
     config['xi_minus_section_name']                 = options.get_string(option_section, 'xi_minus_section_name', default='shear_xi_minus')
-    config['bandpower_clustering_section_name']     = options.get_string(option_section, 'bandpower_clustering_section_name', default='bandpower_clustering')
     config['bandpower_ggl_section_name']            = options.get_string(option_section, 'bandpower_ggl_section_name', default='bandpower_ggl')
     config['bandpower_e_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_section_name', default='bandpower_e_cosmic_shear')
-    config['bandpower_b_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_section_name', default='bandpower_b_cosmic_shear')
     config['cosebis_section_name']                  = options.get_string(option_section, 'cosebis_section_name', default='cosebis')
-    config['onepoint_section_name']                 = options.get_string(option_section, 'onepoint_section_name', default='observable_function')
     
     ## Read scale cuts
     try:
@@ -70,15 +60,11 @@ def setup(options):
     except:
         raise OSError('\"%s\" not found' % config['data_and_covariance_fits_filename'])
     
-    labConv = wtp.LabelConvention(w=config['wt_plus_extension_name'],
-                                  gamma_t=config['gt_plus_extension_name'],
-                                  xi_p=config['xi_plus_extension_name'],
+    labConv = wtp.LabelConvention(xi_p=config['xi_plus_extension_name'],
                                   xi_m=config['xi_minus_extension_name'],
-                                  P_nn=config['bandpower_clustering_extension_name'],
                                   P_ne_E=config['bandpower_ggl_extension_name'],
                                   P_ee_E=config['bandpower_e_cosmic_shear_extension_name'],
-                                  E_n=config['cosebis_extension_name'],
-                                  onept=config['onepoint_extension_name'])
+                                  E_n=config['cosebis_extension_name'])
     statsList, scArgs = labConv.makeScaleCutsArgs(scDict) ## Here, we convert the keys from the default ones to the custom ones.
     config['scale_cuts_arguments'] = scArgs
     config['label_convention']     = labConv
@@ -96,7 +82,6 @@ def setup(options):
     config['use_stats']   = statsList
     config['use_stats_c'] = statsList_c
     TP_data.choose_data_sets(statsList_c)
-    TP_data.plots('/net/home/fohlen13/dvornik/pmm/test_run/mock_data/plots/mock_plots_scale_cuts', plot_cov=True, plot_kernel=True, plot_1pt=True)
     
     ## Extract the vector & matrix & put in config dict
     config['data']       = TP_data.makeMeanVector()
@@ -111,7 +96,6 @@ def setup(options):
         config["TP_data"] = TP_data
     ## Test
     #wtp.printTwoPoint_fromObj(TP_data)
-
     return config
 
 def execute(block, config):
@@ -131,11 +115,8 @@ def execute(block, config):
     ## Don't change the order of this list
     ## Read as: [section_name, extension_name, angle_name, isGGL]
     sectionNameList = [
-        [config['wt_plus_section_name'],                  config['wt_plus_extension_name'],                  'theta_bin_1_1', False],
-        [config['gt_plus_section_name'],                  config['gt_plus_extension_name'],                  'theta_bin_1_1', True],
         [config['xi_plus_section_name'],                  config['xi_plus_extension_name'],                  'theta_bin_1_1', False],
         [config['xi_minus_section_name'],                 config['xi_minus_extension_name'],                 'theta_bin_1_1', False],
-        [config['bandpower_clustering_section_name'],     config['bandpower_clustering_extension_name'],     'ell',           False],
         [config['bandpower_ggl_section_name'],            config['bandpower_ggl_extension_name'],            'ell',           True],
         [config['bandpower_e_cosmic_shear_section_name'], config['bandpower_e_cosmic_shear_extension_name'], 'ell',           False],
         [config['cosebis_section_name'],                  config['cosebis_extension_name'],                  'cosebis_n',     False],
@@ -203,19 +184,9 @@ def execute(block, config):
         spec  = sBuilder.makeSpectrum(extension_name, (type1, type2), unit, kernels=(ker1, ker2))
         spectra.append(spec)
       
-    if config['onepoint_extension_name'] in config['use_stats']:
-        if not block.has_section(config['onepoint_section_name']):
-            raise AssertionError('You specified \"%s\" in use_stats. When I was computing for \"%s\", I tried to\n\
-                grab theory values from \"%s\" but could not find anything.' % (config['use_stats'], config['onepoint_extension_name'], config['onepoint_section_name']))
-        else:
-            onept_theory = [twopoint.OnePointMeasurement.from_block(block, config['onepoint_section_name'], output_name='1pt')]
-    else:
-        onept_theory = None
-        
     ## Make. Ta da!
-    TP_theory = wtp.TwoPointWrapper.from_spectra(spectra, nobs=onept_theory, kernels=None, covmat_info=None)
+    TP_theory = wtp.TwoPointWrapper.from_spectra(spectra, kernels=None, covmat_info=None)
     #TP_theory = wtp.TwoPointWrapper.from_fits('twoPoint_PneE+PeeE.fits', covmat_name=None) ## For test
-
     
     ## Do scale cuts to theory
     scArgs = config['scale_cuts_arguments']

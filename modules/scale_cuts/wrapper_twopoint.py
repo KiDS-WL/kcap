@@ -30,13 +30,11 @@ class LabelConvention:
     
     def __init__(self, w='wTh', gamma_t='gT', gamma_x='gX', xi_p='xiP', xi_m='xiM', 
                   P_nn='Pnn', P_ne_E='PneE', P_ne_B='PneB', P_ee_E='PeeE', P_ee_B='PeeB', 
-                  E_n='En', B_n='Bn', onept='1pt'):
+                  E_n='En', B_n='Bn'):
     
         self.prefix  = 'twoPoint'
         self.lens    = 'NZ_LENS'
         self.source  = 'NZ_SOURCE'
-        
-        self.onept   = '1PT'.lower()
         
         self.w       = 'wTh'.lower()
         self.gamma_t = 'gT'.lower()
@@ -64,7 +62,6 @@ class LabelConvention:
             self.P_ee_B:   P_ee_B,
             self.E_n:      E_n,
             self.B_n:      B_n,
-            self.onept:    onept,
             'all':         'all'
         }
       
@@ -201,12 +198,12 @@ class TwoPointWrapper(twopoint.TwoPointFile):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        ## Default arguments are: spectra, kernels, nobs, windows, covmat_info
+        ## Default arguments are: spectra, kernels, windows, covmat_info
         return
     
     @classmethod
-    def from_spectra(cls, spectra, kernels=None, nobs=None, covmat_info=None):
-        TP = cls(spectra, kernels, nobs, 'SAMPLE', covmat_info) ## windows = 'SAMPLE'
+    def from_spectra(cls, spectra, kernels=None, covmat_info=None):
+        TP = cls(spectra, kernels, 'SAMPLE', covmat_info) ## windows = 'SAMPLE'
         return TP
     
     @classmethod
@@ -221,9 +218,6 @@ class TwoPointWrapper(twopoint.TwoPointFile):
         theory = []
         for spectrum in self.spectra:
             theory.append(spectrum.value)
-        if self.nobs is not None:
-            for obs in self.nobs:
-                theory.append(np.array(obs.nobs).flatten())
         theory = np.concatenate(theory)
         return theory
       
@@ -231,9 +225,6 @@ class TwoPointWrapper(twopoint.TwoPointFile):
         idx = []
         for spectrum in self.spectra:
             idx.append(len(spectrum.value))
-        if self.nobs is not None:
-            for obs in self.nobs:
-                idx.append(len(np.array(obs.nobs).flatten()))
         
         if sum(idx) != len(data):
             raise ValueError(f"Size of provided data vector incompatible with spectra: {len(data)} vs {sum(idx)}.")
