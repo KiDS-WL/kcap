@@ -173,23 +173,31 @@ def setup(options):
         stat_name = options[option_section, "statistic"]
         if stat_name == "bandpower":
             ell, window_function, ell_bin_edges = \
-                create_bandpower_window_function(n_ell_window=3000,
-                                                 ell_window_max=30000)
+                create_bandpower_window_function(
+                                     n_ell_bin=options[option_section, "n_ell"],
+                                     ell_bin_min=options[option_section, "ell_min"],
+                                     ell_bin_max=options[option_section, "ell_max"],
+                                     n_ell_window=3000,
+                                     ell_window_max=30000)
             os.makedirs(os.path.dirname(window_function_file), exist_ok=True)
             np.savez(window_function_file, ell=ell, EE=window_function,
-                     bin_edges=ell_bin_edges, statistic="bandpower")
+                     bin_edges=ell_bin_edges, statistic="bandpower", n_ell_bin=options[option_section, "n_ell"],
+                                     ell_bin_min=options[option_section, "ell_min"],
+                                     ell_bin_max=options[option_section, "ell_max"])
         elif stat_name == "cosebis":
             ell, window_function, cosebis_modes = \
-                create_cosebis_window_function(n_ell_window=50000)
+                create_cosebis_window_function(n_mode=options[option_section, "n_mode"],
+                                               n_ell_window=50000)
             os.makedirs(os.path.dirname(window_function_file), exist_ok=True)
             np.savez(window_function_file, ell=ell, EE=window_function,
-                     modes=cosebis_modes, statistic="cosebis")
+                     modes=cosebis_modes, statistic="cosebis", n_mode=options[option_section, "n_mode"])
 
     print(f"Window function for {stat_name}: "
           f"ell_min={ell[0]}, ell_max={ell[-1]}, n_ell={len(ell)}")
     if stat_name == "bandpower":
         extra_info["l_min_vec"] = ell_bin_edges[:-1]
         extra_info["l_max_vec"] = ell_bin_edges[1:]
+        extra_info["ell"] = 10**(0.5 * (np.log10(ell_bin_edges[:-1]) + np.log10(ell_bin_edges[1:])))
     elif stat_name == "cosebis":
         extra_info["cosebis_n"] = cosebis_modes
 
@@ -215,9 +223,16 @@ def execute(block, config):
      input_section_name, output_section_name, extra_info) = config
 
     ell_data_block = block[input_section_name, "ell"]
-    n_z_bin = block[input_section_name, "nbin"]
-    bin_indices = [(i, j) for i in range(n_z_bin)
-                   for j in range(i+1)]
+    n_z_bin_a = block[input_section_name, "nbin_a"]
+    n_z_bin_b = block[input_section_name, "nbin_b"]
+    bin_indices = []
+    for i in range(n_z_bin_a):
+        jmax = i+1 if block.get_bool(input_section_name, 'is_auto') else n_z_bin_b
+        for j in range(jmax):
+            if block.get_bool(input_section_name, 'auto_only'):
+                if j!=i:
+                    continue
+            bin_indices.append((i, j))
 
     m = np.ones(ell.size, dtype=bool)
     if extra_info["do_extrapolate_low"]:
@@ -256,6 +271,17 @@ def execute(block, config):
         if value is None:
             continue
         block[output_section_name, name] = value
+        
+    block[output_section_name, 'auto_only'] = block.get_bool(input_section_name, 'auto_only')
+    block[output_section_name, 'is_auto'] = block.get_bool(input_section_name, 'is_auto')
+    if block.has_value(input_section_name, 'nbin'):
+        block[output_section_name, 'nbin'] = block[input_section_name, 'nbin']
+    block[output_section_name, 'nbin_a'] = block[input_section_name, 'nbin_a']
+    block[output_section_name, 'nbin_b'] = block[input_section_name, 'nbin_b']
+    block[output_section_name, 'sample_a'] = block[input_section_name, 'sample_a']
+    block[output_section_name, 'sample_b'] = block[input_section_name, 'sample_b']
+    block[output_section_name, 'sep_name'] = block[input_section_name, 'sep_name']
+    block[output_section_name, 'save_name'] = block[input_section_name, 'save_name']
 
     return 0
 
