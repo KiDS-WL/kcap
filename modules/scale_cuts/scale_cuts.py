@@ -96,7 +96,7 @@ def setup(options):
     config['use_stats']   = statsList
     config['use_stats_c'] = statsList_c
     TP_data.choose_data_sets(statsList_c)
-    TP_data.plots('/net/home/fohlen13/dvornik/pmm/test_run/mock_data/plots/mock_plots_scale_cuts', plot_cov=True, plot_kernel=True, plot_1pt=True)
+    #TP_data.plots('/net/home/fohlen13/dvornik/pmm/test_run/mock_data/plots/mock_plots_scale_cuts', plot_cov=True, plot_kernel=True, plot_1pt=True)
     
     ## Extract the vector & matrix & put in config dict
     config['data']       = TP_data.makeMeanVector()
