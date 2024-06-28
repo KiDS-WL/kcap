@@ -18,8 +18,8 @@ def setup(options):
         raise NameError('data_and_covariance_fits_filename cannot be empty')
     
     ## Read extension names for data outputs
-    config['wt_plus_extension_name']                  = options.get_string(option_section, 'wt_plus_extension_name', default='wTh')
-    config['gt_plus_extension_name']                  = options.get_string(option_section, 'gt_plus_extension_name', default='gT')
+    config['wt_extension_name']                       = options.get_string(option_section, 'wt_extension_name', default='wTh')
+    config['gt_extension_name']                       = options.get_string(option_section, 'gt_extension_name', default='gT')
     config['xi_plus_extension_name']                  = options.get_string(option_section, 'xi_plus_extension_name', default='xiP')
     config['xi_minus_extension_name']                 = options.get_string(option_section, 'xi_minus_extension_name', default='xiM')
     config['bandpower_clustering_extension_name']     = options.get_string(option_section, 'bandpower_clustering_extension_name', default='Pnn')
@@ -27,11 +27,13 @@ def setup(options):
     config['bandpower_e_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_extension_name', default='PeeE')
     config['bandpower_b_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_extension_name', default='PeeB')
     config['cosebis_extension_name']                  = options.get_string(option_section, 'cosebis_extension_name', default='En')
+    config['psi_stats_gg_extension_name']             = options.get_string(option_section, 'psi_stats_gg_extension_name', default='Psi_gg')
+    config['psi_stats_gm_extension_name']             = options.get_string(option_section, 'psi_stats_gm_extension_name', default='Psi_gm')
     config['onepoint_extension_name']                 = options.get_string(option_section, 'onepoint_extension_name', default='1pt')
     
     ## Read section names for theory outputs
-    config['wt_plus_section_name']                  = options.get_string(option_section, 'wt_plus_section_name', default='galaxy_xi')
-    config['gt_plus_section_name']                  = options.get_string(option_section, 'gt_plus_section_name', default='galaxy_shear_xi')
+    config['wt_section_name']                       = options.get_string(option_section, 'wt_section_name', default='galaxy_xi')
+    config['gt_section_name']                       = options.get_string(option_section, 'gt_section_name', default='galaxy_shear_xi')
     config['xi_plus_section_name']                  = options.get_string(option_section, 'xi_plus_section_name', default='shear_xi_plus')
     config['xi_minus_section_name']                 = options.get_string(option_section, 'xi_minus_section_name', default='shear_xi_minus')
     config['bandpower_clustering_section_name']     = options.get_string(option_section, 'bandpower_clustering_section_name', default='bandpower_clustering')
@@ -39,6 +41,8 @@ def setup(options):
     config['bandpower_e_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_section_name', default='bandpower_e_cosmic_shear')
     config['bandpower_b_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_section_name', default='bandpower_b_cosmic_shear')
     config['cosebis_section_name']                  = options.get_string(option_section, 'cosebis_section_name', default='cosebis')
+    config['psi_stats_gg_section_name']             = options.get_string(option_section, 'psi_stats_gg_section_name', default='psi_gg')
+    config['psi_stats_gm_section_name']             = options.get_string(option_section, 'psi_stats_gm_section_name', default='psi_gm')
     config['onepoint_section_name']                 = options.get_string(option_section, 'onepoint_section_name', default='observable_function')
     
     ## Read scale cuts
@@ -70,14 +74,16 @@ def setup(options):
     except:
         raise OSError('\"%s\" not found' % config['data_and_covariance_fits_filename'])
     
-    labConv = wtp.LabelConvention(w=config['wt_plus_extension_name'],
-                                  gamma_t=config['gt_plus_extension_name'],
+    labConv = wtp.LabelConvention(w=config['wt_extension_name'],
+                                  gamma_t=config['gt_extension_name'],
                                   xi_p=config['xi_plus_extension_name'],
                                   xi_m=config['xi_minus_extension_name'],
                                   P_nn=config['bandpower_clustering_extension_name'],
                                   P_ne_E=config['bandpower_ggl_extension_name'],
                                   P_ee_E=config['bandpower_e_cosmic_shear_extension_name'],
                                   E_n=config['cosebis_extension_name'],
+                                  Psi_gg=config['psi_stats_gg_extension_name'],
+                                  Psi_gm=config['psi_stats_gm_extension_name'],
                                   onept=config['onepoint_extension_name'])
     statsList, scArgs = labConv.makeScaleCutsArgs(scDict) ## Here, we convert the keys from the default ones to the custom ones.
     config['scale_cuts_arguments'] = scArgs
@@ -96,7 +102,7 @@ def setup(options):
     config['use_stats']   = statsList
     config['use_stats_c'] = statsList_c
     TP_data.choose_data_sets(statsList_c)
-    #TP_data.plots('/net/home/fohlen13/dvornik/pmm/test_run/mock_data/plots/mock_plots_scale_cuts', plot_cov=True, plot_kernel=True, plot_1pt=True)
+    #TP_data.plots('/net/home/fohlen13/dvornik/halo_model_mc/tests/pmm/test_run/mock_data/plots/mock_plots_scale_cuts', plot_cov=True, plot_kernel=True, plot_1pt=True)
     
     ## Extract the vector & matrix & put in config dict
     config['data']       = TP_data.makeMeanVector()
@@ -131,13 +137,15 @@ def execute(block, config):
     ## Don't change the order of this list
     ## Read as: [section_name, extension_name, angle_name, isGGL]
     sectionNameList = [
-        [config['wt_plus_section_name'],                  config['wt_plus_extension_name'],                  'theta_bin_1_1', False],
-        [config['gt_plus_section_name'],                  config['gt_plus_extension_name'],                  'theta_bin_1_1', True],
+        [config['wt_section_name'],                       config['wt_extension_name'],                       'theta',         False],
+        [config['gt_section_name'],                       config['gt_extension_name'],                       'theta',         True],
         [config['xi_plus_section_name'],                  config['xi_plus_extension_name'],                  'theta_bin_1_1', False],
         [config['xi_minus_section_name'],                 config['xi_minus_extension_name'],                 'theta_bin_1_1', False],
         [config['bandpower_clustering_section_name'],     config['bandpower_clustering_extension_name'],     'ell',           False],
         [config['bandpower_ggl_section_name'],            config['bandpower_ggl_extension_name'],            'ell',           True],
         [config['bandpower_e_cosmic_shear_section_name'], config['bandpower_e_cosmic_shear_extension_name'], 'ell',           False],
+        [config['psi_stats_gg_section_name'],             config['psi_stats_gg_extension_name'],             'cosebis_n',     False],
+        [config['psi_stats_gm_section_name'],             config['psi_stats_gm_extension_name'],             'cosebis_n',     True],
         [config['cosebis_section_name'],                  config['cosebis_extension_name'],                  'cosebis_n',     False],
     ]
     

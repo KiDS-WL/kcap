@@ -30,11 +30,12 @@ class LabelConvention:
     
     def __init__(self, w='wTh', gamma_t='gT', gamma_x='gX', xi_p='xiP', xi_m='xiM', 
                   P_nn='Pnn', P_ne_E='PneE', P_ne_B='PneB', P_ee_E='PeeE', P_ee_B='PeeB', 
-                  E_n='En', B_n='Bn', onept='1pt'):
+                  E_n='En', B_n='Bn', Psi_gm='Psi_gm', Psi_gg='Psi_gg', onept='1pt'):
     
         self.prefix  = 'twoPoint'
         self.lens    = 'NZ_LENS'
         self.source  = 'NZ_SOURCE'
+        self.obs     = 'NZ_OBS'
         
         self.onept   = '1PT'.lower()
         
@@ -50,6 +51,8 @@ class LabelConvention:
         self.P_ee_B  = 'PeeB'.lower()
         self.E_n     = 'En'.lower()
         self.B_n     = 'Bn'.lower()
+        self.Psi_gm  = 'Psi_gm'.lower()
+        self.Psi_gg  = 'Psi_gg'.lower()
         
         self.labDict = {
             self.w:        w,
@@ -64,6 +67,8 @@ class LabelConvention:
             self.P_ee_B:   P_ee_B,
             self.E_n:      E_n,
             self.B_n:      B_n,
+            self.Psi_gm:   Psi_gm,
+            self.Psi_gg:   Psi_gg,
             self.onept:    onept,
             'all':         'all'
         }
@@ -93,6 +98,8 @@ class LabelConvention:
         self.kernelTypeDict[P_ee_B]  = [self.source, self.source, tpType6, tpType6, None] 
         self.kernelTypeDict[E_n]     = [self.source, self.source, tpType5, tpType6, None] 
         self.kernelTypeDict[B_n]     = [self.source, self.source, tpType6, tpType5, None]
+        self.kernelTypeDict[Psi_gm]  = [self.lens,   self.source, tpType4, tpType5, None]
+        self.kernelTypeDict[Psi_gg]  = [self.lens,   self.lens,   tpType4, tpType4, None]
         return
     
     def defaultToCustomStatsTag(self, statsTag):
