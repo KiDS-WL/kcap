@@ -6,6 +6,7 @@ import numpy as np
 import twopoint
 import wrapper_twopoint as wtp
 
+# New scale cuts supporting 1pt statistics
 
 def setup(options):
     config = {}
@@ -18,17 +19,17 @@ def setup(options):
         raise NameError('data_and_covariance_fits_filename cannot be empty')
     
     ## Read extension names for data outputs
-    config['wt_extension_name']                       = options.get_string(option_section, 'wt_extension_name', default='wTh')
-    config['gt_extension_name']                       = options.get_string(option_section, 'gt_extension_name', default='gT')
-    config['xi_plus_extension_name']                  = options.get_string(option_section, 'xi_plus_extension_name', default='xiP')
-    config['xi_minus_extension_name']                 = options.get_string(option_section, 'xi_minus_extension_name', default='xiM')
+    config['wt_extension_name']                       = options.get_string(option_section, 'wt_extension_name', default='wtheta')
+    config['gt_extension_name']                       = options.get_string(option_section, 'gt_extension_name', default='gammat')
+    config['xi_plus_extension_name']                  = options.get_string(option_section, 'xi_plus_extension_name', default='xip')
+    config['xi_minus_extension_name']                 = options.get_string(option_section, 'xi_minus_extension_name', default='xim')
     config['bandpower_clustering_extension_name']     = options.get_string(option_section, 'bandpower_clustering_extension_name', default='Pnn')
     config['bandpower_ggl_extension_name']            = options.get_string(option_section, 'bandpower_ggl_extension_name', default='PneE')
     config['bandpower_e_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_extension_name', default='PeeE')
     config['bandpower_b_cosmic_shear_extension_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_extension_name', default='PeeB')
-    config['cosebis_extension_name']                  = options.get_string(option_section, 'cosebis_extension_name', default='En')
     config['psi_stats_gg_extension_name']             = options.get_string(option_section, 'psi_stats_gg_extension_name', default='Psi_gg')
     config['psi_stats_gm_extension_name']             = options.get_string(option_section, 'psi_stats_gm_extension_name', default='Psi_gm')
+    config['cosebis_extension_name']                  = options.get_string(option_section, 'cosebis_extension_name', default='En')
     config['onepoint_extension_name']                 = options.get_string(option_section, 'onepoint_extension_name', default='1pt')
     
     ## Read section names for theory outputs
@@ -40,9 +41,9 @@ def setup(options):
     config['bandpower_ggl_section_name']            = options.get_string(option_section, 'bandpower_ggl_section_name', default='bandpower_ggl')
     config['bandpower_e_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_e_cosmic_shear_section_name', default='bandpower_e_cosmic_shear')
     config['bandpower_b_cosmic_shear_section_name'] = options.get_string(option_section, 'bandpower_b_cosmic_shear_section_name', default='bandpower_b_cosmic_shear')
-    config['cosebis_section_name']                  = options.get_string(option_section, 'cosebis_section_name', default='cosebis')
     config['psi_stats_gg_section_name']             = options.get_string(option_section, 'psi_stats_gg_section_name', default='psi_gg')
     config['psi_stats_gm_section_name']             = options.get_string(option_section, 'psi_stats_gm_section_name', default='psi_gm')
+    config['cosebis_section_name']                  = options.get_string(option_section, 'cosebis_section_name', default='cosebis')
     config['onepoint_section_name']                 = options.get_string(option_section, 'onepoint_section_name', default='observable_function')
     
     ## Read scale cuts
@@ -92,9 +93,9 @@ def setup(options):
     ## Do scale cuts to data and cov
     TP_data.cutScales(cutCross=scArgs[0], statsTag_tomoInd_tomoInd_list=scArgs[1], statsTag_binIndList_dict=scArgs[2])
     TP_data.keepScales(statsTag_tomoInd1_tomoInd2__angMin_angMax_dict=scArgs[3], statsTag__angMin_angMax_dict=scArgs[4])
-    print('  Did scale cuts to data & cov')
+    #print('  Did scale cuts to data & cov')
     
-    ## Don't put this before scale cuts, because TP_data.choose_data_sets does 
+    ## Don't put this before scale cuts, because TP_data.choose_data_sets does
     ## not modify the covmat_info attribute but only the covmat attribute.
     ## While one can cut a correctly cut covariance, the scale cuts on this
     ## covariance, which relies on covmat_info, can result in errors.
@@ -121,7 +122,7 @@ def setup(options):
     return config
 
 def execute(block, config):
-    print('Gathering theory outputs to make a vector')
+    #print('Gathering theory outputs to make a vector')
     
     ## Save data and cov in the data block
     output_section_name = config['output_section_name']
@@ -139,21 +140,21 @@ def execute(block, config):
     sectionNameList = [
         [config['wt_section_name'],                       config['wt_extension_name'],                       'theta',         False],
         [config['gt_section_name'],                       config['gt_extension_name'],                       'theta',         True],
-        [config['xi_plus_section_name'],                  config['xi_plus_extension_name'],                  'theta_bin_1_1', False],
-        [config['xi_minus_section_name'],                 config['xi_minus_extension_name'],                 'theta_bin_1_1', False],
+        [config['xi_plus_section_name'],                  config['xi_plus_extension_name'],                  'theta',         False],
+        [config['xi_minus_section_name'],                 config['xi_minus_extension_name'],                 'theta',         False],
         [config['bandpower_clustering_section_name'],     config['bandpower_clustering_extension_name'],     'ell',           False],
         [config['bandpower_ggl_section_name'],            config['bandpower_ggl_extension_name'],            'ell',           True],
         [config['bandpower_e_cosmic_shear_section_name'], config['bandpower_e_cosmic_shear_extension_name'], 'ell',           False],
-        [config['psi_stats_gg_section_name'],             config['psi_stats_gg_extension_name'],             'cosebis_n',     False],
-        [config['psi_stats_gm_section_name'],             config['psi_stats_gm_extension_name'],             'cosebis_n',     True],
-        [config['cosebis_section_name'],                  config['cosebis_extension_name'],                  'cosebis_n',     False],
+        [config['psi_stats_gg_section_name'],             config['psi_stats_gg_extension_name'],             'index_bin_1_1',     False],
+        [config['psi_stats_gm_section_name'],             config['psi_stats_gm_extension_name'],             'index_bin_1_1',     True],
+        [config['cosebis_section_name'],                  config['cosebis_extension_name'],                  'n',     False],
     ]
     
     for line in sectionNameList:
         section_name, extension_name, angle_name, isGGL = line
       
         if extension_name not in config['use_stats']:
-            print('  Skipped %s' % extension_name)
+            #print('  Skipped %s' % extension_name)
             continue
         
         elif not block.has_section(section_name):
@@ -176,7 +177,7 @@ def execute(block, config):
         if isGGL:
             for i in range(nbTomo_max):
                 if not block.has_value(section_name, 'bin_%d_%d' % (i+1, 1)):
-                    print('  %s stops at lens bin %d' % (section_name, i))
+                    #print('  %s stops at lens bin %d' % (section_name, i))
                     break
           
                 for j in range(nbTomo_max):
@@ -189,7 +190,7 @@ def execute(block, config):
         else:
             for i in range(nbTomo_max):
                 if not block.has_value(section_name, 'bin_%d_%d' % (i+1, i+1)):
-                    print('  %s stops at bin %d' % (section_name, i))
+                    #print('  %s stops at bin %d' % (section_name, i))
                     break
                 
                 for j in range(i, nbTomo_max):
@@ -229,7 +230,7 @@ def execute(block, config):
     scArgs = config['scale_cuts_arguments']
     TP_theory.cutScales(cutCross=scArgs[0], statsTag_tomoInd_tomoInd_list=scArgs[1], statsTag_binIndList_dict=scArgs[2])
     TP_theory.keepScales(statsTag_tomoInd1_tomoInd2__angMin_angMax_dict=scArgs[3], statsTag__angMin_angMax_dict=scArgs[4])
-    print('  Did scale cuts to theory')
+    #print('  Did scale cuts to theory')
     
     ## Extract the vector & put in block as output_section_name
     block[output_section_name, 'theory'] = TP_theory.makeMeanVector()
